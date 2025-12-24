@@ -9,7 +9,34 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+)
+
+var (
+	primaryColor   = lipgloss.Color("62")
+	secondaryColor = lipgloss.Color("240")
+	accentColor    = lipgloss.Color("42")
+
+	listPanelStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2).
+			Height(20)
+
+	detailPanelStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(secondaryColor).
+				Padding(1, 2).
+				Height(20)
+
+	selectedItemStyle = lipgloss.NewStyle().
+				Foreground(accentColor).
+				Bold(true)
+
+	statusBarStyle = lipgloss.NewStyle().
+			Foreground(secondaryColor).
+			Italic(true)
 )
 
 type viewMode int
@@ -136,10 +163,16 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "up", "k":
 		if m.cursor > 0 {
 			m.cursor--
+			if m.cursor < len(issuesToShow) {
+				return m, m.fetchIssueDetail(issuesToShow[m.cursor].Key)
+			}
 		}
 	case "down", "j":
 		if m.cursor < len(issuesToShow)-1 {
 			m.cursor++
+			if m.cursor < len(issuesToShow) {
+				return m, m.fetchIssueDetail(issuesToShow[m.cursor].Key)
+			}
 		}
 	case "esc":
 		m.filterInput.SetValue("")
@@ -239,29 +272,54 @@ func (m model) renderListView() string {
 		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
 	}
 
+	var listContent strings.Builder
 	for i, issue := range issuesToShow {
-		cursor := " "
+		line := fmt.Sprintf("[%s] %s - %s", issue.Key, issue.Summary, issue.Status)
+
 		if m.cursor == i {
-			cursor = ">"
+			line = selectedItemStyle.Render("> " + line)
+		} else {
+			line = " " + line
 		}
 
-		b.WriteString(fmt.Sprintf("%s [%s] %s - %s\n",
-			cursor, issue.Key, issue.Summary, issue.Status))
+		listContent.WriteString(line + "\n")
 	}
 
-	b.WriteString("\n")
+	var detailContent strings.Builder
+	if m.cursor < len(issuesToShow) {
+		selectedIssue := issuesToShow[m.cursor]
+		detailContent.WriteString(lipgloss.NewStyle().Bold(true).Render(selectedIssue.Key) + "\n\n")
+		detailContent.WriteString("Summary: " + selectedIssue.Summary + "\n")
+		detailContent.WriteString("Status: " + selectedIssue.Status + "\n")
+		detailContent.WriteString("Type: " + selectedIssue.Type + "\n")
 
-	if m.filtering {
-		b.WriteString("Filter: ")
-		b.WriteString(m.filterInput.View())
-		b.WriteString(" (enter to finish, esc to cancel)")
-	} else if m.filterInput.Value() != "" {
-		b.WriteString(fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues)))
+		if m.issueDetail != nil && m.issueDetail.Key == selectedIssue.Key {
+			detailContent.WriteString("\nAssignee: " + m.issueDetail.Assignee + "\n")
+			detailContent.WriteString("Reporter: " + m.issueDetail.Reporter + "\n")
+			if m.issueDetail.Description != "" {
+				detailContent.WriteString("Description:\n" + m.issueDetail.Description + "\n")
+			}
+		}
+
 	} else {
-		b.WriteString("\n/ filter | enter detail | t transition | q quit")
+		detailContent.WriteString("No issue selected")
 	}
 
-	return b.String()
+	issuesPanel := listPanelStyle.Render(listContent.String())
+	detailPanel := detailPanelStyle.Render(detailContent.String())
+
+	panels := lipgloss.JoinHorizontal(lipgloss.Top, issuesPanel, detailPanel)
+
+	var statusBar string
+	if m.filtering {
+		statusBar = "Filter: " + m.filterInput.View() + " (enter to finish, esc to cancel)"
+	} else if m.filterInput.Value() != "" {
+		statusBar = fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues))
+	} else {
+		statusBar = "\n/ filter | enter detail | t transition | q quit"
+	}
+
+	return panels + "\n" + statusBarStyle.Render(statusBar)
 }
 
 func (m model) renderDetailView() string {
