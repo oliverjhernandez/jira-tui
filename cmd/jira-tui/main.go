@@ -22,13 +22,15 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
 			Padding(1, 2).
-			Height(20)
+			Height(20).
+			Width(100)
 
 	detailPanelStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(secondaryColor).
 				Padding(1, 2).
-				Height(20)
+				Height(20).
+				Width(100)
 
 	selectedItemStyle = lipgloss.NewStyle().
 				Foreground(accentColor).
@@ -37,6 +39,42 @@ var (
 	statusBarStyle = lipgloss.NewStyle().
 			Foreground(secondaryColor).
 			Italic(true)
+
+	detailHeaderStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("63"))
+
+	detailLabelStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("240")).
+				Bold(true)
+
+	detailValueStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252"))
+
+	// Status badge styles
+	statusInProgressStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("0")).
+				Background(lipgloss.Color("42")).
+				Padding(0, 1).
+				Bold(true)
+
+	statusDoneStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("0")).
+			Background(lipgloss.Color("42")).
+			Padding(0, 1).
+			Bold(true)
+
+	statusToDoStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("0")).
+			Background(lipgloss.Color("153")).
+			Padding(0, 1).
+			Bold(true)
+
+	statusDefaultStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("0")).
+				Background(lipgloss.Color("240")).
+				Padding(0, 1).
+				Bold(true)
 )
 
 type viewMode int
@@ -274,10 +312,14 @@ func (m model) renderListView() string {
 
 	var listContent strings.Builder
 	for i, issue := range issuesToShow {
-		line := fmt.Sprintf("[%s] %s - %s", issue.Key, issue.Summary, issue.Status)
+		key := fmt.Sprintf("[%s]", issue.Key)
+		statusBadge := renderStatusBadge(issue.Status)
+		summary := truncate(issue.Summary, 40)
+
+		line := key + " " + statusBadge + " " + summary
 
 		if m.cursor == i {
-			line = selectedItemStyle.Render("> " + line)
+			line = "> " + line
 		} else {
 			line = " " + line
 		}
@@ -288,21 +330,36 @@ func (m model) renderListView() string {
 	var detailContent strings.Builder
 	if m.cursor < len(issuesToShow) {
 		selectedIssue := issuesToShow[m.cursor]
-		detailContent.WriteString(lipgloss.NewStyle().Bold(true).Render(selectedIssue.Key) + "\n\n")
-		detailContent.WriteString("Summary: " + selectedIssue.Summary + "\n")
-		detailContent.WriteString("Status: " + selectedIssue.Status + "\n")
-		detailContent.WriteString("Type: " + selectedIssue.Type + "\n")
+
+		header := detailHeaderStyle.Render(selectedIssue.Key) + " " + renderStatusBadge(selectedIssue.Status)
+		detailContent.WriteString(header + "\n\n")
+		detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
+		detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
 
 		if m.issueDetail != nil && m.issueDetail.Key == selectedIssue.Key {
-			detailContent.WriteString("\nAssignee: " + m.issueDetail.Assignee + "\n")
-			detailContent.WriteString("Reporter: " + m.issueDetail.Reporter + "\n")
-			if m.issueDetail.Description != "" {
-				detailContent.WriteString("Description:\n" + m.issueDetail.Description + "\n")
-			}
-		}
+			detailContent.WriteString(renderField("Assignee", m.issueDetail.Assignee) + "\n")
+			detailContent.WriteString(renderField("Reporter", m.issueDetail.Reporter) + "\n")
 
+			if m.issueDetail.Description != "" {
+				detailContent.WriteString(detailLabelStyle.Render("Description:") + "\n")
+				desc := m.issueDetail.Description
+				if len(desc) > 200 {
+					desc = desc[:200] + "..."
+				}
+				detailContent.WriteString(detailValueStyle.Render(desc) + "\n\n")
+			}
+
+			if len(m.issueDetail.Comments) > 0 {
+				detailContent.WriteString(detailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
+				detailContent.WriteString(detailValueStyle.Render("Press Enter for full view") + "\n")
+			}
+		} else if m.loadingDetail {
+			detailContent.WriteString("\n" + lipgloss.NewStyle().Italic(true).Render("Loading details...") + "\n")
+		} else {
+			detailContent.WriteString("\n" + lipgloss.NewStyle().Faint(true).Render("Press Enter for full details") + "\n")
+		}
 	} else {
-		detailContent.WriteString("No issue selected")
+		detailContent.WriteString(lipgloss.NewStyle().Faint(true).Render("No issue selected"))
 	}
 
 	issuesPanel := listPanelStyle.Render(listContent.String())
@@ -471,6 +528,31 @@ func issueMatchesFilter(issue jira.Issue, filter string) bool {
 	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||
 		strings.Contains(strings.ToLower(issue.Key), filterLower) ||
 		strings.Contains(strings.ToLower(issue.Status), filterLower)
+}
+
+func renderStatusBadge(status string) string {
+	statusLower := strings.ToLower(status)
+
+	if strings.Contains(statusLower, "trabajando") {
+		return statusInProgressStyle.Render(status)
+	} else if strings.Contains(statusLower, "done") {
+		return statusDoneStyle.Render(status)
+	} else if strings.Contains(statusLower, "backlog") || strings.Contains(statusLower, "todo") || strings.Contains(statusLower, "selected for development") {
+		return statusToDoStyle.Render(status)
+	}
+
+	return statusDefaultStyle.Render(status)
+}
+
+func renderField(label, value string) string {
+	return detailLabelStyle.Render(label+": ") + detailValueStyle.Render(value)
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }
 
 func main() {
