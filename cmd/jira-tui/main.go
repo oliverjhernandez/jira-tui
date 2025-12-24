@@ -18,7 +18,6 @@ const (
 	listView viewMode = iota
 	detailView
 	transitionView
-	filterView
 )
 
 type model struct {
@@ -73,8 +72,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateDetailView(msg)
 		case transitionView:
 			return m.updateTransitionView(msg)
-		case filterView:
-			return m.updateFilterView(msg)
 		}
 
 	case issuesLoadedMsg:
@@ -107,6 +104,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+
+	issuesToShow := m.issues
+	if m.filterInput.Value() != "" {
+		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
+	}
+
+	if m.filtering {
+		switch msg.String() {
+		case "esc":
+			m.filtering = false
+			m.filterInput.SetValue("")
+			m.filterInput.Blur()
+			m.cursor = 0
+			return m, nil
+		case "enter":
+			m.filtering = false
+			m.filterInput.Blur()
+			return m, nil
+		}
+
+		var cmd tea.Cmd
+		m.filterInput, cmd = m.filterInput.Update(msg)
+
+		return m, cmd
+	}
+
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -115,16 +138,21 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cursor--
 		}
 	case "down", "j":
-		if m.cursor < len(m.issues)-1 {
+		if m.cursor < len(issuesToShow)-1 {
 			m.cursor++
 		}
+	case "esc":
+		m.filterInput.SetValue("")
+		m.cursor = 0
 	case "/":
-		m.mode = filterView
-		m.filtering = !m.filtering
+		m.filtering = true
+		m.filterInput.SetValue("")
 		m.filterInput.Focus()
+		m.cursor = 0
+		return m, textinput.Blink
 	case "enter":
-		if len(m.issues) > 0 {
-			m.selectedIssue = &m.issues[m.cursor]
+		if len(issuesToShow) > 0 && m.cursor < len(issuesToShow) {
+			m.selectedIssue = &issuesToShow[m.cursor]
 			m.mode = detailView
 			m.loadingDetail = true
 			m.issueDetail = nil
@@ -139,7 +167,7 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "esc", "backspace":
+	case "esc":
 		m.mode = listView
 		m.selectedIssue = nil
 		m.issueDetail = nil
@@ -181,28 +209,6 @@ func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) updateFilterView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
-		case "esc", "backspace":
-			m.mode = listView
-			m.filtering = false
-			m.filterInput.SetValue("")
-			return m, nil
-		case "enter":
-			m.mode = listView
-			m.filtering = false
-			return m, nil
-		}
-
-	}
-
-	m.filterInput, cmd = m.filterInput.Update(msg)
-	return m, cmd
-}
-
 func (m model) View() string {
 	if m.loading {
 		return "Loading issues...\n"
@@ -219,8 +225,6 @@ func (m model) View() string {
 		return m.renderDetailView()
 	case transitionView:
 		return m.renderTransitionView()
-	case filterView:
-		return m.renderFilterView()
 	default:
 		return "Unknown view\n"
 	}
@@ -245,7 +249,17 @@ func (m model) renderListView() string {
 			cursor, issue.Key, issue.Summary, issue.Status))
 	}
 
-	b.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to view details, q to quit.\n")
+	b.WriteString("\n")
+
+	if m.filtering {
+		b.WriteString("Filter: ")
+		b.WriteString(m.filterInput.View())
+		b.WriteString(" (enter to finish, esc to cancel)")
+	} else if m.filterInput.Value() != "" {
+		b.WriteString(fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues)))
+	} else {
+		b.WriteString("\n/ filter | enter detail | t transition | q quit")
+	}
 
 	return b.String()
 }
@@ -311,17 +325,6 @@ func (m model) renderTransitionView() string {
 	}
 
 	b.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
-
-	return b.String()
-}
-
-func (m model) renderFilterView() string {
-	var b strings.Builder
-
-	b.WriteString("Filter: ")
-	filter := m.filterInput
-	b.WriteString(filter.View())
-	b.WriteString("\n\n")
 
 	return b.String()
 }
@@ -394,15 +397,22 @@ func fetchIssues() tea.Msg {
 }
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
-	var newIssues []jira.Issue
+	var filtered []jira.Issue
 
-	for _, v := range issues {
-		if strings.Contains(v.Summary, filter) {
-			newIssues = append(newIssues, v)
+	for _, i := range issues {
+		if issueMatchesFilter(i, filter) {
+			filtered = append(filtered, i)
 		}
 	}
 
-	return newIssues
+	return filtered
+}
+
+func issueMatchesFilter(issue jira.Issue, filter string) bool {
+	filterLower := strings.ToLower(filter)
+	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||
+		strings.Contains(strings.ToLower(issue.Key), filterLower) ||
+		strings.Contains(strings.ToLower(issue.Status), filterLower)
 }
 
 func main() {
@@ -413,7 +423,7 @@ func main() {
 	client, _ := jira.NewClient(url, email, token)
 
 	filterBox := textinput.New()
-	filterBox.CharLimit = 10
+	filterBox.CharLimit = 50
 
 	p := tea.NewProgram(model{
 		loading:     true,
