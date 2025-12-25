@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -83,6 +84,7 @@ const (
 	listView viewMode = iota
 	detailView
 	transitionView
+	editDescriptionView
 )
 
 type model struct {
@@ -100,6 +102,8 @@ type model struct {
 	loadingTransitions bool
 	filterInput        textinput.Model
 	filtering          bool
+	editTextArea       textarea.Model
+	editingDescription bool
 }
 
 // bubbletea messages from commands
@@ -119,6 +123,10 @@ type transitionCompleteMsg struct {
 	success bool
 }
 
+type editedDescriptionMsg struct {
+	success bool
+}
+
 type errMsg struct {
 	err error
 }
@@ -128,6 +136,11 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m.mode {
+	case editDescriptionView:
+		return m.updateEditDescriptionView(msg)
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch m.mode {
@@ -152,11 +165,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingTransitions = false
 
 	case transitionCompleteMsg:
-		// Transition completed, refresh the issue detail
 		m.mode = detailView
 		m.loadingDetail = true
 		m.issueDetail = nil
 		return m, m.fetchIssueDetail(m.selectedIssue.Key)
+
+	case editedDescriptionMsg:
+		m.mode = listView
+		if m.selectedIssue != nil {
+			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+		}
+		return m, nil
 
 	case errMsg:
 		m.err = msg.err
@@ -221,6 +240,12 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filterInput.Focus()
 		m.cursor = 0
 		return m, textinput.Blink
+	case "e":
+		m.mode = editDescriptionView
+		m.editingDescription = true
+		m.editTextArea.SetValue(m.issueDetail.Description)
+		m.editTextArea.Focus()
+		return m, textarea.Blink
 	case "enter":
 		if len(issuesToShow) > 0 && m.cursor < len(issuesToShow) {
 			m.selectedIssue = &issuesToShow[m.cursor]
@@ -259,7 +284,6 @@ func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "esc", "backspace":
-		// Go back to detail view
 		m.mode = detailView
 		m.transitions = nil
 	case "up", "k":
@@ -296,6 +320,8 @@ func (m model) View() string {
 		return m.renderDetailView()
 	case transitionView:
 		return m.renderTransitionView()
+	case editDescriptionView:
+		return m.renderEditDescriptionView()
 	default:
 		return "Unknown view\n"
 	}
@@ -444,6 +470,42 @@ func (m model) renderTransitionView() string {
 	return b.String()
 }
 
+func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			m.mode = listView
+			m.editingDescription = false
+			m.editTextArea.Blur()
+			return m, nil
+		case "ctrl+s":
+			m.mode = listView
+			m.editingDescription = false
+			m.editTextArea.Blur()
+			return m, m.postDescription(m.issueDetail.Key, m.editTextArea.Value())
+		}
+	}
+
+	var cmd tea.Cmd
+	m.editTextArea, cmd = m.editTextArea.Update(msg)
+
+	return m, cmd
+}
+
+func (m model) renderEditDescriptionView() string {
+	var b strings.Builder
+
+	header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+	b.WriteString(header + "\n\n")
+
+	b.WriteString("Description:\n")
+	b.WriteString(m.editTextArea.View())
+	b.WriteString("\n\n=== END EDIT ===\n")
+
+	return b.String()
+}
+
 func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -486,6 +548,21 @@ func (m model) doTransition(issueKey, transitionID string) tea.Cmd {
 		}
 
 		return transitionCompleteMsg{success: true}
+	}
+}
+
+func (m model) postDescription(issueKey, description string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostDescription(context.Background(), issueKey, description)
+		if m.client == nil {
+			return errMsg{err}
+		}
+
+		return editedDescriptionMsg{success: true}
 	}
 }
 
@@ -565,11 +642,15 @@ func main() {
 	filterBox := textinput.New()
 	filterBox.CharLimit = 50
 
+	editTextAreaBox := textarea.New()
+	editTextAreaBox.CharLimit = 3000
+
 	p := tea.NewProgram(model{
-		loading:     true,
-		mode:        listView,
-		client:      client,
-		filterInput: filterBox,
+		loading:      true,
+		mode:         listView,
+		client:       client,
+		filterInput:  filterBox,
+		editTextArea: editTextAreaBox,
 	})
 
 	if _, err := p.Run(); err != nil {

@@ -307,6 +307,57 @@ func (c *Client) DoTransition(ctx context.Context, issueKey, transitionID string
 	return nil
 }
 
+func (c *Client) PostDescription(ctx context.Context, issueKey string, description string) error {
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
+
+	body := map[string]any{
+		"fields": map[string]any{
+			"description": map[string]any{
+				"type":    "doc",
+				"version": 1,
+				"content": []map[string]any{
+					{
+						"type": "paragraph",
+						"content": []map[string]any{
+							{
+								"type": "text",
+								"text": description,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
 func extractText(doc *descriptionDoc) string {
 	if doc == nil {
 		return ""
