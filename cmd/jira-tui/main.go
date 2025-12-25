@@ -7,17 +7,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
 
 var (
-	primaryColor   = lipgloss.Color("62")
-	secondaryColor = lipgloss.Color("240")
-	accentColor    = lipgloss.Color("42")
+	primaryColor   = lipgloss.Color("15")  // Bright white (adapts)
+	secondaryColor = lipgloss.Color("240") // Gray
+	accentColor    = lipgloss.Color("42")  // Green
 
 	listPanelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -104,6 +104,8 @@ type model struct {
 	filtering          bool
 	editTextArea       textarea.Model
 	editingDescription bool
+	windowWidth        int
+	windowHeight       int
 }
 
 // bubbletea messages from commands
@@ -136,8 +138,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch m.mode {
-	case editDescriptionView:
+	if m.mode == editDescriptionView {
 		return m.updateEditDescriptionView(msg)
 	}
 
@@ -176,6 +177,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchIssueDetail(m.selectedIssue.Key)
 		}
 		return m, nil
+
+	case tea.WindowSizeMsg:
+		m.windowHeight = msg.Height
+		m.windowWidth = msg.Width
 
 	case errMsg:
 		m.err = msg.err
@@ -304,27 +309,32 @@ func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
+	var content string
+
 	if m.loading {
-		return "Loading issues...\n"
+		content = "Loading issues...\n"
 	}
 
 	if m.err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
+		content = fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
 	}
 
 	switch m.mode {
 	case listView:
-		return m.renderListView()
+		content = m.renderListView()
 	case detailView:
-		return m.renderDetailView()
+		content = m.renderDetailView()
 	case transitionView:
-		return m.renderTransitionView()
+		content = m.renderTransitionView()
 	case editDescriptionView:
-		return m.renderEditDescriptionView()
+		content = m.renderEditDescriptionView()
 	default:
-		return "Unknown view\n"
+		content = "Unknown view\n"
 	}
+
+	layer := lipgloss.NewLayer(content)
+	return tea.NewView(layer)
 }
 
 func (m model) renderListView() string {
@@ -494,16 +504,33 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditDescriptionView() string {
-	var b strings.Builder
 
-	header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
-	b.WriteString(header + "\n\n")
+	background := m.renderListView()
 
-	b.WriteString("Description:\n")
-	b.WriteString(m.editTextArea.View())
-	b.WriteString("\n\n=== END EDIT ===\n")
+	var modalContent strings.Builder
 
-	return b.String()
+	if m.issueDetail != nil {
+		header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+		modalContent.WriteString(header + "\n\n")
+	}
+	modalContent.WriteString("Description:\n")
+	modalContent.WriteString(m.editTextArea.Value() + "\n\n")
+	modalContent.WriteString("ctrl+s save | esc cancel")
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1, 2).
+		Width(60).
+		Background(lipgloss.Color("150"))
+
+	styledModal := modalStyle.Render(modalContent.String())
+
+	backgroundLayer := lipgloss.NewLayer(background)
+	modalLayer := lipgloss.NewLayer(styledModal).X(m.windowWidth / 2).Y(m.windowHeight / 2)
+
+	canvas := lipgloss.NewCanvas(backgroundLayer, modalLayer)
+	return canvas.Render()
 }
 
 func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
@@ -651,6 +678,8 @@ func main() {
 		client:       client,
 		filterInput:  filterBox,
 		editTextArea: editTextAreaBox,
+		windowWidth:  80,
+		windowHeight: 24,
 	})
 
 	if _, err := p.Run(); err != nil {
