@@ -24,7 +24,7 @@ var (
 			BorderForeground(primaryColor).
 			Padding(1, 2).
 			Height(20).
-			Width(100)
+			Width(200)
 
 	detailPanelStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
@@ -52,7 +52,37 @@ var (
 	detailValueStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("252"))
 
-	// Status badge styles
+	// Field Styles
+	keyFieldStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("252")).
+			Bold(true).
+			Width(12).
+			Align(lipgloss.Left)
+
+	statusFieldStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")).
+				Bold(true).
+				Width(12).
+				Align(lipgloss.Left)
+
+	summaryFieldStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")).
+				Bold(true).
+				Width(40).
+				Align(lipgloss.Left)
+
+	assigneeFieldStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")).
+				Bold(true).
+				Width(20).
+				Align(lipgloss.Left)
+
+	priorityFieldStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")).
+				Bold(true).
+				Width(10).
+				Align(lipgloss.Left)
+
 	statusInProgressStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("0")).
 				Background(lipgloss.Color("42")).
@@ -313,11 +343,13 @@ func (m model) View() tea.View {
 	var content string
 
 	if m.loading {
-		content = "Loading issues...\n"
+		layer := lipgloss.NewLayer("Loading issues...\n")
+		return tea.NewView(layer)
 	}
 
 	if m.err != nil {
-		content = fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
+		layer := lipgloss.NewLayer(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
+		return tea.NewView(layer)
 	}
 
 	switch m.mode {
@@ -348,11 +380,13 @@ func (m model) renderListView() string {
 
 	var listContent strings.Builder
 	for i, issue := range issuesToShow {
-		key := fmt.Sprintf("[%s]", issue.Key)
-		statusBadge := renderStatusBadge(issue.Status)
-		summary := truncate(issue.Summary, 40)
+		key := keyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
+		summary := summaryFieldStyle.Render(truncate(issue.Summary, 40))
+		statusBadge := statusFieldStyle.Render(renderStatusBadge(issue.Status))
+		// assignee := assigneeFieldStyle.Render(issue.Assignee)
+		// priority := assigneeFieldStyle.Render(issue.Priority)
 
-		line := key + " " + statusBadge + " " + summary
+		line := key + " " + summary + " " + statusBadge
 
 		if m.cursor == i {
 			line = "> " + line
@@ -363,14 +397,37 @@ func (m model) renderListView() string {
 		listContent.WriteString(line + "\n")
 	}
 
-	var detailContent strings.Builder
-	if m.cursor < len(issuesToShow) {
-		selectedIssue := issuesToShow[m.cursor]
+	var statusBar string
+	if m.filtering {
+		statusBar = "Filter: " + m.filterInput.View() + " (enter to finish, esc to cancel)"
+	} else if m.filterInput.Value() != "" {
+		statusBar = fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues))
+	} else {
+		statusBar = "\n/ filter | enter detail | t transition | q quit"
+	}
 
-		header := detailHeaderStyle.Render(selectedIssue.Key) + " " + renderStatusBadge(selectedIssue.Status)
-		detailContent.WriteString(header + "\n\n")
-		detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
-		detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
+	listRender := listPanelStyle.Render(listContent.String())
+	statusBarRender := statusBarStyle.Render(statusBar)
+
+	return listRender + "\n" + statusBarRender
+}
+
+func (m model) renderDetailView() string {
+	if m.selectedIssue == nil {
+		return "No issue selected\n"
+	}
+
+	var detailContent strings.Builder
+	selectedIssue := m.issues[m.cursor]
+
+	header := detailHeaderStyle.Render(selectedIssue.Key) + " " + renderStatusBadge(selectedIssue.Status)
+	detailContent.WriteString(header + "\n\n")
+	detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
+	detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
+
+	if m.loadingDetail {
+		detailContent.WriteString("Loading details...\n")
+	} else if m.issueDetail != nil {
 
 		if m.issueDetail != nil && m.issueDetail.Key == selectedIssue.Key {
 			detailContent.WriteString(renderField("Assignee", m.issueDetail.Assignee) + "\n")
@@ -389,70 +446,22 @@ func (m model) renderListView() string {
 				detailContent.WriteString(detailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
 				detailContent.WriteString(detailValueStyle.Render("Press Enter for full view") + "\n")
 			}
-		} else if m.loadingDetail {
-			detailContent.WriteString("\n" + lipgloss.NewStyle().Italic(true).Render("Loading details...") + "\n")
 		} else {
 			detailContent.WriteString("\n" + lipgloss.NewStyle().Faint(true).Render("Press Enter for full details") + "\n")
 		}
-	} else {
-		detailContent.WriteString(lipgloss.NewStyle().Faint(true).Render("No issue selected"))
 	}
-
-	issuesPanel := listPanelStyle.Render(listContent.String())
-	detailPanel := detailPanelStyle.Render(detailContent.String())
-
-	panels := lipgloss.JoinHorizontal(lipgloss.Top, issuesPanel, detailPanel)
 
 	var statusBar string
 	if m.filtering {
 		statusBar = "Filter: " + m.filterInput.View() + " (enter to finish, esc to cancel)"
-	} else if m.filterInput.Value() != "" {
-		statusBar = fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues))
 	} else {
 		statusBar = "\n/ filter | enter detail | t transition | q quit"
 	}
 
-	return panels + "\n" + statusBarStyle.Render(statusBar)
-}
+	detailRender := detailPanelStyle.Render(detailContent.String())
+	statusBarRender := statusBarStyle.Render(statusBar)
 
-func (m model) renderDetailView() string {
-	if m.selectedIssue == nil {
-		return "No issue selected\n"
-	}
-
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Issue: %s\n", m.selectedIssue.Key))
-	b.WriteString(strings.Repeat("=", 50) + "\n\n")
-
-	if m.loadingDetail {
-		b.WriteString("Loading details...\n")
-	} else if m.issueDetail != nil {
-		b.WriteString(fmt.Sprintf("Summary: %s\n", m.issueDetail.Summary))
-		b.WriteString(fmt.Sprintf("Type: %s\n", m.issueDetail.Type))
-		b.WriteString(fmt.Sprintf("Status: %s\n", m.issueDetail.Status))
-		b.WriteString(fmt.Sprintf("Assignee: %s\n", m.issueDetail.Assignee))
-		b.WriteString(fmt.Sprintf("Reporter: %s\n", m.issueDetail.Reporter))
-		b.WriteString("\n")
-
-		if m.issueDetail.Description != "" {
-			b.WriteString("Description:\n")
-			b.WriteString(m.issueDetail.Description)
-			b.WriteString("\n\n")
-		}
-
-		if len(m.issueDetail.Comments) > 0 {
-			b.WriteString(fmt.Sprintf("Comments (%d):\n", len(m.issueDetail.Comments)))
-			b.WriteString(strings.Repeat("-", 50) + "\n")
-			for _, comment := range m.issueDetail.Comments {
-				b.WriteString(fmt.Sprintf("%s - %s:\n%s\n\n",
-					comment.Author, comment.Created, comment.Body))
-			}
-		}
-	}
-
-	b.WriteString("Press 't' to change status, Esc to go back, q to quit.\n")
-
-	return b.String()
+	return detailRender + "\n\n" + statusBarRender
 }
 
 func (m model) renderTransitionView() string {
@@ -635,13 +644,17 @@ func issueMatchesFilter(issue jira.Issue, filter string) bool {
 }
 
 func renderStatusBadge(status string) string {
+	if status == "selected for development" {
+		status = "To Do"
+	}
+
 	statusLower := strings.ToLower(status)
 
 	if strings.Contains(statusLower, "trabajando") {
 		return statusInProgressStyle.Render(status)
 	} else if strings.Contains(statusLower, "done") {
 		return statusDoneStyle.Render(status)
-	} else if strings.Contains(statusLower, "backlog") || strings.Contains(statusLower, "todo") || strings.Contains(statusLower, "selected for development") {
+	} else if strings.Contains(statusLower, "backlog") || strings.Contains(statusLower, "to do") {
 		return statusToDoStyle.Render(status)
 	}
 
