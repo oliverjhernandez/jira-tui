@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,10 +20,12 @@ type Client struct {
 }
 
 type Issue struct {
-	Key     string
-	Summary string
-	Status  string
-	Type    string
+	Key      string
+	Summary  string
+	Status   string
+	Type     string
+	Assignee string
+	Priority string
 }
 
 type IssueDetail struct {
@@ -34,6 +37,7 @@ type IssueDetail struct {
 	Assignee    string
 	Reporter    string
 	Comments    []Comment
+	Priority    string
 }
 
 type Comment struct {
@@ -74,6 +78,7 @@ type issueFields struct {
 	Assignee    *userField      `json:"assignee"`
 	Reporter    *userField      `json:"reporter"`
 	Comment     *commentList    `json:"comment"`
+	Priority    *priorityField  `json:"priority"`
 }
 
 type descriptionDoc struct {
@@ -99,6 +104,10 @@ type typeField struct {
 	Name string `json:"name"`
 }
 
+type priorityField struct {
+	Name string `json:"name"`
+}
+
 type userField struct {
 	DisplayName string `json:"displayName"`
 }
@@ -114,13 +123,13 @@ type jiraComment struct {
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved ORDER BY created DESC"
+	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done ORDER BY created DESC"
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "50")
-	params.Add("fields", "summary,status,issuetype")
+	params.Add("fields", "summary,status,issuetype,assignee,priority")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -136,10 +145,15 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		fmt.Printf("JSON: %v", string(bodyBytes))
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -149,12 +163,23 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	}
 
 	result := make([]Issue, 0, len(searchResp.Issues))
+
 	for _, issue := range searchResp.Issues {
+		var assignee string
+
+		if issue.Fields.Assignee == nil {
+			assignee = "Unassigned"
+		} else {
+			assignee = issue.Fields.Assignee.DisplayName
+		}
+
 		result = append(result, Issue{
-			Key:     issue.Key,
-			Summary: issue.Fields.Summary,
-			Status:  issue.Fields.Status.Name,
-			Type:    issue.Fields.Type.Name,
+			Key:      issue.Key,
+			Summary:  issue.Fields.Summary,
+			Status:   issue.Fields.Status.Name,
+			Type:     issue.Fields.Type.Name,
+			Assignee: assignee,
+			Priority: issue.Fields.Priority.Name,
 		})
 	}
 
@@ -164,7 +189,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
 	params := url.Values{}
-	params.Add("fields", "summary,description,status,issuetype,assignee,reporter,comment")
+	params.Add("fields", "summary,description,status,issuetype,assignee,reporter,comment,priority")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -180,7 +205,17 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("failed to close response body: %s", err)
+		}
+	}()
+
+	// bodyBytes, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("JSON: %s", string(bodyBytes))
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -238,7 +273,11 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -297,7 +336,11 @@ func (c *Client) DoTransition(ctx context.Context, issueKey, transitionID string
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -348,7 +391,11 @@ func (c *Client) PostDescription(ctx context.Context, issueKey string, descripti
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)

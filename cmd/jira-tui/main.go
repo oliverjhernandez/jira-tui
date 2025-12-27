@@ -17,7 +17,7 @@ import (
 var (
 	primaryColor   = lipgloss.Color("15")  // Bright white (adapts)
 	secondaryColor = lipgloss.Color("240") // Gray
-	accentColor    = lipgloss.Color("42")  // Green
+	// accentColor    = lipgloss.Color("42")  // Green
 
 	listPanelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -33,9 +33,9 @@ var (
 				Height(20).
 				Width(100)
 
-	selectedItemStyle = lipgloss.NewStyle().
-				Foreground(accentColor).
-				Bold(true)
+	// selectedItemStyle = lipgloss.NewStyle().
+	// 			Foreground(accentColor).
+	// 			Bold(true)
 
 	statusBarStyle = lipgloss.NewStyle().
 			Foreground(secondaryColor).
@@ -77,11 +77,11 @@ var (
 				Width(20).
 				Align(lipgloss.Left)
 
-	priorityFieldStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("252")).
-				Bold(true).
-				Width(10).
-				Align(lipgloss.Left)
+	// priorityFieldStyle = lipgloss.NewStyle().
+	// 			Foreground(lipgloss.Color("252")).
+	// 			Bold(true).
+	// 			Width(10).
+	// 			Align(lipgloss.Left)
 
 	statusInProgressStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("0")).
@@ -383,10 +383,10 @@ func (m model) renderListView() string {
 		key := keyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
 		summary := summaryFieldStyle.Render(truncate(issue.Summary, 40))
 		statusBadge := statusFieldStyle.Render(renderStatusBadge(issue.Status))
-		// assignee := assigneeFieldStyle.Render(issue.Assignee)
-		// priority := assigneeFieldStyle.Render(issue.Priority)
+		assignee := assigneeFieldStyle.Render(issue.Assignee)
+		priority := assigneeFieldStyle.Render(issue.Priority)
 
-		line := key + " " + summary + " " + statusBadge
+		line := key + " " + summary + " " + statusBadge + " " + assignee + " " + priority
 
 		if m.cursor == i {
 			line = "> " + line
@@ -644,7 +644,7 @@ func issueMatchesFilter(issue jira.Issue, filter string) bool {
 }
 
 func renderStatusBadge(status string) string {
-	if status == "selected for development" {
+	if strings.ToLower(status) == "selected for development" {
 		status = "To Do"
 	}
 
