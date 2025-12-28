@@ -123,7 +123,7 @@ type jiraComment struct {
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done ORDER BY created DESC"
+	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done ORDER BY status DESC"
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
 	params := url.Values{}
