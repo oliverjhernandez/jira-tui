@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
@@ -29,7 +28,14 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "p":
 		m.mode = editPriorityView
 		m.editingPriority = true
-		m.priorityCursor = max(0, slices.Index(m.priorityOptions, m.issueDetail.Priority))
+		priorityIndex := -1
+		for i, p := range m.priorityOptions {
+			if p.Name == m.issueDetail.Priority.Name {
+				priorityIndex = i
+				break
+			}
+		}
+		m.priorityCursor = max(0, priorityIndex)
 	case "t":
 		if m.selectedIssue != nil {
 			m.mode = transitionView
@@ -54,6 +60,7 @@ func (m model) renderDetailView() string {
 	detailContent.WriteString(header + "\n\n")
 	detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
 	detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
+	detailContent.WriteString(renderField("Priority", selectedIssue.Priority) + "\n")
 
 	if m.loadingDetail {
 		detailContent.WriteString("Loading details...\n")

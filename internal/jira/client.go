@@ -216,12 +216,6 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		}
 	}()
 
-	// bodyBytes, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Printf("JSON: %s", string(bodyBytes))
-
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
@@ -234,9 +228,9 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 
 	detail := &IssueDetail{
 		Key:         issue.Key,
+		Type:        issue.Fields.Type.Name,
 		Summary:     issue.Fields.Summary,
 		Status:      issue.Fields.Status.Name,
-		Type:        issue.Fields.Type.Name,
 		Description: extractText(issue.Fields.Description),
 	}
 
@@ -257,6 +251,12 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 				Body:    extractText(comment.Body),
 				Created: comment.Created,
 			})
+		}
+	}
+
+	if issue.Fields.Priority != nil {
+		detail.Priority = Priority{
+			Name: issue.Fields.Priority.Name,
 		}
 	}
 
