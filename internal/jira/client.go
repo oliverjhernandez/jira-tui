@@ -37,7 +37,7 @@ type IssueDetail struct {
 	Assignee    string
 	Reporter    string
 	Comments    []Comment
-	Priority    string
+	Priority    Priority
 }
 
 type Comment struct {
@@ -47,6 +47,11 @@ type Comment struct {
 }
 
 type Transition struct {
+	ID   string
+	Name string
+}
+
+type Priority struct {
 	ID   string
 	Name string
 }
@@ -350,7 +355,7 @@ func (c *Client) DoTransition(ctx context.Context, issueKey, transitionID string
 	return nil
 }
 
-func (c *Client) PostDescription(ctx context.Context, issueKey string, description string) error {
+func (c *Client) UpdateDescription(ctx context.Context, issueKey string, description string) error {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
 
 	body := map[string]any{
@@ -403,6 +408,96 @@ func (c *Client) PostDescription(ctx context.Context, issueKey string, descripti
 	}
 
 	return nil
+}
+
+func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority string) error {
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
+
+	body := map[string]any{
+		"fields": map[string]any{
+			"priority": map[string]any{
+				"name": priority,
+			},
+		},
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
+func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
+	apiURL := fmt.Sprintf("%s/rest/api/3/priority", c.baseURL)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("Body: %+v", string(bodyBytes))
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var result []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	priorities := make([]Priority, 0, len(result))
+	for _, t := range result {
+		priorities = append(priorities, Priority{
+			ID:   t.ID,
+			Name: t.Name,
+		})
+	}
+
+	return priorities, nil
 }
 
 func extractText(doc *descriptionDoc) string {

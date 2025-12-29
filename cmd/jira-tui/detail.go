@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
@@ -17,12 +18,18 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.mode = listView
 		m.selectedIssue = nil
 		m.issueDetail = nil
-	case "e":
+		m.loading = true
+		return m, m.fetchData
+	case "d":
 		m.mode = editDescriptionView
 		m.editingDescription = true
 		m.editTextArea.SetValue(m.issueDetail.Description)
 		m.editTextArea.Focus()
 		return m, textarea.Blink
+	case "p":
+		m.mode = editPriorityView
+		m.editingPriority = true
+		m.priorityCursor = max(0, slices.Index(m.priorityOptions, m.issueDetail.Priority))
 	case "t":
 		if m.selectedIssue != nil {
 			m.mode = transitionView

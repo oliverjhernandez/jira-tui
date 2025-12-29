@@ -1,56 +1,69 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
-func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
-
+func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
-			m.editingDescription = false
-			m.editTextArea.Blur()
+			m.editingPriority = false
 			return m, nil
-		case "alt+enter": // actually shift # NOTE: maybe i should deal with this
+		case "up", "k":
+			log.Printf("p cursor: %d", m.priorityCursor)
+			if m.priorityCursor > 0 {
+				m.priorityCursor--
+			}
+			return m, nil
+		case "down", "j":
+			if m.priorityCursor < len(m.priorityOptions)-1 {
+				m.priorityCursor++
+			}
+			return m, nil
+		case "enter":
 			m.mode = detailView
-			m.editingDescription = false
-			m.editTextArea.Blur()
-			return m, m.updateDescription(m.issueDetail.Key, m.editTextArea.Value())
+			m.editingPriority = false
+			return m, m.postPriority(m.issueDetail.Key, m.priorityOptions[m.priorityCursor].Name)
 		}
 	}
 
-	var cmd tea.Cmd
-	m.editTextArea, cmd = m.editTextArea.Update(msg)
-
-	return m, cmd
+	return m, nil
 }
 
-func (m model) renderEditDescriptionView() string {
+func (m model) renderEditPriorityView() string {
 	background := m.renderDetailView()
 
 	var modalContent strings.Builder
 
-	if m.issueDetail != nil {
+	if m.priorityOptions != nil {
 		header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalWidth := int(float64(m.windowWidth) * 0.7)
-	modalHeight := int(float64(m.windowHeight) * 0.6)
+	modalWidth := int(float64(m.windowWidth) * 0.3)
+	modalHeight := int(float64(m.windowHeight) * 0.2)
 	modalY := (m.windowHeight-modalHeight)/2 - 5
 	modalX := (m.windowWidth / 2) - (modalWidth / 2)
 
-	m.editTextArea.SetWidth(modalWidth - 6)
-	m.editTextArea.SetHeight(modalHeight - 8)
+	modalContent.WriteString("Priority:\n")
 
-	modalContent.WriteString("Description:\n")
-	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	modalContent.WriteString("shift+Enter save | esc cancel")
+	for i, v := range m.priorityOptions {
+		line := v.Name
+		if m.priorityCursor == i {
+			line = "> " + line
+		} else {
+			line = " " + line
+		}
+
+		modalContent.WriteString(line + "\n")
+	}
+	modalContent.WriteString("enter save | esc cancel")
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

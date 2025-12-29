@@ -18,6 +18,9 @@ type viewMode int
 type model struct {
 	issues             []jira.Issue
 	cursor             int
+	priorityCursor     int
+	transitionCursor   int
+	priorityOptions    []jira.Priority
 	loading            bool
 	err                error
 	mode               viewMode
@@ -26,23 +29,26 @@ type model struct {
 	loadingDetail      bool
 	client             *jira.Client
 	transitions        []jira.Transition
-	transitionCursor   int
 	loadingTransitions bool
 	filterInput        textinput.Model
 	filtering          bool
 	editTextArea       textarea.Model
 	editingDescription bool
+	editingPriority    bool
 	windowWidth        int
 	windowHeight       int
 }
 
 func (m model) Init() tea.Cmd {
-	return m.fetchIssues
+	return m.fetchData
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.mode == editDescriptionView {
+	switch m.mode {
+	case editDescriptionView:
 		return m.updateEditDescriptionView(msg)
+	case editPriorityView:
+		return m.updateEditPriorityView(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -56,8 +62,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateTransitionView(msg)
 		}
 
-	case issuesLoadedMsg:
+	case dataLoadedMsg:
 		m.issues = msg.issues
+		m.priorityOptions = msg.priorities
 		m.loading = false
 
 	case issueDetailLoadedMsg:
@@ -75,7 +82,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.fetchIssueDetail(m.selectedIssue.Key)
 
 	case editedDescriptionMsg:
-		m.mode = listView
+		m.mode = detailView
+		m.loadingDetail = true
+		if m.selectedIssue != nil {
+			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+		}
+		return m, nil
+
+	case editedPriorityMsg:
+		m.mode = detailView
+		m.loadingDetail = true
 		if m.selectedIssue != nil {
 			return m, m.fetchIssueDetail(m.selectedIssue.Key)
 		}
@@ -117,6 +133,8 @@ func (m model) View() tea.View {
 		content = m.renderTransitionView()
 	case editDescriptionView:
 		content = m.renderEditDescriptionView()
+	case editPriorityView:
+		content = m.renderEditPriorityView()
 	default:
 		content = "Unknown view\n"
 	}
@@ -130,6 +148,8 @@ func main() {
 	email := os.Getenv("JIRA_EMAIL")
 	token := os.Getenv("JIRA_TOKEN")
 
+	client, _ := jira.NewClient(url, email, token)
+
 	logFile, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
@@ -140,8 +160,6 @@ func main() {
 		}
 	}()
 	log.SetOutput(logFile)
-
-	client, _ := jira.NewClient(url, email, token)
 
 	filterBox := textinput.New()
 	filterBox.CharLimit = 50

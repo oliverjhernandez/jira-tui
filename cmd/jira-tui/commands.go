@@ -14,11 +14,13 @@ const (
 	detailView
 	transitionView
 	editDescriptionView
+	editPriorityView
 )
 
 // bubbletea messages from commands
-type issuesLoadedMsg struct {
-	issues []jira.Issue
+type dataLoadedMsg struct {
+	issues     []jira.Issue
+	priorities []jira.Priority
 }
 
 type issueDetailLoadedMsg struct {
@@ -34,6 +36,10 @@ type transitionCompleteMsg struct {
 }
 
 type editedDescriptionMsg struct {
+	success bool
+}
+
+type editedPriorityMsg struct {
 	success bool
 }
 
@@ -86,14 +92,14 @@ func (m model) doTransition(issueKey, transitionID string) tea.Cmd {
 	}
 }
 
-func (m model) postDescription(issueKey, description string) tea.Cmd {
+func (m model) updateDescription(issueKey, description string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.PostDescription(context.Background(), issueKey, description)
-		if m.client == nil {
+		err := m.client.UpdateDescription(context.Background(), issueKey, description)
+		if err != nil {
 			return errMsg{err}
 		}
 
@@ -101,7 +107,22 @@ func (m model) postDescription(issueKey, description string) tea.Cmd {
 	}
 }
 
-func (m model) fetchIssues() tea.Msg {
+func (m model) postPriority(issueKey, priorityName string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.UpdatePriority(context.Background(), issueKey, priorityName)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return editedPriorityMsg{success: true}
+	}
+}
+
+func (m model) fetchData() tea.Msg {
 	url := os.Getenv("JIRA_URL")
 	email := os.Getenv("JIRA_EMAIL")
 	token := os.Getenv("JIRA_TOKEN")
@@ -120,5 +141,10 @@ func (m model) fetchIssues() tea.Msg {
 		return errMsg{err}
 	}
 
-	return issuesLoadedMsg{issues}
+	priorities, err := client.GetPriorities(context.Background())
+	if err != nil {
+		return errMsg{err}
+	}
+
+	return dataLoadedMsg{issues, priorities}
 }
