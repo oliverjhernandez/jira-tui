@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -49,18 +53,45 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderDetailView() string {
+	log.Printf("=== renderDetailView called ===")
+
 	if m.selectedIssue == nil {
-		return "No issue selected\n"
+		log.Printf("DEBUG: Returning early - selectedIssue nil? %v",
+			m.selectedIssue == nil)
+		return "Loading issue...\n"
+	} else {
+		log.Printf("Selected: %+v", m.selectedIssue)
+	}
+
+	if m.issueDetail == nil {
+		log.Printf("DEBUG: Returning early - issueDetail nil? %v",
+			m.issueDetail == nil)
+		return "Loading issue...\n"
+	} else {
+		detailJSON, _ := json.MarshalIndent(m.issueDetail, "", "  ")
+		log.Printf("Detail JSON: %s", string(detailJSON))
 	}
 
 	var detailContent strings.Builder
-	selectedIssue := m.issues[m.cursor]
+	selectedIssue := m.issueDetail
 
-	header := detailHeaderStyle.Render(selectedIssue.Key) + " " + renderStatusBadge(selectedIssue.Status)
+	index := "[" + strconv.Itoa(m.cursor) + "/" + strconv.Itoa(len(m.issues)) + "]"
+	parent := "No parent"
+	if selectedIssue.Parent != nil {
+		parent = selectedIssue.Parent.ID
+	}
+
+	status := renderStatusBadge(selectedIssue.Status)
+	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
+	estimate := selectedIssue.OriginalEstimate
+	logged := "4h" // TODO: pending
+
+	header := index + " " + parent + " " + status + " " + assignee + " " + estimate + " " + logged
+
 	detailContent.WriteString(header + "\n\n")
 	detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
 	detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
-	detailContent.WriteString(renderField("Priority", selectedIssue.Priority) + "\n")
+	detailContent.WriteString(renderField("Priority", selectedIssue.Priority.Name) + "\n")
 
 	if m.loadingDetail {
 		detailContent.WriteString("Loading details...\n")
@@ -71,17 +102,17 @@ func (m model) renderDetailView() string {
 			detailContent.WriteString(renderField("Reporter", m.issueDetail.Reporter) + "\n")
 
 			if m.issueDetail.Description != "" {
-				detailContent.WriteString(detailLabelStyle.Render("Description:") + "\n")
+				detailContent.WriteString(ui.DetailLabelStyle.Render("Description:") + "\n")
 				desc := m.issueDetail.Description
 				if len(desc) > 200 {
 					desc = desc[:200] + "..."
 				}
-				detailContent.WriteString(detailValueStyle.Render(desc) + "\n\n")
+				detailContent.WriteString(ui.DetailValueStyle.Render(desc) + "\n\n")
 			}
 
 			if len(m.issueDetail.Comments) > 0 {
-				detailContent.WriteString(detailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
-				detailContent.WriteString(detailValueStyle.Render("Press Enter for full view") + "\n")
+				detailContent.WriteString(ui.DetailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
+				detailContent.WriteString(ui.DetailValueStyle.Render("Press Enter for full view") + "\n")
 			}
 		} else {
 			detailContent.WriteString("\n" + lipgloss.NewStyle().Faint(true).Render("Press Enter for full details") + "\n")
@@ -95,8 +126,8 @@ func (m model) renderDetailView() string {
 		statusBar = "\n/ filter | enter detail | t transition | q quit"
 	}
 
-	detailRender := detailPanelStyle.Render(detailContent.String())
-	statusBarRender := statusBarStyle.Render(statusBar)
+	detailRender := ui.DetailPanelStyle.Render(detailContent.String())
+	statusBarRender := ui.StatusBarStyle.Render(statusBar)
 
 	return detailRender + "\n\n" + statusBarRender
 }

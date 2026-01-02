@@ -29,21 +29,24 @@ type Issue struct {
 }
 
 type IssueDetail struct {
-	Key         string
-	Summary     string
-	Status      string
-	Type        string
-	Description string
-	Assignee    string
-	Reporter    string
-	Comments    []Comment
-	Priority    Priority
+	Key              string
+	Summary          string
+	Status           string
+	Type             string
+	Description      string
+	Assignee         string
+	Reporter         string
+	Comments         []Comment
+	Priority         Priority
+	Parent           *Parent
+	OriginalEstimate string
 }
 
 type Comment struct {
-	Author  string
-	Body    string
-	Created string
+	Author       string
+	EmailAddress string
+	Body         string
+	Created      string
 }
 
 type Transition struct {
@@ -54,6 +57,11 @@ type Transition struct {
 type Priority struct {
 	ID   string
 	Name string
+}
+
+type Parent struct {
+	ID   string
+	Type string
 }
 
 func NewClient(baseURL, email, token string) (*Client, error) {
@@ -76,14 +84,16 @@ type jiraIssue struct {
 }
 
 type issueFields struct {
-	Summary     string          `json:"summary"`
-	Description *descriptionDoc `json:"description"`
-	Status      statusField     `json:"status"`
-	Type        typeField       `json:"issuetype"`
-	Assignee    *userField      `json:"assignee"`
-	Reporter    *userField      `json:"reporter"`
-	Comment     *commentList    `json:"comment"`
-	Priority    *priorityField  `json:"priority"`
+	Summary          string          `json:"summary"`
+	Description      *descriptionDoc `json:"description"`
+	Status           statusField     `json:"status"`
+	Type             typeField       `json:"issuetype"`
+	Assignee         *userField      `json:"assignee"`
+	Reporter         *userField      `json:"reporter"`
+	Comment          *commentList    `json:"comment"`
+	Priority         *priorityField  `json:"priority"`
+	Parent           *parentField    `json:"parent"`
+	OriginalEstimate string          `json:"original_estimate"`
 }
 
 type descriptionDoc struct {
@@ -111,6 +121,11 @@ type typeField struct {
 
 type priorityField struct {
 	Name string `json:"name"`
+}
+
+type parentField struct {
+	Id         string `json:"id"`
+	ParentType string `json:"parent_type"`
 }
 
 type userField struct {
@@ -194,7 +209,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
 	params := url.Values{}
-	params.Add("fields", "summary,description,status,issuetype,assignee,reporter,comment,priority")
+	params.Add("fields", "summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -222,6 +237,11 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	}
 
 	var issue jiraIssue
+	// body2 := resp.Body
+	// bodyBytes, _ := io.ReadAll(body2)
+	// prettyJSON, _ := json.MarshalIndent(string(bodyBytes), "", " ")
+	// log.Printf("JSON: %s", string(prettyJSON))
+
 	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -232,6 +252,13 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		Summary:     issue.Fields.Summary,
 		Status:      issue.Fields.Status.Name,
 		Description: extractText(issue.Fields.Description),
+	}
+
+	if issue.Fields.Parent != nil {
+		detail.Parent = &Parent{
+			issue.Fields.Parent.Id,
+			issue.Fields.Parent.ParentType,
+		}
 	}
 
 	if issue.Fields.Assignee != nil {

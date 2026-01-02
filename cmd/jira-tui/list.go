@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -42,14 +44,14 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cursor > 0 {
 			m.cursor--
 			if m.cursor < len(issuesToShow) {
-				return m, m.fetchIssueDetail(issuesToShow[m.cursor].Key)
+				return m, nil
 			}
 		}
 	case "down", "j":
 		if m.cursor < len(issuesToShow)-1 {
 			m.cursor++
 			if m.cursor < len(issuesToShow) {
-				return m, m.fetchIssueDetail(issuesToShow[m.cursor].Key)
+				return m, nil
 			}
 		}
 	case "esc":
@@ -75,11 +77,12 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderListView() string {
+	log.Printf("=== renderListView called ===")
 
 	panelWidth := max(120, m.windowWidth-4)
 	panelHeight := m.windowHeight - 4
 
-	listPanelStyle := baseListPanelStyle.
+	listPanelStyle := ui.BaseListPanelStyle.
 		Height(panelHeight).
 		Width(panelWidth)
 
@@ -93,11 +96,11 @@ func (m model) renderListView() string {
 
 	var listContent strings.Builder
 	for i, issue := range issuesToShow {
-		key := keyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
-		summary := summaryFieldStyle.Render(truncate(issue.Summary, 40))
-		statusBadge := statusFieldStyle.Render(renderStatusBadge(issue.Status))
-		assignee := assigneeFieldStyle.Render(issue.Assignee)
-		priority := priorityFieldStyle.Render(issue.Priority)
+		key := ui.KeyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
+		summary := ui.SummaryFieldStyle.Render(truncate(issue.Summary, 40))
+		statusBadge := ui.StatusFieldStyle.Render(renderStatusBadge(issue.Status))
+		assignee := ui.AssigneeFieldStyle.Render(issue.Assignee)
+		priority := ui.PriorityFieldStyle.Render(issue.Priority)
 
 		line := key + " " + summary + " " + statusBadge + " " + assignee + " " + priority
 
@@ -120,7 +123,7 @@ func (m model) renderListView() string {
 	}
 
 	listRender := listPanelStyle.Render(listContent.String())
-	statusBarRender := statusBarStyle.Render(statusBar)
+	statusBarRender := ui.StatusBarStyle.Render(statusBar)
 
 	return listRender + "\n" + statusBarRender
 }
