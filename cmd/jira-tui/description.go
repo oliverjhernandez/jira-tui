@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -31,12 +33,14 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditDescriptionView() string {
+	log.Printf("=== renderEditDescriptionView called ===")
+
 	background := m.renderDetailView()
 
 	var modalContent strings.Builder
 
 	if m.issueDetail != nil {
-		header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 

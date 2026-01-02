@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -33,6 +34,8 @@ func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderTransitionView() string {
+	log.Printf("=== renderTransitionView called ===")
+
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("Change Status for %s\n", m.selectedIssue.Key))
 	b.WriteString(strings.Repeat("=", 50) + "\n\n")

@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -37,12 +38,14 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditPriorityView() string {
+	log.Printf("=== renderEditPriorityView called ===")
+
 	background := m.renderDetailView()
 
 	var modalContent strings.Builder
 
 	if m.priorityOptions != nil {
-		header := detailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 

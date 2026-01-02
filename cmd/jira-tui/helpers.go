@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
@@ -26,14 +27,14 @@ func renderStatusBadge(status string) string {
 	statusLower := strings.ToLower(status)
 
 	if strings.Contains(statusLower, "trabajando") {
-		return statusInProgressStyle.Render(status)
+		return ui.StatusInProgressStyle.Render(status)
 	} else if strings.Contains(statusLower, "done") {
-		return statusDoneStyle.Render(status)
+		return ui.StatusDoneStyle.Render(status)
 	} else if strings.Contains(statusLower, "backlog") || strings.Contains(statusLower, "to do") {
-		return statusToDoStyle.Render(status)
+		return ui.StatusToDoStyle.Render(status)
 	}
 
-	return statusDefaultStyle.Render(status)
+	return ui.StatusDefaultStyle.Render(status)
 }
 
 func truncate(s string, maxLen int) string {
@@ -44,7 +45,7 @@ func truncate(s string, maxLen int) string {
 }
 
 func renderField(label, value string) string {
-	return detailLabelStyle.Render(label+": ") + detailValueStyle.Render(value)
+	return ui.DetailLabelStyle.Render(label+": ") + ui.DetailValueStyle.Render(value)
 }
 
 func issueMatchesFilter(issue jira.Issue, filter string) bool {
