@@ -37,6 +37,7 @@ type model struct {
 	editingPriority    bool
 	windowWidth        int
 	windowHeight       int
+	detailViewport     *viewport.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -44,24 +45,8 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch m.mode {
-	case editDescriptionView:
-		return m.updateEditDescriptionView(msg)
-	case editPriorityView:
-		return m.updateEditPriorityView(msg)
-	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch m.mode {
-		case listView:
-			return m.updateListView(msg)
-		case detailView:
-			return m.updateDetailView(msg)
-		case transitionView:
-			return m.updateTransitionView(msg)
-		}
-
 	case dataLoadedMsg:
 		m.issues = msg.issues
 		m.priorityOptions = msg.priorities
@@ -101,11 +86,39 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
 
+		if m.mode == detailView {
+			headerHeight := 15 // NOTE: Adjust based on your header size
+			footerHeight := 2  // NOTE: Adjust based on your footer size
+
+			m.detailViewport.Width = msg.Width - 10
+			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
+		}
+		return m, nil
+
 	case errMsg:
 		m.err = msg.err
 		m.loading = false
 		m.loadingDetail = false
 		m.loadingTransitions = false
+
+	}
+
+	switch m.mode {
+	case detailView:
+		return m.updateDetailView(msg)
+	case editDescriptionView:
+		return m.updateEditDescriptionView(msg)
+	case editPriorityView:
+		return m.updateEditPriorityView(msg)
+	}
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch m.mode {
+		case listView:
+			return m.updateListView(keyMsg) // NOTE: why expect keymsg?
+		case transitionView:
+			return m.updateTransitionView(keyMsg) // NOTE: why expect keymsg?
+		}
 	}
 
 	return m, nil

@@ -55,9 +55,6 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-	case "esc":
-		m.filterInput.SetValue("")
-		m.cursor = 0
 	case "/":
 		m.filtering = true
 		m.filterInput.SetValue("")
@@ -70,8 +67,16 @@ func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.mode = detailView
 			m.loadingDetail = true
 			m.issueDetail = nil
+
+			width := m.windowWidth - 10
+			height := m.windowHeight - 15
+			vp := viewport.New(width, height)
+			m.detailViewport = &vp
 			return m, m.fetchIssueDetail(m.selectedIssue.Key)
 		}
+	case "esc":
+		m.filterInput.SetValue("")
+		m.cursor = 0
 	}
 
 	return m, nil
