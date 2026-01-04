@@ -13,12 +13,10 @@ var (
 				BorderForeground(PrimaryColor).
 				Padding(1, 2)
 
-	DetailPanelStyle = lipgloss.NewStyle().
+	BaseDetailPanelStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(secondaryColor).
-				Padding(1, 2).
-				Height(20).
-				Width(120)
+				Padding(1, 2)
 
 	SeparatorStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
@@ -38,7 +36,7 @@ var (
 				Foreground(lipgloss.Color("63"))
 
 	DetailFieldStyle = lipgloss.NewStyle().
-				Width(25)
+				Width(30)
 
 	DetailLabelStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("63")).

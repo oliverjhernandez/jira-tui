@@ -94,8 +94,22 @@ func (m model) renderListView() string {
 		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
 	}
 
+	maxVisible := panelHeight - 4
+	start := 0
+	end := min(len(issuesToShow), maxVisible)
+
+	if m.cursor >= end {
+		start = m.cursor - maxVisible + 1
+		end = m.cursor + 1
+	} else if m.cursor < start {
+		start = m.cursor
+		end = start + maxVisible
+	}
+
 	var listContent strings.Builder
-	for i, issue := range issuesToShow {
+	for i := start; i < end; i++ {
+		issue := issuesToShow[i]
+
 		key := ui.KeyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
 		summary := ui.SummaryFieldStyle.Render(truncate(issue.Summary, 40))
 		statusBadge := ui.StatusFieldStyle.Render(renderStatusBadge(issue.Status))

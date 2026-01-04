@@ -54,6 +54,13 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) renderDetailView() string {
 	log.Printf("=== renderDetailView called ===")
 
+	panelWidth := max(120, m.windowWidth-4)
+	panelHeight := m.windowHeight - 4
+
+	detailPanelStyle := ui.BaseDetailPanelStyle.
+		Height(panelHeight).
+		Width(panelWidth)
+
 	if m.selectedIssue == nil || m.issueDetail == nil {
 		return "Loading issue...\n"
 	}
@@ -61,7 +68,7 @@ func (m model) renderDetailView() string {
 	var detailContent strings.Builder
 	selectedIssue := m.issueDetail
 
-	index := "[" + strconv.Itoa(m.cursor) + "/" + strconv.Itoa(len(m.issues)) + "]"
+	index := "[" + strconv.Itoa(m.cursor+1) + "/" + strconv.Itoa(len(m.issues)) + "]"
 	parent := "NA"
 	if selectedIssue.Parent != nil {
 		parent = selectedIssue.Parent.ID
@@ -72,7 +79,7 @@ func (m model) renderDetailView() string {
 	status := renderStatusBadge(selectedIssue.Status)
 	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
 	estimate := selectedIssue.OriginalEstimate
-	logged := "4h" // TODO: pending
+	logged := "4h" // TODO: get from tempo api
 
 	header := index + " " + parent + "/" + issueKey + " " + issueSummary + "\n" + " " + assignee + " " + estimate + " " + logged
 
@@ -81,14 +88,14 @@ func (m model) renderDetailView() string {
 	detailContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
 	col1 := (renderField("Status", status))
 	col2 := renderField("Assignee", m.issueDetail.Assignee)
-	col3 := renderField("Created", "XXXXXXX") + "\n"
+	col3 := renderField("Created", "XXXXXXX") // TODO: get from api
 
 	row1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 	detailContent.WriteString(row1 + "\n")
 
 	col1 = renderField("Priority", selectedIssue.Priority.Name)
 	col2 = renderField("Reporter", m.issueDetail.Reporter)
-	col3 = renderField("Updated", "XXXXXXX")
+	col3 = renderField("Updated", "XXXXXXX") // TODO: get from api
 
 	row2 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 	detailContent.WriteString(row2 + "\n")
@@ -97,11 +104,7 @@ func (m model) renderDetailView() string {
 	detailContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
 
 	detailContent.WriteString(ui.DetailLabelStyle.Render("Description:") + "\n")
-	desc := m.issueDetail.Description
-	if len(desc) > 200 {
-		desc = desc[:200] + "..."
-	}
-	detailContent.WriteString(ui.DetailValueStyle.Render(desc) + "\n\n")
+	detailContent.WriteString(ui.DetailValueStyle.Render(m.issueDetail.Description) + "\n\n")
 
 	if len(m.issueDetail.Comments) > 0 {
 		detailContent.WriteString(ui.DetailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
@@ -115,7 +118,7 @@ func (m model) renderDetailView() string {
 		statusBar = "\n/ filter | enter detail | t transition | q quit"
 	}
 
-	detailRender := ui.DetailPanelStyle.Render(detailContent.String())
+	detailRender := detailPanelStyle.Render(detailContent.String())
 	statusBarRender := ui.StatusBarStyle.Render(statusBar)
 
 	return detailRender + "\n\n" + statusBarRender
