@@ -124,7 +124,7 @@ type priorityField struct {
 }
 
 type parentField struct {
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	ParentType string `json:"parent_type"`
 }
 
@@ -256,7 +256,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 
 	if issue.Fields.Parent != nil {
 		detail.Parent = &Parent{
-			issue.Fields.Parent.Id,
+			issue.Fields.Parent.ID,
 			issue.Fields.Parent.ParentType,
 		}
 	}

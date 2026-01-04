@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 
-	"charm.land/bubbles/v2/textarea"
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
 
@@ -111,17 +111,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) View() tea.View {
+func (m model) View() string {
 	var content string
 
 	if m.loading {
-		layer := lipgloss.NewLayer("Loading issues...\n")
-		return tea.NewView(layer)
+		return "Loading issues...\n"
 	}
 
 	if m.err != nil {
-		layer := lipgloss.NewLayer(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
-		return tea.NewView(layer)
+		return fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
 	}
 
 	switch m.mode {
@@ -139,8 +137,7 @@ func (m model) View() tea.View {
 		content = "Unknown view\n"
 	}
 
-	layer := lipgloss.NewLayer(content)
-	return tea.NewView(layer)
+	return content
 }
 
 func main() {

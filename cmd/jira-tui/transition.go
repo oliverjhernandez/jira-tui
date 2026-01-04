@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -51,8 +51,8 @@ func (m model) renderEditPriorityView() string {
 
 	modalWidth := int(float64(m.windowWidth) * 0.3)
 	modalHeight := int(float64(m.windowHeight) * 0.2)
-	modalY := (m.windowHeight-modalHeight)/2 - 5
-	modalX := (m.windowWidth / 2) - (modalWidth / 2)
+	// modalY := (m.windowHeight-modalHeight)/2 - 5
+	// modalX := (m.windowWidth / 2) - (modalWidth / 2)
 
 	modalContent.WriteString("Priority:\n")
 
@@ -78,10 +78,10 @@ func (m model) renderEditPriorityView() string {
 
 	styledModal := modalStyle.Render(modalContent.String())
 
-	backgroundLayer := lipgloss.NewLayer(background)
-	modalLayer := lipgloss.NewLayer(styledModal).
-		Y(modalY).X(modalX)
+	// backgroundLayer := lipgloss.NewLayer(background)
+	// modalLayer := lipgloss.NewLayer(styledModal).
+	// 	Y(modalY).X(modalX)
 
-	canvas := lipgloss.NewCanvas(backgroundLayer, modalLayer)
-	return canvas.Render()
+	canvas := background + styledModal
+	return canvas
 }

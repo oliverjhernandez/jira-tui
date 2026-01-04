@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -46,8 +46,8 @@ func (m model) renderEditDescriptionView() string {
 
 	modalWidth := int(float64(m.windowWidth) * 0.7)
 	modalHeight := int(float64(m.windowHeight) * 0.6)
-	modalY := (m.windowHeight-modalHeight)/2 - 5
-	modalX := (m.windowWidth / 2) - (modalWidth / 2)
+	// modalY := (m.windowHeight-modalHeight)/2 - 5
+	// modalX := (m.windowWidth / 2) - (modalWidth / 2)
 
 	m.editTextArea.SetWidth(modalWidth - 6)
 	m.editTextArea.SetHeight(modalHeight - 8)
@@ -66,10 +66,6 @@ func (m model) renderEditDescriptionView() string {
 
 	styledModal := modalStyle.Render(modalContent.String())
 
-	backgroundLayer := lipgloss.NewLayer(background)
-	modalLayer := lipgloss.NewLayer(styledModal).
-		Y(modalY).X(modalX)
-
-	canvas := lipgloss.NewCanvas(backgroundLayer, modalLayer)
-	return canvas.Render()
+	canvas := background + styledModal
+	return canvas
 }
