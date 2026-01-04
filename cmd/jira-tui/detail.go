@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -55,68 +54,58 @@ func (m model) updateDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) renderDetailView() string {
 	log.Printf("=== renderDetailView called ===")
 
-	if m.selectedIssue == nil {
-		log.Printf("DEBUG: Returning early - selectedIssue nil? %v",
-			m.selectedIssue == nil)
+	if m.selectedIssue == nil || m.issueDetail == nil {
 		return "Loading issue...\n"
-	} else {
-		log.Printf("Selected: %+v", m.selectedIssue)
-	}
-
-	if m.issueDetail == nil {
-		log.Printf("DEBUG: Returning early - issueDetail nil? %v",
-			m.issueDetail == nil)
-		return "Loading issue...\n"
-	} else {
-		detailJSON, _ := json.MarshalIndent(m.issueDetail, "", "  ")
-		log.Printf("Detail JSON: %s", string(detailJSON))
 	}
 
 	var detailContent strings.Builder
 	selectedIssue := m.issueDetail
 
 	index := "[" + strconv.Itoa(m.cursor) + "/" + strconv.Itoa(len(m.issues)) + "]"
-	parent := "No parent"
+	parent := "NA"
 	if selectedIssue.Parent != nil {
 		parent = selectedIssue.Parent.ID
 	}
 
+	issueKey := selectedIssue.Key
+	issueSummary := truncate(selectedIssue.Summary, 40)
 	status := renderStatusBadge(selectedIssue.Status)
 	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
 	estimate := selectedIssue.OriginalEstimate
 	logged := "4h" // TODO: pending
 
-	header := index + " " + parent + " " + status + " " + assignee + " " + estimate + " " + logged
+	header := index + " " + parent + "/" + issueKey + " " + issueSummary + "\n" + " " + assignee + " " + estimate + " " + logged
 
-	detailContent.WriteString(header + "\n\n")
-	detailContent.WriteString(renderField("Summary", truncate(selectedIssue.Summary, 40)) + "\n")
+	detailContent.WriteString(header + "\n")
+
+	detailContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
+	col1 := (renderField("Status", status))
+	col2 := renderField("Assignee", m.issueDetail.Assignee)
+	col3 := renderField("Created", "XXXXXXX") + "\n"
+
+	row1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+	detailContent.WriteString(row1 + "\n")
+
+	col1 = renderField("Priority", selectedIssue.Priority.Name)
+	col2 = renderField("Reporter", m.issueDetail.Reporter)
+	col3 = renderField("Updated", "XXXXXXX")
+
+	row2 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+	detailContent.WriteString(row2 + "\n")
+
 	detailContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
-	detailContent.WriteString(renderField("Priority", selectedIssue.Priority.Name) + "\n")
+	detailContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
 
-	if m.loadingDetail {
-		detailContent.WriteString("Loading details...\n")
-	} else if m.issueDetail != nil {
+	detailContent.WriteString(ui.DetailLabelStyle.Render("Description:") + "\n")
+	desc := m.issueDetail.Description
+	if len(desc) > 200 {
+		desc = desc[:200] + "..."
+	}
+	detailContent.WriteString(ui.DetailValueStyle.Render(desc) + "\n\n")
 
-		if m.issueDetail != nil && m.issueDetail.Key == selectedIssue.Key {
-			detailContent.WriteString(renderField("Assignee", m.issueDetail.Assignee) + "\n")
-			detailContent.WriteString(renderField("Reporter", m.issueDetail.Reporter) + "\n")
-
-			if m.issueDetail.Description != "" {
-				detailContent.WriteString(ui.DetailLabelStyle.Render("Description:") + "\n")
-				desc := m.issueDetail.Description
-				if len(desc) > 200 {
-					desc = desc[:200] + "..."
-				}
-				detailContent.WriteString(ui.DetailValueStyle.Render(desc) + "\n\n")
-			}
-
-			if len(m.issueDetail.Comments) > 0 {
-				detailContent.WriteString(ui.DetailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
-				detailContent.WriteString(ui.DetailValueStyle.Render("Press Enter for full view") + "\n")
-			}
-		} else {
-			detailContent.WriteString("\n" + lipgloss.NewStyle().Faint(true).Render("Press Enter for full details") + "\n")
-		}
+	if len(m.issueDetail.Comments) > 0 {
+		detailContent.WriteString(ui.DetailLabelStyle.Render(fmt.Sprintf("Comments: (%d):", len(m.issueDetail.Comments))) + "\n")
+		detailContent.WriteString(ui.DetailValueStyle.Render("Press Enter for full view") + "\n")
 	}
 
 	var statusBar string

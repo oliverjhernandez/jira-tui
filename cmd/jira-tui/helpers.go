@@ -45,7 +45,10 @@ func truncate(s string, maxLen int) string {
 }
 
 func renderField(label, value string) string {
-	return ui.DetailLabelStyle.Render(label+": ") + ui.DetailValueStyle.Render(value)
+	return ui.DetailFieldStyle.Render(
+		ui.DetailLabelStyle.Render(label+": "),
+		ui.DetailValueStyle.Render(value),
+	)
 }
 
 func issueMatchesFilter(issue jira.Issue, filter string) bool {

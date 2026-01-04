@@ -18,7 +18,12 @@ var (
 				BorderForeground(secondaryColor).
 				Padding(1, 2).
 				Height(20).
-				Width(100)
+				Width(120)
+
+	SeparatorStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderTop(true).
+			Width(80) // TODO: this should be dynamic
 
 	// selectedItemStyle = lipgloss.NewStyle().
 	// 			Foreground(accentColor).
@@ -32,8 +37,11 @@ var (
 				Bold(true).
 				Foreground(lipgloss.Color("63"))
 
+	DetailFieldStyle = lipgloss.NewStyle().
+				Width(25)
+
 	DetailLabelStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240")).
+				Foreground(lipgloss.Color("63")).
 				Bold(true)
 
 	DetailValueStyle = lipgloss.NewStyle().
