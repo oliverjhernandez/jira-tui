@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -36,26 +37,42 @@ func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m model) renderTransitionView() string {
 	log.Printf("=== renderTransitionView called ===")
 
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Change Status for %s\n", m.selectedIssue.Key))
-	b.WriteString(strings.Repeat("=", 50) + "\n\n")
+	bg := m.renderDetailView()
+
+	var modalContent strings.Builder
+	modalContent.WriteString(fmt.Sprintf("Change Status for %s\n", m.selectedIssue.Key))
+	modalContent.WriteString(strings.Repeat("=", 50) + "\n\n")
 
 	if m.loadingTransitions {
-		b.WriteString("Loading available transitions...\n")
+		modalContent.WriteString("Loading available transitions...\n")
 	} else if len(m.transitions) == 0 {
-		b.WriteString("No transitions available for this issue.\n")
+		modalContent.WriteString("No transitions available for this issue.\n")
 	} else {
-		b.WriteString("Select new status:\n\n")
-		for i, transition := range m.transitions {
+		modalContent.WriteString("Select new status:\n\n")
+		for i, t := range m.transitions {
 			cursor := " "
 			if m.transitionCursor == i {
 				cursor = ">"
 			}
-			b.WriteString(fmt.Sprintf("%s %s\n", cursor, transition.Name))
+			modalContent.WriteString(fmt.Sprintf("%s %s\n", cursor, t.Name))
 		}
 	}
 
-	b.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
+	modalContent.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
 
-	return b.String()
+	modalWidth := int(float64(m.windowWidth) * 0.7)
+	modalHeight := int(float64(m.windowHeight) * 0.6)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1, 2).
+		Width(modalWidth).
+		Height(modalHeight).
+		Background(lipgloss.Color("235"))
+
+	styledModal := modalStyle.Render(modalContent.String())
+	overlay := PlaceOverlay(10, 20, styledModal, bg, false)
+
+	return overlay
 }

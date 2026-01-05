@@ -89,7 +89,7 @@ func (m model) renderDetailView() string {
 	}
 
 	issueKey := selectedIssue.Key
-	issueSummary := truncate(selectedIssue.Summary, 40)
+	issueSummary := truncateLongString(selectedIssue.Summary, 40)
 	status := renderStatusBadge(selectedIssue.Status)
 	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
 	estimate := selectedIssue.OriginalEstimate

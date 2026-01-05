@@ -117,7 +117,7 @@ func (m model) renderListView() string {
 		issue := issuesToShow[i]
 
 		key := ui.KeyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
-		summary := ui.SummaryFieldStyle.Render(truncate(issue.Summary, 40))
+		summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, 40))
 		statusBadge := ui.StatusFieldStyle.Render(renderStatusBadge(issue.Status))
 		assignee := ui.AssigneeFieldStyle.Render(issue.Assignee)
 		priority := ui.PriorityFieldStyle.Render(issue.Priority)

@@ -35,7 +35,7 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderEditDescriptionView() string {
 	log.Printf("=== renderEditDescriptionView called ===")
 
-	background := m.renderDetailView()
+	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
 
@@ -46,8 +46,6 @@ func (m model) renderEditDescriptionView() string {
 
 	modalWidth := int(float64(m.windowWidth) * 0.7)
 	modalHeight := int(float64(m.windowHeight) * 0.6)
-	// modalY := (m.windowHeight-modalHeight)/2 - 5
-	// modalX := (m.windowWidth / 2) - (modalWidth / 2)
 
 	m.editTextArea.SetWidth(modalWidth - 6)
 	m.editTextArea.SetHeight(modalHeight - 8)
@@ -65,7 +63,7 @@ func (m model) renderEditDescriptionView() string {
 		Background(lipgloss.Color("235"))
 
 	styledModal := modalStyle.Render(modalContent.String())
+	overlay := PlaceOverlay(10, 20, styledModal, bg, false)
 
-	canvas := background + styledModal
-	return canvas
+	return overlay
 }
