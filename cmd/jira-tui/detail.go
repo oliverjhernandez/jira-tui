@@ -121,7 +121,7 @@ func (m model) renderDetailView() string {
 	scrollContent.WriteString("--- Comments -------------------------\n")
 	if len(m.issueDetail.Comments) > 0 {
 		for _, c := range m.issueDetail.Comments {
-			scrollContent.WriteString(fmt.Sprintf("\n%s • %s\n", c.Author, c.Created))
+			scrollContent.WriteString(fmt.Sprintf("\n%s • %s\n", ui.CommentAuthorStyle.Render(c.Author), ui.CommentTimestampStyle.Render(timeAgo(c.Created))))
 			scrollContent.WriteString(c.Body + "\n")
 		}
 	}

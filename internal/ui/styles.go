@@ -99,4 +99,16 @@ var (
 				Background(lipgloss.Color("240")).
 				Padding(0, 1).
 				Bold(true)
+
+	CommentAuthorStyle = lipgloss.NewStyle().
+				Bold(true)
+
+	CommentTimestampStyle = lipgloss.NewStyle().
+				Faint(true)
+
+	MentionStyle = lipgloss.NewStyle().
+			Italic(true).
+			Background(lipgloss.Color("#87afff")).
+			Foreground(lipgloss.Color(secondaryColor)).
+			Padding(0, 1)
 )

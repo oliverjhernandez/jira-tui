@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type Client struct {
@@ -107,7 +109,12 @@ type contentBlock struct {
 }
 
 type contentNode struct {
-	Type string `json:"type"`
+	Type  string `json:"type"`
+	Text  string `json:"text,omitempty"`
+	Attrs attrs  `json:"attrs"`
+}
+
+type attrs struct {
 	Text string `json:"text,omitempty"`
 }
 
@@ -546,6 +553,10 @@ func extractBlockText(block contentBlock) string {
 
 	var text string
 	for _, node := range block.Content {
+		if node.Type == "mention" && node.Attrs.Text != "" {
+			text += ui.MentionStyle.Render(node.Attrs.Text)
+		}
+
 		if node.Text != "" {
 			text += node.Text
 		}
