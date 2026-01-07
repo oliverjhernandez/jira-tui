@@ -2,6 +2,7 @@
 package jira
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,8 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type Client struct {
@@ -362,7 +361,7 @@ func (c *Client) DoTransition(ctx context.Context, issueKey, transitionID string
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(string(bodyBytes)))
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -455,6 +454,7 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 		},
 	}
 
+	// NOTE: sending a request probably should be a function on its own
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
@@ -534,32 +534,56 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 	return priorities, nil
 }
 
-func extractText(doc *descriptionDoc) string {
-	if doc == nil {
-		return ""
+func (c *Client) PostComment(ctx context.Context, issueKey string, comment string) error {
+
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.baseURL, issueKey)
+
+	body := map[string]any{
+		"body": map[string]any{
+			"type":    "doc",
+			"version": 1,
+			"content": []map[string]any{
+				{
+					"content": []map[string]any{
+						{
+							"text": comment,
+							"type": "text",
+						},
+					},
+					"type": "paragraph",
+				},
+			},
+		},
 	}
 
-	var text string
-	for _, block := range doc.Content {
-		text += extractBlockText(block) + "\n"
-	}
-	return text
-}
-
-func extractBlockText(block contentBlock) string {
-	if block.Text != "" {
-		return block.Text
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	var text string
-	for _, node := range block.Content {
-		if node.Type == "mention" && node.Attrs.Text != "" {
-			text += ui.MentionStyle.Render(node.Attrs.Text)
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
 		}
+	}()
 
-		if node.Text != "" {
-			text += node.Text
-		}
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
-	return text
+
+	return nil
 }

@@ -16,14 +16,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	log.Printf(">>> updateDetailView called with: %T", msg)
 	var cmd tea.Cmd
 
-	// beforeOffset := m.detailViewport.YOffset
-	// m.detailViewport, cmd = m.detailViewport.Update(msg)
-	// afterOffset := m.detailViewport.YOffset
-
-	// if beforeOffset != afterOffset {
-	// 	log.Printf("YOffset changed! %d -> %d", beforeOffset, afterOffset)
-	// }
-
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyPressMsg.String() {
 		case "j":
@@ -54,6 +46,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.transitionCursor = 0
 				return m, m.fetchTransitions(m.selectedIssue.Key)
 			}
+		case "c":
+			m.mode = postCommentView
+			m.postingComment = true
+			m.editTextArea.SetValue("")
+			m.editTextArea.Focus()
+			return m, textarea.Blink
 		case "esc":
 			m.mode = listView
 			m.selectedIssue = nil
@@ -110,7 +108,7 @@ func (m model) renderDetailView() string {
 
 	metadata := row1 + "\n" + row2 + "\n" + renderField("Type", selectedIssue.Type)
 
-	// TODO: place type somewhere
+	// TODO: place issue type somewhere
 	// metadataContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
 	// metadataContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
 

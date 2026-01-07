@@ -35,6 +35,7 @@ type model struct {
 	editTextArea       textarea.Model
 	editingDescription bool
 	editingPriority    bool
+	postingComment     bool
 	windowWidth        int
 	windowHeight       int
 	detailViewport     *viewport.Model
@@ -82,6 +83,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case postedCommentMsg:
+		m.mode = detailView
+		m.loadingDetail = true
+		if m.selectedIssue != nil {
+			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
@@ -110,6 +119,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateEditDescriptionView(msg)
 	case editPriorityView:
 		return m.updateEditPriorityView(msg)
+	case postCommentView:
+		return m.updatePostCommentView(msg)
 	}
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
@@ -146,6 +157,8 @@ func (m model) View() string {
 		content = m.renderEditDescriptionView()
 	case editPriorityView:
 		content = m.renderEditPriorityView()
+	case postCommentView:
+		content = m.renderPostCommentView()
 	default:
 		content = "Unknown view\n"
 	}

@@ -15,6 +15,7 @@ const (
 	transitionView
 	editDescriptionView
 	editPriorityView
+	postCommentView
 )
 
 // bubbletea messages from commands
@@ -40,6 +41,10 @@ type editedDescriptionMsg struct {
 }
 
 type editedPriorityMsg struct {
+	success bool
+}
+
+type postedCommentMsg struct {
 	success bool
 }
 
@@ -147,4 +152,19 @@ func (m model) fetchData() tea.Msg {
 	}
 
 	return dataLoadedMsg{issues, priorities}
+}
+
+func (m model) postComment(issueKey, comment string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostComment(context.Background(), issueKey, comment)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return editedPriorityMsg{success: true}
+	}
 }
