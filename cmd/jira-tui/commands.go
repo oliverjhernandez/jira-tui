@@ -13,14 +13,18 @@ const (
 	listView viewMode = iota
 	detailView
 	transitionView
+	assignableUsersSearchView
 	editDescriptionView
 	editPriorityView
 	postCommentView
 )
 
 // bubbletea messages from commands
-type dataLoadedMsg struct {
-	issues     []jira.Issue
+type issuesLoadedMsg struct {
+	issues []jira.Issue
+}
+
+type prioritiesLoadedMsg struct {
 	priorities []jira.Priority
 }
 
@@ -30,6 +34,10 @@ type issueDetailLoadedMsg struct {
 
 type transitionsLoadedMsg struct {
 	transitions []jira.Transition
+}
+
+type assignableUsersLoadedMsg struct {
+	users []jira.User
 }
 
 type transitionCompleteMsg struct {
@@ -82,13 +90,28 @@ func (m model) fetchTransitions(issueKey string) tea.Cmd {
 	}
 }
 
-func (m model) doTransition(issueKey, transitionID string) tea.Cmd {
+func (m model) postTransition(issueKey, transitionID string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.DoTransition(context.Background(), issueKey, transitionID)
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return transitionCompleteMsg{success: true}
+	}
+}
+
+func (m model) postAssignee(issueKey, assigneeID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostAssignee(context.Background(), issueKey, assigneeID)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -127,7 +150,31 @@ func (m model) postPriority(issueKey, priorityName string) tea.Cmd {
 	}
 }
 
-func (m model) fetchData() tea.Msg {
+func (m model) fetchMyIssues() tea.Cmd {
+	return func() tea.Msg {
+		url := os.Getenv("JIRA_URL")
+		email := os.Getenv("JIRA_EMAIL")
+		token := os.Getenv("JIRA_TOKEN")
+
+		if url == "" || email == "" || token == "" {
+			return errMsg{fmt.Errorf("missing env vars: JIRA_URL, JIRA_EMAIL, JIRA_TOKEN")}
+		}
+
+		client, err := jira.NewClient(url, email, token)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		issues, err := client.GetMyIssues(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return issuesLoadedMsg{issues}
+	}
+}
+
+func (m model) fetchPriorities() tea.Msg {
 	url := os.Getenv("JIRA_URL")
 	email := os.Getenv("JIRA_EMAIL")
 	token := os.Getenv("JIRA_TOKEN")
@@ -141,17 +188,12 @@ func (m model) fetchData() tea.Msg {
 		return errMsg{err}
 	}
 
-	issues, err := client.GetMyIssues(context.Background())
-	if err != nil {
-		return errMsg{err}
-	}
-
 	priorities, err := client.GetPriorities(context.Background())
 	if err != nil {
 		return errMsg{err}
 	}
 
-	return dataLoadedMsg{issues, priorities}
+	return prioritiesLoadedMsg{priorities}
 }
 
 func (m model) postComment(issueKey, comment string) tea.Cmd {
@@ -166,5 +208,20 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 		}
 
 		return editedPriorityMsg{success: true}
+	}
+}
+
+func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		users, err := m.client.GetUsers(context.Background(), issueKey)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return assignableUsersLoadedMsg{users}
 	}
 }

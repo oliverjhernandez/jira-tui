@@ -28,10 +28,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.transitionCursor++
 			}
 		case "enter":
-			// Execute the selected transition
 			if len(m.transitions) > 0 {
 				transition := m.transitions[m.transitionCursor]
-				return m, m.doTransition(m.selectedIssue.Key, transition.ID)
+				return m, m.postTransition(m.selectedIssue.Key, transition.ID)
 			}
 		}
 	}
@@ -45,7 +44,7 @@ func (m model) renderTransitionView() string {
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
-	modalContent.WriteString(fmt.Sprintf("Change Status for %s\n", m.selectedIssue.Key))
+	fmt.Fprintf(&modalContent, "Change Status for %s\n", m.selectedIssue.Key)
 	modalContent.WriteString(strings.Repeat("=", 50) + "\n\n")
 
 	if m.loadingTransitions {
@@ -59,7 +58,7 @@ func (m model) renderTransitionView() string {
 			if m.transitionCursor == i {
 				cursor = ">"
 			}
-			modalContent.WriteString(fmt.Sprintf("%s %s\n", cursor, t.Name))
+			fmt.Fprintf(&modalContent, "%s %s\n", cursor, t.Name)
 		}
 	}
 

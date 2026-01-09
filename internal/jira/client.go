@@ -55,6 +55,11 @@ type Transition struct {
 	Name string
 }
 
+type User struct {
+	ID   string `json:"accountId"`
+	Name string `json:"displayName"`
+}
+
 type Priority struct {
 	ID   string
 	Name string
@@ -149,7 +154,7 @@ type jiraComment struct {
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done ORDER BY status DESC"
+	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done AND status != Validación ORDER BY status DESC"
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
 	params := url.Values{}
@@ -347,7 +352,91 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 	return transitions, nil
 }
 
-func (c *Client) DoTransition(ctx context.Context, issueKey, transitionID string) error {
+func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) {
+	apiURL := fmt.Sprintf("%s/rest/api/3/user/assignable/search?issueKey=%s", c.baseURL, issueKey)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var result []User
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	users := make([]User, 0, len(result))
+	for _, t := range result {
+		users = append(users, User{
+			ID:   t.ID,
+			Name: t.Name,
+		})
+	}
+
+	return users, nil
+}
+
+func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) error {
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/assignee", c.baseURL, issueKey)
+
+	body := map[string]any{
+		"accountId": assigneeID,
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		log.Printf("failed to execute request: %s", err.Error())
+		return nil // TODO: manage error upwards
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		return nil
+	}
+
+	return nil
+}
+
+func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string) error {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.baseURL, issueKey)
 
 	body := map[string]any{

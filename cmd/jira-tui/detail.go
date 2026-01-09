@@ -17,6 +17,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
+
 		switch keyPressMsg.String() {
 		case "j":
 			m.detailViewport.ScrollDown(1)
@@ -52,12 +53,19 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editTextArea.SetValue("")
 			m.editTextArea.Focus()
 			return m, textarea.Blink
+		case "a":
+			m.mode = assignableUsersSearchView
+			m.loadingAssignableUsers = true
+			m.filterInput.SetValue("")
+			m.filterInput.Focus()
+			m.cursor = 0
+			return m, m.fetchAssignableUsers(m.selectedIssue.Key)
 		case "esc":
 			m.mode = listView
 			m.selectedIssue = nil
 			m.issueDetail = nil
 			m.loading = true
-			return m, m.fetchData
+			return m, m.fetchMyIssues()
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		default:
@@ -108,7 +116,7 @@ func (m model) renderDetailView() string {
 
 	metadata := row1 + "\n" + row2 + "\n" + renderField("Type", selectedIssue.Type)
 
-	// TODO: place issue type somewhere
+	// TODO: place issue type somewhere, probably as an icon
 	// metadataContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
 	// metadataContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
 
@@ -119,24 +127,14 @@ func (m model) renderDetailView() string {
 	scrollContent.WriteString("--- Comments -------------------------\n")
 	if len(m.issueDetail.Comments) > 0 {
 		for _, c := range m.issueDetail.Comments {
-			scrollContent.WriteString(fmt.Sprintf("\n%s • %s\n", ui.CommentAuthorStyle.Render(c.Author), ui.CommentTimestampStyle.Render(timeAgo(c.Created))))
+			fmt.Fprintf(&scrollContent, "\n%s • %s\n", ui.CommentAuthorStyle.Render(c.Author), ui.CommentTimestampStyle.Render(timeAgo(c.Created)))
 			scrollContent.WriteString(c.Body + "\n")
 		}
 	}
 
-	var statusBar string
-	if m.filtering {
-		statusBar = "Filter: " + m.filterInput.View() + " (enter to finish, esc to cancel)"
-	} else {
-		statusBar = "\n/ filter | enter detail | t transition | q quit"
-	}
+	statusBar := "\na assignee | enter detail | t transition | q quit"
 
 	m.detailViewport.SetContent(scrollContent.String())
-	log.Printf("Viewport - Width: %d, Height: %d, Total lines: %d, YOffset: %d",
-		m.detailViewport.Width,
-		m.detailViewport.Height,
-		m.detailViewport.TotalLineCount(),
-		m.detailViewport.YOffset)
 
 	var output strings.Builder
 	output.WriteString(header + "\n")

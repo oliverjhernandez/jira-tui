@@ -1,17 +1,21 @@
 package jira
 
-import "github.com/oliverjhernandez/jira-tui/internal/ui"
+import (
+	"strings"
+
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
+)
 
 func extractText(doc *descriptionDoc) string {
 	if doc == nil {
 		return ""
 	}
 
-	var text string
+	var text strings.Builder
 	for _, block := range doc.Content {
-		text += extractBlockText(block) + "\n"
+		text.WriteString(extractBlockText(block) + "\n")
 	}
-	return text
+	return text.String()
 }
 
 func extractBlockText(block contentBlock) string {
@@ -19,15 +23,15 @@ func extractBlockText(block contentBlock) string {
 		return block.Text
 	}
 
-	var text string
+	var text strings.Builder
 	for _, node := range block.Content {
 		if node.Type == "mention" && node.Attrs.Text != "" {
-			text += ui.MentionStyle.Render(node.Attrs.Text)
+			text.WriteString(ui.MentionStyle.Render(node.Attrs.Text))
 		}
 
 		if node.Text != "" {
-			text += node.Text
+			text.WriteString(node.Text)
 		}
 	}
-	return text
+	return text.String()
 }

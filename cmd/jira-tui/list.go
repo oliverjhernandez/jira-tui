@@ -88,6 +88,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderListView() string {
 	log.Printf("=== renderListView called ===")
+	log.Printf("renderListView - mode: %v, loading: %v, issues: %d", m.mode, m.loading, len(m.issues))
 
 	panelWidth := max(120, m.windowWidth-4)
 	panelHeight := m.windowHeight - 4
@@ -114,6 +115,14 @@ func (m model) renderListView() string {
 	} else if m.cursor < start {
 		start = m.cursor
 		end = start + maxVisible
+	}
+
+	start = max(0, start)
+	end = min(len(issuesToShow), end)
+
+	if start >= len(issuesToShow) {
+		start = 0
+		end = min(len(issuesToShow), maxVisible)
 	}
 
 	var listContent strings.Builder

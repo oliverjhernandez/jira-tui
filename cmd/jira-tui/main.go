@@ -16,42 +16,52 @@ import (
 type viewMode int
 
 type model struct {
-	issues             []jira.Issue
-	cursor             int
-	priorityCursor     int
-	transitionCursor   int
-	priorityOptions    []jira.Priority
-	loading            bool
-	err                error
-	mode               viewMode
-	selectedIssue      *jira.Issue
-	issueDetail        *jira.IssueDetail
-	loadingDetail      bool
-	client             *jira.Client
-	transitions        []jira.Transition
-	loadingTransitions bool
-	filterInput        textinput.Model
-	filtering          bool
-	editTextArea       textarea.Model
-	editingDescription bool
-	editingPriority    bool
-	postingComment     bool
-	windowWidth        int
-	windowHeight       int
-	detailViewport     *viewport.Model
+	issues                 []jira.Issue
+	cursor                 int
+	priorityCursor         int
+	transitionCursor       int
+	priorityOptions        []jira.Priority
+	loading                bool
+	err                    error
+	mode                   viewMode
+	selectedIssue          *jira.Issue
+	issueDetail            *jira.IssueDetail
+	loadingDetail          bool
+	client                 *jira.Client
+	transitions            []jira.Transition
+	loadingTransitions     bool
+	loadingAssignableUsers bool
+	filterInput            textinput.Model
+	filtering              bool
+	editTextArea           textarea.Model
+	editingDescription     bool
+	editingPriority        bool
+	postingComment         bool
+	windowWidth            int
+	windowHeight           int
+	detailViewport         *viewport.Model
+	assignableUsersCache   []jira.User
+	filteredUsers          []*jira.User
+	assigneeCursor         int
 }
 
 func (m model) Init() tea.Cmd {
-	return m.fetchData
+	return tea.Batch(m.fetchMyIssues(), m.fetchPriorities)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
-	case dataLoadedMsg:
+	case issuesLoadedMsg:
+		log.Printf("issuesLoadedMsg received - %d issues, current mode: %v", len(msg.issues), m.mode)
 		m.issues = msg.issues
+		m.loading = false
+		return m, nil
+
+	case prioritiesLoadedMsg:
 		m.priorityOptions = msg.priorities
 		m.loading = false
+		return m, nil
 
 	case issueDetailLoadedMsg:
 		m.issueDetail = msg.detail
@@ -90,6 +100,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchIssueDetail(m.selectedIssue.Key)
 		}
 		return m, nil
+
+	case assignableUsersLoadedMsg:
+		m.assignableUsersCache = msg.users
+		m.loadingAssignableUsers = false
+		m.mode = assignableUsersSearchView
 
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
@@ -156,6 +171,8 @@ func (m model) View() string {
 		content = m.renderEditPriorityView()
 	case postCommentView:
 		content = m.renderPostCommentView()
+	case assignableUsersSearchView:
+		content = m.renderAssignableUsersView()
 	default:
 		content = "Unknown view\n"
 	}

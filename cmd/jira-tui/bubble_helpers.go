@@ -27,19 +27,19 @@ func PlaceOverlay(
 	fgHeight := len(fgLines)
 
 	if shadow {
-		shadowbg := ""
+		var shadowbg strings.Builder
 		shadowchar := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#333333")).
 			Render("░")
 		for i := 0; i <= fgHeight; i++ {
 			if i == 0 {
-				shadowbg += " " + strings.Repeat(" ", fgWidth) + "\n"
+				shadowbg.WriteString(" " + strings.Repeat(" ", fgWidth) + "\n")
 			} else {
-				shadowbg += " " + strings.Repeat(shadowchar, fgWidth) + "\n"
+				shadowbg.WriteString(" " + strings.Repeat(shadowchar, fgWidth) + "\n")
 			}
 		}
 
-		fg = PlaceOverlay(0, 0, fg, shadowbg, false, opts...)
+		fg = PlaceOverlay(0, 0, fg, shadowbg.String(), false, opts...)
 		fgLines, fgWidth = getLines(fg)
 		fgHeight = len(fgLines)
 	}
