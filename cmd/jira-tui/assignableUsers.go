@@ -13,14 +13,6 @@ func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
-		case "j":
-			if m.assigneeCursor < len(m.filteredUsers)-1 {
-				m.assigneeCursor++
-			}
-		case "k":
-			if m.assigneeCursor > 0 {
-				m.assigneeCursor--
-			}
 		case "esc":
 			m.filterInput.SetValue("")
 			m.filterInput.Blur()
