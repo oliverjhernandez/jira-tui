@@ -113,23 +113,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.mode {
+	case listView:
+		return m.updateListView(msg)
 	case detailView:
 		return m.updateDetailView(msg)
 	case editDescriptionView:
 		return m.updateEditDescriptionView(msg)
 	case editPriorityView:
 		return m.updateEditPriorityView(msg)
+	case transitionView:
+		return m.updateTransitionView(msg)
 	case postCommentView:
 		return m.updatePostCommentView(msg)
-	}
-
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch m.mode {
-		case listView:
-			return m.updateListView(keyMsg) // NOTE: why expect keymsg?
-		case transitionView:
-			return m.updateTransitionView(keyMsg) // NOTE: why expect keymsg?
-		}
+	case assignableUsersSearchView:
+		return m.updateAssignableUsersView(msg)
 	}
 
 	return m, nil

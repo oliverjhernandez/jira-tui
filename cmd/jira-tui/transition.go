@@ -9,28 +9,33 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func (m model) updateTransitionView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
-	case "esc", "backspace":
-		m.mode = detailView
-		m.transitions = nil
-	case "up", "k":
-		if m.transitionCursor > 0 {
-			m.transitionCursor--
-		}
-	case "down", "j":
-		if m.transitionCursor < len(m.transitions)-1 {
-			m.transitionCursor++
-		}
-	case "enter":
-		// Execute the selected transition
-		if len(m.transitions) > 0 {
-			transition := m.transitions[m.transitionCursor]
-			return m, m.doTransition(m.selectedIssue.Key, transition.ID)
+func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+
+		switch keyMsg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "esc", "backspace":
+			m.mode = detailView
+			m.transitions = nil
+		case "up", "k":
+			if m.transitionCursor > 0 {
+				m.transitionCursor--
+			}
+		case "down", "j":
+			if m.transitionCursor < len(m.transitions)-1 {
+				m.transitionCursor++
+			}
+		case "enter":
+			// Execute the selected transition
+			if len(m.transitions) > 0 {
+				transition := m.transitions[m.transitionCursor]
+				return m, m.doTransition(m.selectedIssue.Key, transition.ID)
+			}
 		}
 	}
+
 	return m, nil
 }
 

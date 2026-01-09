@@ -11,72 +11,76 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func (m model) updateListView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	issuesToShow := m.issues
-	if m.filterInput.Value() != "" {
-		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
-	}
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
-	if m.filtering {
-		switch msg.String() {
-		case "esc":
-			m.filtering = false
+		issuesToShow := m.issues
+		if m.filterInput.Value() != "" {
+			issuesToShow = filterIssues(m.issues, m.filterInput.Value())
+		}
+
+		if m.filtering {
+			switch keyMsg.String() {
+			case "esc":
+				m.filtering = false
+				m.filterInput.SetValue("")
+				m.filterInput.Blur()
+				m.cursor = 0
+				return m, nil
+			case "enter":
+				m.filtering = false
+				m.filterInput.Blur()
+				return m, nil
+			}
+
+			var cmd tea.Cmd
+			m.filterInput, cmd = m.filterInput.Update(msg)
+
+			return m, cmd
+		}
+
+		switch keyMsg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+				if m.cursor < len(issuesToShow) {
+					return m, nil
+				}
+			}
+		case "down", "j":
+			if m.cursor < len(issuesToShow)-1 {
+				m.cursor++
+				if m.cursor < len(issuesToShow) {
+					return m, nil
+				}
+			}
+		case "/":
+			m.filtering = true
 			m.filterInput.SetValue("")
-			m.filterInput.Blur()
+			m.filterInput.Focus()
 			m.cursor = 0
-			return m, nil
+			return m, textinput.Blink
 		case "enter":
-			m.filtering = false
-			m.filterInput.Blur()
-			return m, nil
-		}
+			if len(issuesToShow) > 0 && m.cursor < len(issuesToShow) {
+				m.selectedIssue = &issuesToShow[m.cursor]
+				m.mode = detailView
+				m.loadingDetail = true
+				m.issueDetail = nil
 
-		var cmd tea.Cmd
-		m.filterInput, cmd = m.filterInput.Update(msg)
-
-		return m, cmd
-	}
-
-	switch msg.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
-	case "up", "k":
-		if m.cursor > 0 {
-			m.cursor--
-			if m.cursor < len(issuesToShow) {
-				return m, nil
+				width := m.windowWidth - 10
+				height := m.windowHeight - 15
+				vp := viewport.New(width, height)
+				m.detailViewport = &vp
+				return m, m.fetchIssueDetail(m.selectedIssue.Key)
 			}
+		case "esc":
+			m.filterInput.SetValue("")
+			m.cursor = 0
 		}
-	case "down", "j":
-		if m.cursor < len(issuesToShow)-1 {
-			m.cursor++
-			if m.cursor < len(issuesToShow) {
-				return m, nil
-			}
-		}
-	case "/":
-		m.filtering = true
-		m.filterInput.SetValue("")
-		m.filterInput.Focus()
-		m.cursor = 0
-		return m, textinput.Blink
-	case "enter":
-		if len(issuesToShow) > 0 && m.cursor < len(issuesToShow) {
-			m.selectedIssue = &issuesToShow[m.cursor]
-			m.mode = detailView
-			m.loadingDetail = true
-			m.issueDetail = nil
 
-			width := m.windowWidth - 10
-			height := m.windowHeight - 15
-			vp := viewport.New(width, height)
-			m.detailViewport = &vp
-			return m, m.fetchIssueDetail(m.selectedIssue.Key)
-		}
-	case "esc":
-		m.filterInput.SetValue("")
-		m.cursor = 0
 	}
 
 	return m, nil
