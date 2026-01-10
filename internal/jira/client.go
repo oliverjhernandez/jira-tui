@@ -19,7 +19,7 @@ type Client struct {
 	jiraToken  string
 	tempoURL   string
 	tempoToken string
-	email      string
+	jiraEmail  string
 }
 
 type Issue struct {
@@ -81,13 +81,17 @@ func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (
 		jiraToken:  jiraToken,
 		tempoURL:   tempoBaseURL,
 		tempoToken: tempoToken,
-		email:      email,
+		jiraEmail:  email,
 	}, nil
 }
 
 // Response structs for the v3 API
 type searchResponse struct {
 	Issues []jiraIssue `json:"issues"`
+}
+
+type worklogsResponse struct {
+	Results []WorkLog `json:"results"`
 }
 
 type jiraIssue struct {
@@ -161,9 +165,9 @@ type jiraComment struct {
 }
 
 type WorkLog struct {
-	ID     string `json:"tempoWorklogId"`
+	ID     int    `json:"tempoWorklogId"`
 	Time   int    `json:"timeSpentSeconds"`
-	Author Author `json:"accountId"`
+	Author Author `json:"author"`
 }
 
 type Author struct {
@@ -186,7 +190,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -247,7 +251,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -328,7 +332,7 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -379,7 +383,7 @@ func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) 
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -431,7 +435,7 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -474,7 +478,7 @@ func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID stri
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -529,7 +533,7 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -573,7 +577,7 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -603,7 +607,7 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -674,7 +678,7 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -697,14 +701,15 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 }
 
 func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, error) {
-	apiURL := fmt.Sprintf("%s/4/worklogs/issue/%s", c.jiraURL, issueID)
+	apiURL := fmt.Sprintf("%s/4/worklogs/issue/%s", c.tempoURL, issueID)
+	log.Printf("API URL: %s", apiURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.jiraToken)
+	req.Header.Set("Authorization", "Bearer "+c.tempoToken)
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
@@ -723,20 +728,10 @@ func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, er
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var wl []WorkLog
-
+	var wl worklogsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&wl); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	workingLogs := make([]WorkLog, 0, len(wl))
-	for _, t := range wl {
-		workingLogs = append(workingLogs, WorkLog{
-			ID:     t.ID,
-			Time:   t.Time,
-			Author: t.Author,
-		})
-	}
-
-	return workingLogs, nil
+	return wl.Results, nil
 }

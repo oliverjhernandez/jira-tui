@@ -104,7 +104,8 @@ func extractLoggedTime(worklogs []jira.WorkLog) string {
 		}
 	}
 
-	loggedStr := strconv.Itoa(logged)
+	loggedHours := logged / 60 / 60
+	loggedStr := strconv.Itoa(loggedHours)
 
 	return loggedStr + "h"
 }
