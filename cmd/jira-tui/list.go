@@ -68,13 +68,17 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIssue = &issuesToShow[m.cursor]
 				m.mode = detailView
 				m.loadingDetail = true
+				m.loadingWorkLogs = true
 				m.issueDetail = nil
 
 				width := m.windowWidth - 10
 				height := m.windowHeight - 15
 				vp := viewport.New(width, height)
 				m.detailViewport = &vp
-				return m, m.fetchIssueDetail(m.selectedIssue.Key)
+				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
+				wlsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
+
+				return m, tea.Batch(detailCmd, wlsCmd)
 			}
 		case "esc":
 			m.filterInput.SetValue("")

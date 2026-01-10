@@ -14,13 +14,16 @@ import (
 )
 
 type Client struct {
-	baseURL string
-	client  *http.Client
-	email   string
-	token   string
+	Client     *http.Client
+	jiraURL    string
+	jiraToken  string
+	tempoURL   string
+	tempoToken string
+	email      string
 }
 
 type Issue struct {
+	ID       string
 	Key      string
 	Summary  string
 	Status   string
@@ -30,6 +33,7 @@ type Issue struct {
 }
 
 type IssueDetail struct {
+	ID               string
 	Key              string
 	Summary          string
 	Status           string
@@ -70,12 +74,14 @@ type Parent struct {
 	Type string
 }
 
-func NewClient(baseURL, email, token string) (*Client, error) {
+func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (*Client, error) {
 	return &Client{
-		baseURL: baseURL,
-		client:  &http.Client{},
-		email:   email,
-		token:   token,
+		Client:     &http.Client{},
+		jiraURL:    jiraBaseURL,
+		jiraToken:  jiraToken,
+		tempoURL:   tempoBaseURL,
+		tempoToken: tempoToken,
+		email:      email,
 	}, nil
 }
 
@@ -86,6 +92,7 @@ type searchResponse struct {
 
 type jiraIssue struct {
 	Key    string      `json:"key"`
+	ID     string      `json:"id"`
 	Fields issueFields `json:"fields"`
 }
 
@@ -153,14 +160,24 @@ type jiraComment struct {
 	Created string          `json:"created"`
 }
 
+type WorkLog struct {
+	ID     string `json:"tempoWorklogId"`
+	Time   int    `json:"timeSpentSeconds"`
+	Author Author `json:"accountId"`
+}
+
+type Author struct {
+	AccountID string `json:"accountId"`
+}
+
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done AND status != Validación ORDER BY status DESC"
 
-	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.baseURL)
+	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "50")
-	params.Add("fields", "summary,status,issuetype,assignee,priority")
+	params.Add("fields", "id,summary,status,issuetype,assignee,priority")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -169,10 +186,10 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -205,6 +222,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 		}
 
 		result = append(result, Issue{
+			ID:       issue.ID,
 			Key:      issue.Key,
 			Summary:  issue.Fields.Summary,
 			Status:   issue.Fields.Status.Name,
@@ -218,9 +236,9 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 }
 
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
 	params := url.Values{}
-	params.Add("fields", "summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -229,10 +247,10 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -258,6 +276,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	}
 
 	detail := &IssueDetail{
+		ID:          issue.ID,
 		Key:         issue.Key,
 		Type:        issue.Fields.Type.Name,
 		Summary:     issue.Fields.Summary,
@@ -302,17 +321,17 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 }
 
 func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transition, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.jiraURL, issueKey)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -353,17 +372,17 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 }
 
 func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/user/assignable/search?issueKey=%s", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/user/assignable/search?issueKey=%s", c.jiraURL, issueKey)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -396,7 +415,7 @@ func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) 
 }
 
 func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/assignee", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/assignee", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"accountId": assigneeID,
@@ -412,11 +431,11 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		log.Printf("failed to execute request: %s", err.Error())
 		return nil // TODO: manage error upwards
@@ -437,7 +456,7 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 }
 
 func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"transition": map[string]string{
@@ -455,11 +474,11 @@ func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID stri
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -478,7 +497,7 @@ func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID stri
 }
 
 func (c *Client) UpdateDescription(ctx context.Context, issueKey string, description string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"fields": map[string]any{
@@ -510,11 +529,11 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -533,7 +552,7 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 }
 
 func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"fields": map[string]any{
@@ -554,11 +573,11 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -577,17 +596,17 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 }
 
 func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/priority", c.baseURL)
+	apiURL := fmt.Sprintf("%s/rest/api/3/priority", c.jiraURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -625,7 +644,7 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 
 func (c *Client) PostComment(ctx context.Context, issueKey string, comment string) error {
 
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.baseURL, issueKey)
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"body": map[string]any{
@@ -655,11 +674,11 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.SetBasicAuth(c.email, c.token)
+	req.SetBasicAuth(c.email, c.jiraToken)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -675,4 +694,49 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 	}
 
 	return nil
+}
+
+func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, error) {
+	apiURL := fmt.Sprintf("%s/4/worklogs/issue/%s", c.jiraURL, issueID)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.email, c.jiraToken)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("Body: %+v", string(bodyBytes))
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var wl []WorkLog
+
+	if err := json.NewDecoder(resp.Body).Decode(&wl); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	workingLogs := make([]WorkLog, 0, len(wl))
+	for _, t := range wl {
+		workingLogs = append(workingLogs, WorkLog{
+			ID:     t.ID,
+			Time:   t.Time,
+			Author: t.Author,
+		})
+	}
+
+	return workingLogs, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/oliverjhernandez/jira-tui/internal/config"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
 
@@ -17,20 +18,21 @@ type viewMode int
 
 type model struct {
 	issues                 []jira.Issue
+	mode                   viewMode
 	cursor                 int
 	priorityCursor         int
 	transitionCursor       int
 	priorityOptions        []jira.Priority
 	loading                bool
-	err                    error
-	mode                   viewMode
-	selectedIssue          *jira.Issue
-	issueDetail            *jira.IssueDetail
 	loadingDetail          bool
-	client                 *jira.Client
-	transitions            []jira.Transition
 	loadingTransitions     bool
 	loadingAssignableUsers bool
+	loadingWorkLogs        bool
+	selectedIssue          *jira.Issue
+	selectedIssueWorklogs  []jira.WorkLog
+	issueDetail            *jira.IssueDetail
+	client                 *jira.Client
+	transitions            []jira.Transition
 	filterInput            textinput.Model
 	filtering              bool
 	editTextArea           textarea.Model
@@ -43,6 +45,7 @@ type model struct {
 	assignableUsersCache   []jira.User
 	filteredUsers          []*jira.User
 	assigneeCursor         int
+	err                    error
 }
 
 func (m model) Init() tea.Cmd {
@@ -66,6 +69,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case issueDetailLoadedMsg:
 		m.issueDetail = msg.detail
 		m.loadingDetail = false
+
+	case workLogsLoadedMSg:
+		m.selectedIssueWorklogs = msg.workLogs
+		m.loadingWorkLogs = false
 
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
@@ -181,11 +188,13 @@ func (m model) View() string {
 }
 
 func main() {
-	url := os.Getenv("JIRA_URL")
-	email := os.Getenv("JIRA_EMAIL")
-	token := os.Getenv("JIRA_TOKEN")
 
-	client, _ := jira.NewClient(url, email, token)
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	client, _ := jira.NewClient(cfg.JiraURL, cfg.JIraEmail, cfg.JiraToken, cfg.TempoURL, cfg.TempoToken)
 
 	logFile, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -217,7 +226,7 @@ func main() {
 	})
 
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
 	}
 }

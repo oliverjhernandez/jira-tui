@@ -94,3 +94,17 @@ func timeAgo(date string) string {
 		return strconv.Itoa(diffMinutes) + " minutes ago"
 	}
 }
+
+func extractLoggedTime(worklogs []jira.WorkLog) string {
+	logged := 0
+
+	if len(worklogs) > 0 {
+		for _, wl := range worklogs {
+			logged += wl.Time
+		}
+	}
+
+	loggedStr := strconv.Itoa(logged)
+
+	return loggedStr + "h"
+}

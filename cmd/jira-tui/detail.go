@@ -85,11 +85,16 @@ func (m model) renderDetailView() string {
 		return "Loading issue...\n"
 	}
 
+	if m.selectedIssueWorklogs == nil {
+		return "Loading working logs...\n"
+	}
+
 	// HEADER
 	selectedIssue := m.issueDetail
+	worklogs := extractLoggedTime(m.selectedIssueWorklogs)
 
 	index := "[" + strconv.Itoa(m.cursor+1) + "/" + strconv.Itoa(len(m.issues)) + "]"
-	parent := "NA"
+	parent := "NP"
 	if selectedIssue.Parent != nil {
 		parent = selectedIssue.Parent.ID
 	}
@@ -99,7 +104,7 @@ func (m model) renderDetailView() string {
 	status := renderStatusBadge(selectedIssue.Status)
 	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
 	estimate := selectedIssue.OriginalEstimate
-	logged := "4h" // TODO: get from tempo api
+	logged := worklogs
 
 	header := index + " " + parent + "/" + issueKey + " " + issueSummary + "\n" + " " + assignee + " " + estimate + " " + logged
 

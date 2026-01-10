@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
@@ -38,6 +37,10 @@ type transitionsLoadedMsg struct {
 
 type assignableUsersLoadedMsg struct {
 	users []jira.User
+}
+
+type workLogsLoadedMSg struct {
+	workLogs []jira.WorkLog
 }
 
 type transitionCompleteMsg struct {
@@ -152,20 +155,11 @@ func (m model) postPriority(issueKey, priorityName string) tea.Cmd {
 
 func (m model) fetchMyIssues() tea.Cmd {
 	return func() tea.Msg {
-		url := os.Getenv("JIRA_URL")
-		email := os.Getenv("JIRA_EMAIL")
-		token := os.Getenv("JIRA_TOKEN")
-
-		if url == "" || email == "" || token == "" {
-			return errMsg{fmt.Errorf("missing env vars: JIRA_URL, JIRA_EMAIL, JIRA_TOKEN")}
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		client, err := jira.NewClient(url, email, token)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		issues, err := client.GetMyIssues(context.Background())
+		issues, err := m.client.GetMyIssues(context.Background())
 		if err != nil {
 			return errMsg{err}
 		}
@@ -175,20 +169,12 @@ func (m model) fetchMyIssues() tea.Cmd {
 }
 
 func (m model) fetchPriorities() tea.Msg {
-	url := os.Getenv("JIRA_URL")
-	email := os.Getenv("JIRA_EMAIL")
-	token := os.Getenv("JIRA_TOKEN")
 
-	if url == "" || email == "" || token == "" {
-		return errMsg{fmt.Errorf("missing env vars: JIRA_URL, JIRA_EMAIL, JIRA_TOKEN")}
+	if m.client == nil {
+		return errMsg{fmt.Errorf("jira client not initialized")}
 	}
 
-	client, err := jira.NewClient(url, email, token)
-	if err != nil {
-		return errMsg{err}
-	}
-
-	priorities, err := client.GetPriorities(context.Background())
+	priorities, err := m.client.GetPriorities(context.Background())
 	if err != nil {
 		return errMsg{err}
 	}
@@ -207,7 +193,7 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return editedPriorityMsg{success: true}
+		return postedCommentMsg{success: true}
 	}
 }
 
@@ -223,5 +209,20 @@ func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
 		}
 
 		return assignableUsersLoadedMsg{users}
+	}
+}
+
+func (m model) fetchWorkLogs(issueID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		wls, err := m.client.GetWorkLogs(context.Background(), issueID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return workLogsLoadedMSg{wls}
 	}
 }
