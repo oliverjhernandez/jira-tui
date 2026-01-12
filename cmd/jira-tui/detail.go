@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -82,79 +81,90 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderDetailView() string {
 	if m.selectedIssue == nil || m.issueDetail == nil {
-		return "Loading issue...\n"
+		return ui.PanelStyleActive.Render("Loading issue...")
 	}
-
-	if m.selectedIssueWorklogs == nil {
-		return "Loading working logs...\n"
-	}
-
-	// HEADER
-	selectedIssue := m.issueDetail
-	worklogs := extractLoggedTime(m.selectedIssueWorklogs)
-
-	index := "[" + strconv.Itoa(m.cursor+1) + "/" + strconv.Itoa(len(m.issues)) + "]"
-	parent := "NP"
-	if selectedIssue.Parent != nil {
-		parent = selectedIssue.Parent.ID
-	}
-
-	issueKey := selectedIssue.Key
-	issueSummary := truncateLongString(selectedIssue.Summary, 40)
-	status := renderStatusBadge(selectedIssue.Status)
-	assignee := strings.Split(selectedIssue.Assignee, " ")[0]
-	estimate := selectedIssue.OriginalEstimate
-	logged := worklogs
-
-	header := index + " " + parent + "/" + issueKey + " " + issueSummary + "\n" + " " + assignee + " " + estimate + " " + logged
-
-	// 	METADATA
-	col1 := (renderField("Status", status))
-	col2 := renderField("Assignee", m.issueDetail.Assignee)
-	col3 := renderField("Created", "XXXXXXX") // TODO: get from api
-	row1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
-
-	col1 = renderField("Priority", selectedIssue.Priority.Name)
-	col2 = renderField("Reporter", m.issueDetail.Reporter)
-	col3 = renderField("Updated", "XXXXXXX") // TODO: get from api
-	row2 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
-
-	metadata := row1 + "\n" + row2 + "\n" + renderField("Type", selectedIssue.Type)
-
-	// TODO: place issue type somewhere, probably as an icon
-	// metadataContent.WriteString(renderField("Type", selectedIssue.Type) + "\n")
-	// metadataContent.WriteString(ui.SeparatorStyle.Render("") + "\n")
-
-	var scrollContent strings.Builder
-	scrollContent.WriteString("--- Description -------------------------\n")
-	scrollContent.WriteString(ui.DetailValueStyle.Render(m.issueDetail.Description) + "\n\n")
-
-	scrollContent.WriteString("--- Comments -------------------------\n")
-	if len(m.issueDetail.Comments) > 0 {
-		for _, c := range m.issueDetail.Comments {
-			fmt.Fprintf(&scrollContent, "\n%s • %s\n", ui.CommentAuthorStyle.Render(c.Author), ui.CommentTimestampStyle.Render(timeAgo(c.Created)))
-			scrollContent.WriteString(c.Body + "\n")
-		}
-	}
-
-	statusBar := "\na assignee | enter detail | t transition | q quit"
-
-	m.detailViewport.SetContent(scrollContent.String())
-
-	var output strings.Builder
-	output.WriteString(header + "\n")
-	output.WriteString(ui.SeparatorStyle.Render("") + "\n")
-	output.WriteString(metadata + "\n")
-	output.WriteString(ui.SeparatorStyle.Render("") + "\n")
-	output.WriteString(m.detailViewport.View() + "\n")
-	output.WriteString(ui.StatusBarStyle.Render(statusBar))
 
 	panelWidth := max(120, m.windowWidth-4)
 	panelHeight := m.windowHeight - 4
+	contentWidth := panelWidth - 6 // padding and border
 
-	detailPanelStyle := ui.BaseDetailPanelStyle.
+	selectedIssue := m.issueDetail
+
+	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.issues)))
+
+	parent := ""
+	if selectedIssue.Parent != nil {
+		parent = ui.StatusBarDescStyle.Render(selectedIssue.Parent.ID + " / ")
+	}
+
+	issueKey := ui.DetailHeaderStyle.Render(selectedIssue.Key)
+	issueSummary := ui.DetailValueStyle.Render(truncateLongString(selectedIssue.Summary, 50))
+
+	headerLine1 := index + " " + parent + issueKey + "  " + issueSummary
+
+	status := ui.RenderStatusBadge(selectedIssue.Status)
+	assignee := ui.StatusBarDescStyle.Render("@" + strings.Split(selectedIssue.Assignee, " ")[0])
+	estimate := ui.StatusBarDescStyle.Render("Est: " + selectedIssue.OriginalEstimate)
+
+	logged := ""
+	if m.selectedIssueWorklogs != nil {
+		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.selectedIssueWorklogs))
+	}
+
+	headerLine2 := status + "  " + assignee + "  " + estimate + "  " + logged
+
+	header := headerLine1 + "\n" + headerLine2
+
+	col1 := ui.RenderFieldStyled("Priority", selectedIssue.Priority.Name, contentWidth/3)
+	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, contentWidth/3)
+	col3 := ui.RenderFieldStyled("Type", selectedIssue.Type, contentWidth/3)
+	metadataRow := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+
+	var scrollContent strings.Builder
+
+	scrollContent.WriteString(ui.SectionTitleStyle.Render("─── Description ") +
+		ui.SeparatorStyle.Render(strings.Repeat("─", contentWidth-16)) + "\n\n")
+
+	if m.issueDetail.Description != "" {
+		scrollContent.WriteString(ui.DetailValueStyle.Render(m.issueDetail.Description) + "\n\n")
+	} else {
+		scrollContent.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")
+	}
+
+	commentCount := len(m.issueDetail.Comments)
+	scrollContent.WriteString(ui.SectionTitleStyle.Render(fmt.Sprintf("─── Comments (%d) ", commentCount)) +
+		ui.SeparatorStyle.Render(strings.Repeat("─", contentWidth-18)) + "\n\n")
+
+	if commentCount > 0 {
+		for _, c := range m.issueDetail.Comments {
+			author := ui.CommentAuthorStyle.Render(c.Author)
+			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
+			scrollContent.WriteString(author + timestamp + "\n")
+			scrollContent.WriteString(ui.CommentBodyStyle.Render(c.Body) + "\n\n")
+		}
+	} else {
+		scrollContent.WriteString(ui.StatusBarDescStyle.Render("No comments yet") + "\n")
+	}
+
+	m.detailViewport.SetContent(scrollContent.String())
+
+	statusBar := strings.Join([]string{
+		ui.RenderKeyBind("a", "assignee"),
+		ui.RenderKeyBind("c", "comment"),
+		ui.RenderKeyBind("e", "edit"),
+		ui.RenderKeyBind("t", "transition"),
+		ui.RenderKeyBind("esc", "back"),
+	}, "  ")
+
+	var output strings.Builder
+	output.WriteString(header + "\n\n")
+	output.WriteString(metadataRow + "\n\n")
+	output.WriteString(m.detailViewport.View())
+
+	detailPanel := ui.PanelStyleActive.
+		Width(panelWidth).
 		Height(panelHeight).
-		Width(panelWidth)
+		Render(output.String())
 
-	return detailPanelStyle.Render(output.String())
+	return detailPanel + "\n" + ui.StatusBarStyle.Render(statusBar)
 }

@@ -91,25 +91,16 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderListView() string {
-	log.Printf("=== renderListView called ===")
-	log.Printf("renderListView - mode: %v, loading: %v, issues: %d", m.mode, m.loading, len(m.issues))
-
 	panelWidth := max(120, m.windowWidth-4)
-	panelHeight := m.windowHeight - 4
-
-	listPanelStyle := ui.BaseListPanelStyle.
-		Height(panelHeight).
-		Width(panelWidth)
-
-	var b strings.Builder
-	b.WriteString("My Jira Issues\n\n")
+	log.Printf("renderListView - windowWidth: %d, panelWidth: %d", m.windowWidth, panelWidth)
+	panelHeight := m.windowHeight - 6
 
 	issuesToShow := m.issues
 	if m.filterInput.Value() != "" {
 		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
 	}
 
-	maxVisible := panelHeight - 4
+	maxVisible := panelHeight - 2 // title and padding
 	start := 0
 	end := min(len(issuesToShow), maxVisible)
 
@@ -130,21 +121,38 @@ func (m model) renderListView() string {
 	}
 
 	var listContent strings.Builder
+
+	headers := ui.TypeHeader + ui.EmptyHeaderSpace +
+		ui.KeyHeader +
+		ui.PriorityHeader + ui.EmptyHeaderSpace +
+		ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace + // extra space for icon offset
+		ui.StatusHeader + ui.EmptyHeaderSpace +
+		ui.AssigneeHeader
+	listContent.WriteString(headers)
+	listContent.WriteString(ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6)) + "\n")
+
 	for i := start; i < end; i++ {
 		issue := issuesToShow[i]
 
-		key := ui.KeyFieldStyle.Render(fmt.Sprintf("[%s]", issue.Key))
-		summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, 40))
-		statusBadge := ui.StatusFieldStyle.Render(renderStatusBadge(issue.Status))
-		assignee := ui.AssigneeFieldStyle.Render(issue.Assignee)
-		priority := ui.PriorityFieldStyle.Render(issue.Priority)
+		issueType := ui.RenderIssueType(issue.Type)
+		key := ui.KeyFieldStyle.Render(issue.Key)
+		priority := ui.RenderPriority(issue.Priority)
+		summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
+		statusBadge := ui.RenderStatusBadge(issue.Status)
+		assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))
 
-		line := key + " " + summary + " " + statusBadge + " " + assignee + " " + priority
+		line := issueType + ui.EmptyHeaderSpace +
+			key +
+			priority + ui.EmptyHeaderSpace +
+			summary + ui.EmptyHeaderSpace +
+			statusBadge + ui.EmptyHeaderSpace +
+			assignee
 
 		if m.cursor == i {
-			line = "> " + line
+			cursor := ui.IconCursor
+			line = cursor + ui.SelectedRowStyle.Render(line)
 		} else {
-			line = " " + line
+			line = "  " + ui.NormalRowStyle.Render(line)
 		}
 
 		listContent.WriteString(line + "\n")
@@ -152,15 +160,29 @@ func (m model) renderListView() string {
 
 	var statusBar string
 	if m.filtering {
-		statusBar = "Filter: " + m.filterInput.View() + " (enter to finish, esc to cancel)"
+		statusBar = ui.StatusBarKeyStyle.Render("Filter: ") + m.filterInput.View() +
+			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)")
 	} else if m.filterInput.Value() != "" {
-		statusBar = fmt.Sprintf("Filtered by: '%s' (%d/%d) | / to change | esc to clear", m.filterInput.Value(), len(issuesToShow), len(m.issues))
+		statusBar = fmt.Sprintf("%s '%s' %s | %s | %s",
+			ui.StatusBarDescStyle.Render("Filtered:"),
+			ui.StatusBarKeyStyle.Render(m.filterInput.Value()),
+			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", len(issuesToShow), len(m.issues))),
+			ui.RenderKeyBind("/", "change"),
+			ui.RenderKeyBind("esc", "clear"),
+		)
 	} else {
-		statusBar = "\n/ filter | enter detail | t transition | q quit"
+		statusBar = strings.Join([]string{
+			ui.RenderKeyBind("/", "filter"),
+			ui.RenderKeyBind("enter", "detail"),
+			ui.RenderKeyBind("t", "transition"),
+			ui.RenderKeyBind("q", "quit"),
+		}, "  ")
 	}
 
-	listRender := listPanelStyle.Render(listContent.String())
-	statusBarRender := ui.StatusBarStyle.Render(statusBar)
+	listPanel := ui.PanelStyleActive.
+		Width(panelWidth).
+		Height(panelHeight).
+		Render(listContent.String())
 
-	return listRender + "\n" + statusBarRender
+	return listPanel + "\n" + ui.StatusBarStyle.Render(statusBar)
 }

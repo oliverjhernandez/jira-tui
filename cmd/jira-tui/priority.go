@@ -45,7 +45,7 @@ func (m model) renderEditPriorityView() string {
 	var modalContent strings.Builder
 
 	if m.priorityOptions != nil {
-		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 

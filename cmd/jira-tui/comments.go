@@ -40,7 +40,7 @@ func (m model) renderPostCommentView() string {
 	var modalContent strings.Builder
 
 	if m.issueDetail != nil {
-		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + renderStatusBadge(m.issueDetail.Status)
+		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 
