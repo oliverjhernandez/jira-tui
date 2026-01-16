@@ -84,3 +84,35 @@ func extractLoggedTime(worklogs []jira.WorkLog) string {
 
 	return loggedStr + "h"
 }
+
+func parseTimeToSeconds(input string) (int, error) {
+	input = strings.TrimSpace(strings.ToLower(input))
+
+	totalSeconds := 0
+
+	if strings.Contains(input, "h") {
+		parts := strings.Split(input, "h")
+		hours, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid hours: %s", parts[0])
+		}
+		totalSeconds += int(hours * 3600)
+		input = strings.TrimSpace(parts[1])
+	}
+
+	if strings.Contains(input, "m") {
+		parts := strings.Split(input, "m")
+		minutes, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid minutes: %s", parts[0])
+		}
+		totalSeconds += int(minutes * 60)
+	}
+
+	if totalSeconds == 0 {
+		return 0, fmt.Errorf("could not parse time: %s", input)
+	}
+
+	return totalSeconds, nil
+}
+

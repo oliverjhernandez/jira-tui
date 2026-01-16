@@ -174,6 +174,18 @@ type Author struct {
 	AccountID string `json:"accountId"`
 }
 
+type Status struct {
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	StatusCategory StatusCategory `json:"statusCategory"`
+}
+
+type StatusCategory struct {
+	ID   int    `json:"id"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done  ORDER BY status DESC"
 

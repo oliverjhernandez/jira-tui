@@ -39,17 +39,20 @@ type model struct {
 	editingDescription     bool
 	editingPriority        bool
 	postingComment         bool
+	postingWorkLog         bool
 	windowWidth            int
 	windowHeight           int
 	detailViewport         *viewport.Model
 	assignableUsersCache   []jira.User
 	filteredUsers          []*jira.User
 	assigneeCursor         int
+	worklogData            *WorklogFormData
 	err                    error
 }
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(m.fetchMyIssues(), m.fetchPriorities)
+	cmds = append(cmds, m.fetchStatuses())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

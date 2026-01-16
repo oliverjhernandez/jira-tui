@@ -48,10 +48,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "c":
 			m.mode = postCommentView
+			m.postingWorkLog = true
+			return m, nil
+		case "w":
+			m.worklogData = NewWorklogFormData()
+			m.mode = postWorklogView
 			m.postingComment = true
-			m.editTextArea.SetValue("")
-			m.editTextArea.Focus()
-			return m, textarea.Blink
+			return m, m.worklogData.Form.Init()
 		case "a":
 			m.mode = assignableUsersSearchView
 			m.loadingAssignableUsers = true

@@ -16,6 +16,7 @@ const (
 	editDescriptionView
 	editPriorityView
 	postCommentView
+	postWorklogView
 )
 
 // bubbletea messages from commands
@@ -56,6 +57,10 @@ type editedPriorityMsg struct {
 }
 
 type postedCommentMsg struct {
+	success bool
+}
+
+type postedWorkLog struct {
 	success bool
 }
 
@@ -224,5 +229,43 @@ func (m model) fetchWorkLogs(issueID string) tea.Cmd {
 		}
 
 		return workLogsLoadedMSg{wls}
+	}
+}
+
+func (m model) postWorkLog(issueID, date, accountID string, time int) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostWorkLog(context.Background(), issueID, date, accountID, time)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return postedWorkLog{success: true}
+	}
+}
+
+func (m *model) classifyIssues() {
+	for idx := range m.sections {
+		m.sections[idx].Issues = nil
+	}
+
+	statusCategories := make(map[string]string)
+	for _, s := range m.statuses {
+		statusCategories[strings.ToLower(s.Name)] = s.StatusCategory.Key
+	}
+
+	for i := range m.issues {
+		issue := &m.issues[i]
+		categoryKey := statusCategories[strings.ToLower(issue.Status)]
+
+		for idx := range m.sections {
+			if m.sections[idx].CategoryKey == categoryKey {
+				m.sections[idx].Issues = append(m.sections[idx].Issues, issue)
+				break
+			}
+		}
 	}
 }
