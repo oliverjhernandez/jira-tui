@@ -14,9 +14,19 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
 
+var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
+
 type viewMode int
 
+type Section struct {
+	Name        string
+	CategoryKey string
+	Collapsed   bool
+	Issues      []*jira.Issue
+}
+
 type model struct {
+	myself                 *jira.User
 	issues                 []jira.Issue
 	mode                   viewMode
 	cursor                 int
@@ -43,25 +53,43 @@ type model struct {
 	windowWidth            int
 	windowHeight           int
 	detailViewport         *viewport.Model
+	listViewport           *viewport.Model
 	assignableUsersCache   []jira.User
 	filteredUsers          []*jira.User
 	assigneeCursor         int
 	worklogData            *WorklogFormData
 	err                    error
+	sections               []Section
+	activeSection          int
+	sectionCursor          int
+	statuses               []jira.Status
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.fetchMyIssues(), m.fetchPriorities)
+
+	var cmds []tea.Cmd
+	cmds = append(cmds, m.fetchMySelf())
+	cmds = append(cmds, m.fetchMyIssues())
 	cmds = append(cmds, m.fetchStatuses())
+	cmds = append(cmds, m.fetchPriorities())
+
+	return tea.Batch(cmds...)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
+
+	case myselfLoadedMsg:
+		m.myself = msg.me
+		return m, nil
+
 	case issuesLoadedMsg:
-		log.Printf("issuesLoadedMsg received - %d issues, current mode: %v", len(msg.issues), m.mode)
 		m.issues = msg.issues
 		m.loading = false
+		if len(m.statuses) > 0 {
+			m.classifyIssues()
+		}
 		return m, nil
 
 	case prioritiesLoadedMsg:
@@ -80,6 +108,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
 		m.loadingTransitions = false
+
+	case statusesLoadedMsg:
+		m.statuses = msg.statuses
+		if len(m.statuses) > 0 {
+			m.classifyIssues()
+		}
+		return m, nil
 
 	case transitionCompleteMsg:
 		m.mode = detailView
@@ -111,6 +146,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case postedWorkLog:
+		m.mode = detailView
+		m.loadingDetail = true
+		if m.selectedIssue != nil {
+			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+		}
+
 	case assignableUsersLoadedMsg:
 		m.assignableUsersCache = msg.users
 		m.loadingAssignableUsers = false
@@ -120,6 +162,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
 
+		if m.listViewport == nil {
+			vp := viewport.New(m.windowWidth-4, m.windowHeight-3)
+			m.listViewport = &vp
+		} else {
+			m.listViewport.Width = m.windowWidth - 4
+			m.listViewport.Height = m.windowHeight - 3
+		}
+
 		if m.mode == detailView {
 			headerHeight := 15 // NOTE: Adjust based on your header size
 			footerHeight := 2  // NOTE: Adjust based on your footer size
@@ -127,6 +177,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport.Width = msg.Width - 10
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
 		}
+
 		return m, nil
 
 	case errMsg:
@@ -152,6 +203,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updatePostCommentView(msg)
 	case assignableUsersSearchView:
 		return m.updateAssignableUsersView(msg)
+	case postWorklogView:
+		return m.updatePostWorklogView(msg)
 	}
 
 	return m, nil
@@ -161,11 +214,11 @@ func (m model) View() string {
 	var content string
 
 	if m.loading {
-		return "Loading issues...\n"
+		return "\033[H\033[2J" + "Loading issues...\n" // \033[2J clears screen
 	}
 
 	if m.err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
+		return "\033[H\033[2J" + fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
 	}
 
 	switch m.mode {
@@ -183,11 +236,13 @@ func (m model) View() string {
 		content = m.renderPostCommentView()
 	case assignableUsersSearchView:
 		content = m.renderAssignableUsersView()
+	case postWorklogView:
+		content = m.renderPostWorklogView()
 	default:
 		content = "Unknown view\n"
 	}
 
-	return content
+	return "\033[H" + content
 }
 
 func main() {
@@ -218,6 +273,12 @@ func main() {
 	editTextAreaBox.MaxHeight = 20
 	editTextAreaBox.MaxHeight = 80
 
+	sections := []Section{
+		{Name: "In Progress", CategoryKey: "indeterminate"},
+		{Name: "To Do", CategoryKey: "new"},
+		{Name: "Done", CategoryKey: "done", Collapsed: true},
+	}
+
 	p := tea.NewProgram(model{
 		loading:      true,
 		mode:         listView,
@@ -226,6 +287,7 @@ func main() {
 		editTextArea: editTextAreaBox,
 		windowWidth:  80,
 		windowHeight: 24,
+		sections:     sections,
 	})
 
 	if _, err := p.Run(); err != nil {
@@ -233,3 +295,5 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// log.Printf("INIT CURSOR: cursor %d // sectionCursor %d // issues %d", m.cursor, m.sectionCursor, len(sectionIssues))

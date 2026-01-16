@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
@@ -22,6 +23,14 @@ const (
 // bubbletea messages from commands
 type issuesLoadedMsg struct {
 	issues []jira.Issue
+}
+
+type myselfLoadedMsg struct {
+	me *jira.User
+}
+
+type statusesLoadedMsg struct {
+	statuses []jira.Status
 }
 
 type prioritiesLoadedMsg struct {
@@ -66,6 +75,21 @@ type postedWorkLog struct {
 
 type errMsg struct {
 	err error
+}
+
+func (m model) fetchMySelf() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		me, err := m.client.GetMySelf()
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return myselfLoadedMsg{me}
+	}
 }
 
 func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
@@ -173,18 +197,34 @@ func (m model) fetchMyIssues() tea.Cmd {
 	}
 }
 
-func (m model) fetchPriorities() tea.Msg {
+func (m model) fetchPriorities() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
 
-	if m.client == nil {
-		return errMsg{fmt.Errorf("jira client not initialized")}
+		priorities, err := m.client.GetPriorities(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return prioritiesLoadedMsg{priorities}
 	}
+}
 
-	priorities, err := m.client.GetPriorities(context.Background())
-	if err != nil {
-		return errMsg{err}
+func (m model) fetchStatuses() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		statuses, err := m.client.GetStatuses(context.Background(), Projects)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return statusesLoadedMsg{statuses}
 	}
-
-	return prioritiesLoadedMsg{priorities}
 }
 
 func (m model) postComment(issueKey, comment string) tea.Cmd {

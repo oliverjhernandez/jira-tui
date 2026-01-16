@@ -60,8 +60,9 @@ type Transition struct {
 }
 
 type User struct {
-	ID   string `json:"accountId"`
-	Name string `json:"displayName"`
+	ID    string `json:"accountId"`
+	Name  string `json:"displayName"`
+	Email string `json:"emailAddress"`
 }
 
 type Priority struct {
@@ -186,8 +187,35 @@ type StatusCategory struct {
 	Name string `json:"name"`
 }
 
+func (c *Client) GetMySelf() (*User, error) {
+	apiURL := fmt.Sprintf("%s/rest/api/3/myself", c.jiraURL)
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	var result User
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved AND status != Done  ORDER BY status DESC"
+	jql := "assignee = currentUser() AND resolution = Unresolved and status != Validación  ORDER BY status DESC"
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}
@@ -658,6 +686,58 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 	return priorities, nil
 }
 
+func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, error) {
+	statuses := []Status{}
+	seen := make(map[string]bool)
+
+	for _, p := range projects {
+		apiURL := fmt.Sprintf("%s/rest/api/3/project/%s/statuses", c.jiraURL, p)
+
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.SetBasicAuth(c.jiraEmail, c.jiraToken)
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute request: %w", err)
+		}
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("error: %v", err)
+			}
+		}()
+
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			log.Printf("Body: %+v", string(bodyBytes))
+			return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		}
+
+		var result []struct {
+			Statuses []Status `json:"statuses"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+
+		for _, r := range result {
+			for _, s := range r.Statuses {
+				if !seen[s.ID] {
+					seen[s.ID] = true
+					statuses = append(statuses, s)
+				}
+			}
+		}
+	}
+
+	return statuses, nil
+}
+
 func (c *Client) PostComment(ctx context.Context, issueKey string, comment string) error {
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.jiraURL, issueKey)
@@ -746,4 +826,46 @@ func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, er
 	}
 
 	return wl.Results, nil
+}
+
+func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID string, time int) error {
+	apiURL := fmt.Sprintf("%s/4/worklogs", c.tempoURL)
+
+	body := map[string]any{
+		"issueId":          issueID,
+		"timeSpentSeconds": time,
+		"startDate":        date,
+		"authorAccountId":  accountID,
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.tempoToken)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -116,3 +117,22 @@ func parseTimeToSeconds(input string) (int, error) {
 	return totalSeconds, nil
 }
 
+func (m model) getAbsoluteCursorLine() int {
+	lines := 0
+
+	// columnHeader := 3
+	headerLines := 3
+	sectionSpacing := 1
+
+	// lines += columnHeader
+
+	for i := 0; i < m.sectionCursor; i++ {
+		lines += headerLines + sectionSpacing
+		lines += len(m.sections[i].Issues)
+	}
+
+	lines += 2
+	lines += m.cursor + 1
+
+	return lines
+}

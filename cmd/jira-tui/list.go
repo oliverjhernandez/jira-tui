@@ -8,11 +8,11 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
-
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
 		issuesToShow := m.issues
@@ -43,20 +43,61 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyMsg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
+
 		case "up", "k":
-			if m.cursor > 0 {
+			if m.cursor == 0 {
+				if m.sectionCursor > 0 {
+					m.sectionCursor--
+					m.cursor = len(m.sections[m.sectionCursor].Issues) - 1
+				}
+			} else {
 				m.cursor--
-				if m.cursor < len(issuesToShow) {
-					return m, nil
-				}
 			}
+
+			// Always center the cursor in the viewport
+			cursorLine := m.getAbsoluteCursorLine()
+			viewportHeight := m.listViewport.Height
+
+			// Try to keep cursor in the middle third of the screen
+			idealOffset := cursorLine - (viewportHeight / 3)
+
+			// But don't scroll above 0
+			m.listViewport.SetYOffset(max(0, idealOffset))
+
+			return m, nil
+
 		case "down", "j":
-			if m.cursor < len(issuesToShow)-1 {
-				m.cursor++
-				if m.cursor < len(issuesToShow) {
-					return m, nil
+			sectionIssues := m.sections[m.sectionCursor].Issues
+			if m.cursor == len(sectionIssues)-1 {
+				if m.sectionCursor < len(m.sections)-1 {
+					m.sectionCursor++
+					m.cursor = 0
 				}
+			} else {
+				m.cursor++
 			}
+
+			// Scroll viewport to show cursor
+			cursorLine := m.getAbsoluteCursorLine()
+			viewportHeight := m.listViewport.Height
+
+			// If cursor is below visible area, scroll down
+			if cursorLine >= m.listViewport.YOffset+viewportHeight {
+				m.listViewport.SetYOffset(cursorLine - viewportHeight + 1)
+			}
+			// If cursor is above visible area, scroll up
+			if cursorLine < m.listViewport.YOffset {
+				m.listViewport.SetYOffset(cursorLine)
+			}
+			return m, nil
+
+		case "G":
+			lenSection := len(m.sections) - 1
+			lenIssues := len(m.sections[lenSection].Issues) - 1
+
+			m.cursor = lenIssues
+			m.sectionCursor = lenSection
+			return m, nil
 		case "/":
 			m.filtering = true
 			m.filterInput.SetValue("")
@@ -91,73 +132,61 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderListView() string {
+	log.Printf("RENDER: YOffset=%d", m.listViewport.YOffset)
 	panelWidth := max(120, m.windowWidth-4)
-	log.Printf("renderListView - windowWidth: %d, panelWidth: %d", m.windowWidth, panelWidth)
-	panelHeight := m.windowHeight - 6
-
-	issuesToShow := m.issues
-	if m.filterInput.Value() != "" {
-		issuesToShow = filterIssues(m.issues, m.filterInput.Value())
-	}
-
-	maxVisible := panelHeight - 2 // title and padding
-	start := 0
-	end := min(len(issuesToShow), maxVisible)
-
-	if m.cursor >= end {
-		start = m.cursor - maxVisible + 1
-		end = m.cursor + 1
-	} else if m.cursor < start {
-		start = m.cursor
-		end = start + maxVisible
-	}
-
-	start = max(0, start)
-	end = min(len(issuesToShow), end)
-
-	if start >= len(issuesToShow) {
-		start = 0
-		end = min(len(issuesToShow), maxVisible)
-	}
 
 	var listContent strings.Builder
 
+	// Column headers (outside viewport, always visible)
 	headers := ui.TypeHeader + ui.EmptyHeaderSpace +
 		ui.KeyHeader +
 		ui.PriorityHeader + ui.EmptyHeaderSpace +
-		ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace + // extra space for icon offset
+		ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace +
 		ui.StatusHeader + ui.EmptyHeaderSpace +
 		ui.AssigneeHeader
-	listContent.WriteString(headers)
-	listContent.WriteString(ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6)) + "\n")
+	separator := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6))
+	columnHeaders := headers + "\n" + separator
 
-	for i := start; i < end; i++ {
-		issue := issuesToShow[i]
+	// Render ALL sections and issues (viewport handles scrolling)
+	for si, s := range m.sections {
+		paddingLeft := ui.SeparatorStyle.Render("───")
+		sectionHeader := fmt.Sprintf("%s (%d) ", s.Name, len(s.Issues))
+		paddingRight := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-lipgloss.Width(sectionHeader)))
+		fmt.Fprintf(&listContent, "%s%s%s\n", paddingLeft, sectionHeader, paddingRight)
+		// fmt.Fprintf(&listContent, "%s (%d)\n", s.Name, len(s.Issues))
+		// listContent.WriteString(ui.RepeatChar("=", panelWidth-6) + "\n")
 
-		issueType := ui.RenderIssueType(issue.Type)
-		key := ui.KeyFieldStyle.Render(issue.Key)
-		priority := ui.RenderPriority(issue.Priority)
-		summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
-		statusBadge := ui.RenderStatusBadge(issue.Status)
-		assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))
+		for ii, issue := range s.Issues {
+			issueType := ui.RenderIssueType(issue.Type)
+			key := ui.KeyFieldStyle.Render(issue.Key)
+			priority := ui.RenderPriority(issue.Priority)
+			summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
+			statusBadge := ui.RenderStatusBadge(issue.Status)
+			assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))
 
-		line := issueType + ui.EmptyHeaderSpace +
-			key +
-			priority + ui.EmptyHeaderSpace +
-			summary + ui.EmptyHeaderSpace +
-			statusBadge + ui.EmptyHeaderSpace +
-			assignee
+			line := issueType + ui.EmptyHeaderSpace +
+				key +
+				priority + ui.EmptyHeaderSpace +
+				summary + ui.EmptyHeaderSpace +
+				statusBadge + ui.EmptyHeaderSpace +
+				assignee
 
-		if m.cursor == i {
-			cursor := ui.IconCursor
-			line = cursor + ui.SelectedRowStyle.Render(line)
-		} else {
-			line = "  " + ui.NormalRowStyle.Render(line)
+			if m.sectionCursor == si && m.cursor == ii {
+				cursor := ui.IconCursor
+				line = cursor + ui.SelectedRowStyle.Render(line)
+			} else {
+				line = "  " + ui.NormalRowStyle.Render(line)
+			}
+
+			listContent.WriteString(line + "\n")
 		}
-
-		listContent.WriteString(line + "\n")
 	}
 
+	// Set viewport content
+	m.listViewport.SetContent(listContent.String())
+	m.listViewport.YPosition = 0
+
+	// Status bar
 	var statusBar string
 	if m.filtering {
 		statusBar = ui.StatusBarKeyStyle.Render("Filter: ") + m.filterInput.View() +
@@ -166,7 +195,7 @@ func (m model) renderListView() string {
 		statusBar = fmt.Sprintf("%s '%s' %s | %s | %s",
 			ui.StatusBarDescStyle.Render("Filtered:"),
 			ui.StatusBarKeyStyle.Render(m.filterInput.Value()),
-			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", len(issuesToShow), len(m.issues))),
+			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", 10, len(m.issues))),
 			ui.RenderKeyBind("/", "change"),
 			ui.RenderKeyBind("esc", "clear"),
 		)
@@ -179,10 +208,5 @@ func (m model) renderListView() string {
 		}, "  ")
 	}
 
-	listPanel := ui.PanelStyleActive.
-		Width(panelWidth).
-		Height(panelHeight).
-		Render(listContent.String())
-
-	return listPanel + "\n" + ui.StatusBarStyle.Render(statusBar)
+	return columnHeaders + "\n" + m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar)
 }
