@@ -64,7 +64,7 @@ func (m model) renderAssignableUsersView() string {
 	modalContent.WriteString(strings.Repeat("=", 50) + "\n\n")
 
 	if m.loadingAssignableUsers {
-		modalContent.WriteString("Loading available users...\n")
+		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
 	} else if len(m.assignableUsersCache) == 0 {
 		modalContent.WriteString("No assignable users for this issue.\n")
 	}

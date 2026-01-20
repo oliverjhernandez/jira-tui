@@ -64,8 +64,8 @@ func (m model) renderTransitionView() string {
 
 	modalContent.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
 
-	modalWidth := int(float64(m.windowWidth) * 0.7)
-	modalHeight := int(float64(m.windowHeight) * 0.6)
+	modalWidth := int(float64(m.windowWidth) * 0.4)
+	modalHeight := int(float64(m.windowHeight) * 0.4)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

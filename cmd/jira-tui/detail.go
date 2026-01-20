@@ -48,7 +48,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "c":
 			m.mode = postCommentView
-			m.postingWorkLog = true
+			m.postingComment = true
 			return m, nil
 		case "w":
 			m.worklogData = NewWorklogFormData()
@@ -151,7 +151,7 @@ func (m model) renderDetailView() string {
 
 	m.detailViewport.SetContent(scrollContent.String())
 
-	statusBar := strings.Join([]string{
+	commandsHelp := strings.Join([]string{
 		ui.RenderKeyBind("a", "assignee"),
 		ui.RenderKeyBind("c", "comment"),
 		ui.RenderKeyBind("e", "edit"),
@@ -159,15 +159,19 @@ func (m model) renderDetailView() string {
 		ui.RenderKeyBind("esc", "back"),
 	}, "  ")
 
-	var output strings.Builder
-	output.WriteString(header + "\n\n")
-	output.WriteString(metadataRow + "\n\n")
-	output.WriteString(m.detailViewport.View())
+	var statusBar strings.Builder
+	statusBar.WriteString(header + "\n\n")
+	statusBar.WriteString(metadataRow + "\n\n")
+	statusBar.WriteString(m.detailViewport.View())
+
+	if m.loadingTransitions {
+		statusBar.WriteString(m.spinner.View() + "Loading transitions...\n")
+	}
 
 	detailPanel := ui.PanelStyleActive.
 		Width(panelWidth).
 		Height(panelHeight).
-		Render(output.String())
+		Render(statusBar.String())
 
-	return detailPanel + "\n" + ui.StatusBarStyle.Render(statusBar)
+	return detailPanel + "\n" + ui.StatusBarStyle.Render(commandsHelp)
 }

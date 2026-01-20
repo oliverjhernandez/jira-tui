@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -60,9 +61,9 @@ type model struct {
 	worklogData            *WorklogFormData
 	err                    error
 	sections               []Section
-	activeSection          int
 	sectionCursor          int
 	statuses               []jira.Status
+	spinner                spinner.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -77,12 +78,14 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var spinnerCmd tea.Cmd
+	m.spinner, spinnerCmd = m.spinner.Update(msg)
 
 	switch msg := msg.(type) {
 
 	case myselfLoadedMsg:
 		m.myself = msg.me
-		return m, nil
+		return m, spinnerCmd
 
 	case issuesLoadedMsg:
 		m.issues = msg.issues
@@ -90,73 +93,79 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.classifyIssues()
 		}
-		return m, nil
+		return m, spinnerCmd
 
 	case prioritiesLoadedMsg:
 		m.priorityOptions = msg.priorities
 		m.loading = false
-		return m, nil
+		return m, spinnerCmd
 
 	case issueDetailLoadedMsg:
 		m.issueDetail = msg.detail
 		m.loadingDetail = false
+		m.mode = detailView
+		return m, spinnerCmd
 
 	case workLogsLoadedMSg:
 		m.selectedIssueWorklogs = msg.workLogs
 		m.loadingWorkLogs = false
+		return m, spinnerCmd
 
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
 		m.loadingTransitions = false
+		return m, spinnerCmd
 
 	case statusesLoadedMsg:
 		m.statuses = msg.statuses
 		if len(m.statuses) > 0 {
 			m.classifyIssues()
 		}
-		return m, nil
+		return m, spinnerCmd
 
 	case transitionCompleteMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		m.issueDetail = nil
-		return m, m.fetchIssueDetail(m.selectedIssue.Key)
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case editedDescriptionMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		if m.selectedIssue != nil {
-			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 		}
-		return m, nil
+		return m, spinnerCmd
 
 	case editedPriorityMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		if m.selectedIssue != nil {
-			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 		}
-		return m, nil
+		return m, spinnerCmd
 
 	case postedCommentMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		if m.selectedIssue != nil {
-			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 		}
-		return m, nil
+		return m, spinnerCmd
 
 	case postedWorkLog:
 		m.mode = detailView
 		m.loadingDetail = true
 		if m.selectedIssue != nil {
-			return m, m.fetchIssueDetail(m.selectedIssue.Key)
+			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 		}
+		return m, spinnerCmd
 
 	case assignableUsersLoadedMsg:
 		m.assignableUsersCache = msg.users
 		m.loadingAssignableUsers = false
 		m.mode = assignableUsersSearchView
+		return m, spinnerCmd
 
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
@@ -178,7 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
 		}
 
-		return m, nil
+		return m, spinnerCmd
 
 	case errMsg:
 		m.err = msg.err
@@ -186,37 +195,55 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingDetail = false
 		m.loadingTransitions = false
 
+		return m, spinnerCmd
 	}
 
+	var viewCmd tea.Cmd
 	switch m.mode {
 	case listView:
-		return m.updateListView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateListView(msg)
+		m = tmp.(model)
 	case detailView:
-		return m.updateDetailView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateDetailView(msg)
+		m = tmp.(model)
 	case editDescriptionView:
-		return m.updateEditDescriptionView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateEditDescriptionView(msg)
+		m = tmp.(model)
 	case editPriorityView:
-		return m.updateEditPriorityView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateEditPriorityView(msg)
+		m = tmp.(model)
 	case transitionView:
-		return m.updateTransitionView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateTransitionView(msg)
+		m = tmp.(model)
 	case postCommentView:
-		return m.updatePostCommentView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updatePostCommentView(msg)
+		m = tmp.(model)
 	case assignableUsersSearchView:
-		return m.updateAssignableUsersView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updateAssignableUsersView(msg)
+		m = tmp.(model)
 	case postWorklogView:
-		return m.updatePostWorklogView(msg)
+		var tmp tea.Model
+		tmp, viewCmd = m.updatePostWorklogView(msg)
+		m = tmp.(model)
 	}
 
-	return m, nil
+	return m, tea.Batch(spinnerCmd, viewCmd)
 }
 
 func (m model) View() string {
 	var content string
 
 	if m.loading {
-		return "\033[H\033[2J" + "Loading issues...\n" // \033[2J clears screen
-	}
+		return "\033[H\033[2J"
 
+	}
 	if m.err != nil {
 		return "\033[H\033[2J" + fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
 	}
@@ -279,6 +306,8 @@ func main() {
 		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
 
+	spinner := spinner.New()
+
 	p := tea.NewProgram(model{
 		loading:      true,
 		mode:         listView,
@@ -288,6 +317,7 @@ func main() {
 		windowWidth:  80,
 		windowHeight: 24,
 		sections:     sections,
+		spinner:      spinner,
 	})
 
 	if _, err := p.Run(); err != nil {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -56,12 +55,14 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			cursorLine := m.getAbsoluteCursorLine()
 			viewportHeight := m.listViewport.Height
+			currentOffset := m.listViewport.YOffset
 
-			// Try to keep cursor in the middle third of the screen
-			idealOffset := cursorLine - (viewportHeight / 3)
+			topThreshold := currentOffset + (viewportHeight / 3)
 
-			// But don't scroll above 0
-			m.listViewport.SetYOffset(max(0, idealOffset))
+			if cursorLine < topThreshold {
+				newOffset := cursorLine - (viewportHeight / 3)
+				m.listViewport.SetYOffset(max(0, newOffset))
+			}
 
 			return m, nil
 
@@ -76,15 +77,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 
-			// Scroll viewport to show cursor
 			cursorLine := m.getAbsoluteCursorLine()
 			viewportHeight := m.listViewport.Height
 
-			// If cursor is below visible area, scroll down
 			if cursorLine >= m.listViewport.YOffset+viewportHeight {
 				m.listViewport.SetYOffset(cursorLine - viewportHeight + 1)
 			}
-			// If cursor is above visible area, scroll up
 			if cursorLine < m.listViewport.YOffset {
 				m.listViewport.SetYOffset(cursorLine)
 			}
@@ -103,6 +101,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filterInput.Focus()
 			m.cursor = 0
 			return m, textinput.Blink
+
 		case "enter":
 			if m.sectionCursor < len(m.sections) && m.cursor < len(m.sections[m.sectionCursor].Issues) {
 				m.selectedIssue = m.sections[m.sectionCursor].Issues[m.cursor]
@@ -119,6 +118,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				return m, tea.Batch(detailCmd, wlsCmd, m.spinner.Tick)
 			}
+
 		case "esc":
 			m.filterInput.SetValue("")
 			m.cursor = 0
@@ -130,29 +130,24 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderListView() string {
-	log.Printf("RENDER: YOffset=%d", m.listViewport.YOffset)
 	panelWidth := max(120, m.windowWidth-4)
 
 	var listContent strings.Builder
 
-	// Column headers (outside viewport, always visible)
-	headers := ui.TypeHeader + ui.EmptyHeaderSpace +
-		ui.KeyHeader +
-		ui.PriorityHeader + ui.EmptyHeaderSpace +
-		ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace +
-		ui.StatusHeader + ui.EmptyHeaderSpace +
-		ui.AssigneeHeader
-	separator := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6))
-	columnHeaders := headers + "\n" + separator
+	// headers := ui.TypeHeader + ui.EmptyHeaderSpace +
+	// 	ui.KeyHeader +
+	// 	ui.PriorityHeader + ui.EmptyHeaderSpace +
+	// 	ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace +
+	// 	ui.StatusHeader + ui.EmptyHeaderSpace +
+	// 	ui.AssigneeHeader
+	// separator := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6))
+	// columnHeaders := headers
 
-	// Render ALL sections and issues (viewport handles scrolling)
 	for si, s := range m.sections {
 		paddingLeft := ui.SeparatorStyle.Render("───")
 		sectionHeader := fmt.Sprintf("%s (%d) ", s.Name, len(s.Issues))
 		paddingRight := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-lipgloss.Width(sectionHeader)))
 		fmt.Fprintf(&listContent, "%s%s%s\n", paddingLeft, sectionHeader, paddingRight)
-		// fmt.Fprintf(&listContent, "%s (%d)\n", s.Name, len(s.Issues))
-		// listContent.WriteString(ui.RepeatChar("=", panelWidth-6) + "\n")
 
 		for ii, issue := range s.Issues {
 			issueType := ui.RenderIssueType(issue.Type)
@@ -171,7 +166,12 @@ func (m model) renderListView() string {
 
 			if m.sectionCursor == si && m.cursor == ii {
 				cursor := ui.IconCursor
-				line = cursor + ui.SelectedRowStyle.Render(line)
+
+				if m.loadingDetail {
+					line = m.spinner.View() + " " + ui.SelectedRowStyle.Render(line)
+				} else {
+					line = cursor + ui.SelectedRowStyle.Render(line)
+				}
 			} else {
 				line = "  " + ui.NormalRowStyle.Render(line)
 			}
@@ -180,11 +180,9 @@ func (m model) renderListView() string {
 		}
 	}
 
-	// Set viewport content
 	m.listViewport.SetContent(listContent.String())
 	m.listViewport.YPosition = 0
 
-	// Status bar
 	var statusBar string
 	if m.filtering {
 		statusBar = ui.StatusBarKeyStyle.Render("Filter: ") + m.filterInput.View() +
@@ -206,5 +204,5 @@ func (m model) renderListView() string {
 		}, "  ")
 	}
 
-	return columnHeaders + "\n" + m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar)
+	return m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar)
 }
