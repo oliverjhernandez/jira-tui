@@ -15,10 +15,10 @@ import (
 func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
-		issuesToShow := m.issues
-		if m.filterInput.Value() != "" {
-			issuesToShow = filterIssues(m.issues, m.filterInput.Value())
-		}
+		// issuesToShow := m.issues
+		// if m.filterInput.Value() != "" {
+		// 	issuesToShow = filterIssues(m.issues, m.filterInput.Value())
+		// }
 
 		if m.filtering {
 			switch keyMsg.String() {
@@ -54,7 +54,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 
-			// Always center the cursor in the viewport
 			cursorLine := m.getAbsoluteCursorLine()
 			viewportHeight := m.listViewport.Height
 
@@ -105,9 +104,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = 0
 			return m, textinput.Blink
 		case "enter":
-			if len(issuesToShow) > 0 && m.cursor < len(issuesToShow) {
-				m.selectedIssue = &issuesToShow[m.cursor]
-				m.mode = detailView
+			if m.sectionCursor < len(m.sections) && m.cursor < len(m.sections[m.sectionCursor].Issues) {
+				m.selectedIssue = m.sections[m.sectionCursor].Issues[m.cursor]
 				m.loadingDetail = true
 				m.loadingWorkLogs = true
 				m.issueDetail = nil
@@ -119,7 +117,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
 				wlsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
 
-				return m, tea.Batch(detailCmd, wlsCmd)
+				return m, tea.Batch(detailCmd, wlsCmd, m.spinner.Tick)
 			}
 		case "esc":
 			m.filterInput.SetValue("")
