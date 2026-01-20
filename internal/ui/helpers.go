@@ -56,43 +56,72 @@ func RenderStatusBadge(status string) string {
 }
 
 // RenderPriority renders priority with icon and color
-func RenderPriority(priority string) string {
+func RenderPriority(priority string, showText bool) string {
 	p := strings.ToLower(priority)
+	var style lipgloss.Style
+	var icon string
+
 	switch {
 	case strings.Contains(p, "highest"):
-		return PriorityHighestStyle.Render(IconPriorityHighest)
+		style = PriorityHighestStyle
+		icon = IconPriorityHighest
 	case strings.Contains(p, "high"):
-		return PriorityHighStyle.Render(IconPriorityHigh)
+		style = PriorityHighStyle
+		icon = IconPriorityHigh
 	case strings.Contains(p, "medium"):
-		return PriorityMediumStyle.Render(IconPriorityMedium)
+		style = PriorityMediumStyle
+		icon = IconPriorityMedium
 	case strings.Contains(p, "low") && !strings.Contains(p, "lowest"):
-		return PriorityLowStyle.Render(IconPriorityLow)
+		style = PriorityLowStyle
+		icon = IconPriorityLow
 	case strings.Contains(p, "lowest"):
-		return PriorityLowestStyle.Render(IconPriorityLowest)
+		style = PriorityLowestStyle
+		icon = IconPriorityLowest
 	default:
-		return PriorityMediumStyle.Render(IconPriorityMedium)
+		style = PriorityMediumStyle
+		icon = IconPriorityMedium
+	}
+
+	if showText {
+		return style.Render(icon + " " + priority)
+	} else {
+		return style.Render(icon)
 	}
 }
 
 // RenderIssueType renders issue type with icon
-func RenderIssueType(issueType string) string {
+func RenderIssueType(issueType string, showText bool) string {
 	t := strings.ToLower(issueType)
-	style := lipgloss.NewStyle().Width(ColWidthType)
+	var style lipgloss.Style
+	var icon string
 
 	switch {
 	case strings.Contains(t, "bug"):
-		return style.Foreground(ThemeError).Render(IconBug)
+		style = TypeBugStyle
+		icon = IconBug
 	case strings.Contains(t, "task"):
-		return style.Foreground(ThemeInfo).Render(IconTask)
+		style = TypeTaskStyle
+		icon = IconTask
 	case strings.Contains(t, "story"):
-		return style.Foreground(ThemeSuccess).Render(IconStory)
+		style = TypeStoryStyle
+		icon = IconStory
 	case strings.Contains(t, "epic"):
-		return style.Foreground(ThemeAccentAlt).Render(IconEpic)
+		style = TypeEpicStyle
+		icon = IconEpic
 	case strings.Contains(t, "investigación"):
-		return style.Foreground(ThemeAccentAlt).Render(IconInvestigacion)
+		style = TypeInvestStyle
+		icon = IconInvestigacion
 	case strings.Contains(t, "subtask"), strings.Contains(t, "sub-task"):
-		return style.Foreground(ThemeFgMuted).Render(IconSubtask)
+		style = TypeSubTaskStyle
+		icon = IconSubtask
 	default:
-		return style.Render(IconDefault)
+		style = TypeBaseStyle
+		icon = IconDefault
+	}
+
+	if showText {
+		return style.Render(icon + " " + issueType)
+	} else {
+		return style.Render(icon)
 	}
 }

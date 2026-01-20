@@ -88,65 +88,73 @@ func (m model) renderDetailView() string {
 	}
 
 	panelWidth := max(120, m.windowWidth-4)
-	panelHeight := m.windowHeight - 4
+	panelHeight := m.windowHeight - 2
 	contentWidth := panelWidth - 6 // padding and border
 
 	selectedIssue := m.issueDetail
-
-	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.issues)))
+	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
 
 	parent := ""
 	if selectedIssue.Parent != nil {
-		parent = ui.StatusBarDescStyle.Render(selectedIssue.Parent.ID + " / ")
+		parent = ui.RenderIssueType(selectedIssue.Parent.Type, false) + " " +
+			ui.StatusBarDescStyle.Render(selectedIssue.Parent.Key+" / ")
 	}
 
-	issueKey := ui.DetailHeaderStyle.Render(selectedIssue.Key)
-	issueSummary := ui.DetailValueStyle.Render(truncateLongString(selectedIssue.Summary, 50))
+	issueKey := ui.RenderIssueType(selectedIssue.Type, false) + " " + ui.DetailHeaderStyle.Render(selectedIssue.Key)
+	summaryMaxWidth := contentWidth - 30
+	issueSummary := ui.DetailValueStyle.Render(truncateLongString(selectedIssue.Summary, summaryMaxWidth))
 
 	headerLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
 	status := ui.RenderStatusBadge(selectedIssue.Status)
-	assignee := ui.StatusBarDescStyle.Render("@" + strings.Split(selectedIssue.Assignee, " ")[0])
-	estimate := ui.StatusBarDescStyle.Render("Est: " + selectedIssue.OriginalEstimate)
+	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(selectedIssue.Assignee, " ")[0]))
 
 	logged := ""
 	if m.selectedIssueWorklogs != nil {
 		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.selectedIssueWorklogs))
 	}
 
-	headerLine2 := status + "  " + assignee + "  " + estimate + "  " + logged
+	headerLine2 := status + "  " + assignee + "  " + logged
 
 	header := headerLine1 + "\n" + headerLine2
 
-	col1 := ui.RenderFieldStyled("Priority", selectedIssue.Priority.Name, contentWidth/3)
-	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, contentWidth/3)
-	col3 := ui.RenderFieldStyled("Type", selectedIssue.Type, contentWidth/3)
+	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(selectedIssue.Priority.Name, true), 30)
+	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, 30)
+	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(selectedIssue.Type, true), 30)
 	metadataRow := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
 	var scrollContent strings.Builder
 
-	scrollContent.WriteString(ui.SectionTitleStyle.Render("─── Description ") +
-		ui.SeparatorStyle.Render(strings.Repeat("─", contentWidth-16)) + "\n\n")
+	scrollContent.WriteString(ui.SeparatorStyle.Render(strings.Repeat("─", 4)+" ") +
+		ui.SectionTitleStyle.Render("󰠮 Description ") +
+		ui.SeparatorStyle.Render(strings.Repeat("─", 60)) + "\n\n")
 
 	if m.issueDetail.Description != "" {
-		scrollContent.WriteString(ui.DetailValueStyle.Render(m.issueDetail.Description) + "\n\n")
+		wrappedDesc := ui.DetailValueStyle.Width(contentWidth - 4).Render(m.issueDetail.Description)
+		scrollContent.WriteString(wrappedDesc + "\n\n")
 	} else {
 		scrollContent.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")
 	}
 
 	commentCount := len(m.issueDetail.Comments)
-	scrollContent.WriteString(ui.SectionTitleStyle.Render(fmt.Sprintf("─── Comments (%d) ", commentCount)) +
-		ui.SeparatorStyle.Render(strings.Repeat("─", contentWidth-18)) + "\n\n")
+	scrollContent.WriteString(ui.SeparatorStyle.Render(strings.Repeat("─", 4)+" ") +
+		ui.SectionTitleStyle.Render(fmt.Sprintf("󱅰 Comments (%d) ", commentCount)) +
+		ui.SeparatorStyle.Render(strings.Repeat("─", 60)) + "\n\n")
 
 	if commentCount > 0 {
-		for _, c := range m.issueDetail.Comments {
+		for i, c := range m.issueDetail.Comments {
 			author := ui.CommentAuthorStyle.Render(c.Author)
 			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
 			scrollContent.WriteString(author + timestamp + "\n")
-			scrollContent.WriteString(ui.CommentBodyStyle.Render(c.Body) + "\n\n")
+			wrappedBody := ui.CommentBodyStyle.Width(contentWidth - 4).Render(c.Body)
+			scrollContent.WriteString(wrappedBody + "\n")
+
+			if i < commentCount-1 {
+				scrollContent.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+			} else {
+				scrollContent.WriteString("\n")
+			}
 		}
-	} else {
-		scrollContent.WriteString(ui.StatusBarDescStyle.Render("No comments yet") + "\n")
 	}
 
 	m.detailViewport.SetContent(scrollContent.String())

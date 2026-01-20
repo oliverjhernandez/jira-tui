@@ -71,8 +71,9 @@ type Priority struct {
 }
 
 type Parent struct {
-	ID   string
-	Type string
+	ID   string `json:"id"`
+	Key  string `json:"key"`
+	Type string `json:"type"`
 }
 
 func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (*Client, error) {
@@ -149,6 +150,7 @@ type priorityField struct {
 type parentField struct {
 	ID         string `json:"id"`
 	ParentType string `json:"parent_type"`
+	Key        string `json:"key"`
 }
 
 type userField struct {
@@ -331,6 +333,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	if issue.Fields.Parent != nil {
 		detail.Parent = &Parent{
 			issue.Fields.Parent.ID,
+			issue.Fields.Parent.Key,
 			issue.Fields.Parent.ParentType,
 		}
 	}

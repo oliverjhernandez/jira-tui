@@ -229,7 +229,7 @@ var (
 // ============================================================================
 
 var (
-	PriorityBaseStyle    = lipgloss.NewStyle().Width(ColWidthPriority)
+	PriorityBaseStyle    = lipgloss.NewStyle()
 	PriorityHighestStyle = PriorityBaseStyle.
 				Foreground(ThemePriorityHighest).
 				Bold(true)
@@ -249,6 +249,20 @@ var (
 )
 
 // ============================================================================
+// TYPE STYLES
+// ============================================================================
+
+var (
+	TypeBaseStyle    = lipgloss.NewStyle()
+	TypeBugStyle     = TypeBaseStyle.Foreground(ThemeError)
+	TypeTaskStyle    = TypeBaseStyle.Foreground(ThemeInfo)
+	TypeStoryStyle   = TypeBaseStyle.Foreground(ThemeSuccess)
+	TypeEpicStyle    = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeInvestStyle  = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeSubTaskStyle = TypeBaseStyle.Foreground(ThemeFgMuted)
+)
+
+// ============================================================================
 // DETAIL VIEW STYLES
 // ============================================================================
 
@@ -258,9 +272,9 @@ var (
 				Bold(true)
 
 	DetailLabelStyle = lipgloss.NewStyle().
-				Foreground(ThemeFgDim).
+				Foreground(ThemeAccent).
 				Bold(true).
-				Width(12)
+				Width(10)
 
 	DetailValueStyle = lipgloss.NewStyle().
 				Foreground(ThemeFg)

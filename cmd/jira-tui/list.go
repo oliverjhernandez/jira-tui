@@ -150,9 +150,9 @@ func (m model) renderListView() string {
 		fmt.Fprintf(&listContent, "%s%s%s\n", paddingLeft, sectionHeader, paddingRight)
 
 		for ii, issue := range s.Issues {
-			issueType := ui.RenderIssueType(issue.Type)
+			issueType := ui.RenderIssueType(issue.Type, false)
 			key := ui.KeyFieldStyle.Render(issue.Key)
-			priority := ui.RenderPriority(issue.Priority)
+			priority := ui.RenderPriority(issue.Priority, false)
 			summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
 			assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))

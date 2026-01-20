@@ -181,7 +181,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.mode == detailView {
 			headerHeight := 15 // NOTE: Adjust based on your header size
-			footerHeight := 2  // NOTE: Adjust based on your footer size
+			footerHeight := 1  // NOTE: Adjust based on your footer size
 
 			m.detailViewport.Width = msg.Width - 10
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
