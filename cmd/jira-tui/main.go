@@ -132,34 +132,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case editedDescriptionMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		if m.selectedIssue != nil {
-			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
-		}
-		return m, spinnerCmd
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case editedPriorityMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		if m.selectedIssue != nil {
-			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
-		}
-		return m, spinnerCmd
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case postedCommentMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		if m.selectedIssue != nil {
-			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
-		}
-		return m, spinnerCmd
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case postedWorkLog:
 		m.mode = detailView
 		m.loadingDetail = true
-		if m.selectedIssue != nil {
-			return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
-		}
-		return m, spinnerCmd
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.issueDetail.Key))
 
 	case assignableUsersLoadedMsg:
 		m.assignableUsersCache = msg.users
