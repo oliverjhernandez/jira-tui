@@ -40,11 +40,11 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.priorityCursor = max(0, priorityIndex)
 		case "t":
-			if m.selectedIssue != nil {
+			if m.issueDetail != nil {
 				m.mode = transitionView
 				m.loadingTransitions = true
 				m.transitionCursor = 0
-				return m, m.fetchTransitions(m.selectedIssue.Key)
+				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
 		case "c":
 			m.mode = postCommentView
@@ -61,10 +61,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filterInput.SetValue("")
 			m.filterInput.Focus()
 			m.cursor = 0
-			return m, m.fetchAssignableUsers(m.selectedIssue.Key)
+			return m, m.fetchAssignableUsers(m.issueDetail.Key)
 		case "esc":
 			m.mode = listView
-			m.selectedIssue = nil
 			m.issueDetail = nil
 			m.loading = true
 			return m, m.fetchMyIssues()
@@ -83,7 +82,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderDetailView() string {
-	if m.selectedIssue == nil || m.issueDetail == nil {
+	if m.issueDetail == nil {
 		return ui.PanelStyleActive.Render("Loading issue...")
 	}
 
@@ -91,23 +90,22 @@ func (m model) renderDetailView() string {
 	panelHeight := m.windowHeight - 2
 	contentWidth := panelWidth - 6 // padding and border
 
-	selectedIssue := m.issueDetail
 	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
 
 	parent := ""
-	if selectedIssue.Parent != nil {
-		parent = ui.RenderIssueType(selectedIssue.Parent.Type, false) + " " +
-			ui.StatusBarDescStyle.Render(selectedIssue.Parent.Key+" / ")
+	if m.issueDetail.Parent != nil {
+		parent = ui.RenderIssueType(m.issueDetail.Parent.Type, false) + " " +
+			ui.StatusBarDescStyle.Render(m.issueDetail.Parent.Key+" / ")
 	}
 
-	issueKey := ui.RenderIssueType(selectedIssue.Type, false) + " " + ui.DetailHeaderStyle.Render(selectedIssue.Key)
+	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
 	summaryMaxWidth := contentWidth - 30
-	issueSummary := ui.DetailValueStyle.Render(truncateLongString(selectedIssue.Summary, summaryMaxWidth))
+	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
 
 	headerLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
-	status := ui.RenderStatusBadge(selectedIssue.Status)
-	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(selectedIssue.Assignee, " ")[0]))
+	status := ui.RenderStatusBadge(m.issueDetail.Status)
+	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
 
 	logged := ""
 	if m.selectedIssueWorklogs != nil {
@@ -118,9 +116,9 @@ func (m model) renderDetailView() string {
 
 	header := headerLine1 + "\n" + headerLine2
 
-	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(selectedIssue.Priority.Name, true), 30)
+	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), 30)
 	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, 30)
-	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(selectedIssue.Type, true), 30)
+	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), 30)
 	metadataRow := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
 	var scrollContent strings.Builder
