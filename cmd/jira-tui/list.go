@@ -134,15 +134,6 @@ func (m model) renderListView() string {
 
 	var listContent strings.Builder
 
-	// headers := ui.TypeHeader + ui.EmptyHeaderSpace +
-	// 	ui.KeyHeader +
-	// 	ui.PriorityHeader + ui.EmptyHeaderSpace +
-	// 	ui.SummaryHeader + ui.EmptyHeaderSpace + ui.EmptyHeaderSpace +
-	// 	ui.StatusHeader + ui.EmptyHeaderSpace +
-	// 	ui.AssigneeHeader
-	// separator := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-6))
-	// columnHeaders := headers
-
 	for si, s := range m.sections {
 		paddingLeft := ui.SeparatorStyle.Render("───")
 		sectionHeader := fmt.Sprintf("%s (%d) ", s.Name, len(s.Issues))
