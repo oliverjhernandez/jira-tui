@@ -5,9 +5,17 @@ import (
 	"log"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
+
+func isCancelTransition(t jira.Transition) bool {
+	name := strings.ToLower(t.Name)
+	return strings.Contains(name, "cancel") || strings.Contains(name, "cancelado")
+}
 
 func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
@@ -35,6 +43,13 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.estimateData = NewEstimateFormData()
 					m.mode = postEstimateView
 					return m, m.estimateData.Form.Init()
+				}
+				if isCancelTransition(transition) {
+					m.pendingTransition = &transition
+					m.editTextArea.Reset()
+					m.editTextArea.Focus()
+					m.mode = postCancelReasonView
+					return m, textarea.Blink
 				}
 				return m, m.postTransition(m.selectedIssue.Key, transition.ID)
 			}
@@ -72,6 +87,74 @@ func (m model) renderTransitionView() string {
 
 	modalWidth := int(float64(m.windowWidth) * 0.4)
 	modalHeight := int(float64(m.windowHeight) * 0.4)
+
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1, 2).
+		Width(modalWidth).
+		Height(modalHeight).
+		Background(lipgloss.Color("235"))
+
+	styledModal := modalStyle.Render(modalContent.String())
+	overlay := PlaceOverlay(10, 20, styledModal, bg, false)
+
+	return overlay
+}
+
+func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			m.mode = detailView
+			m.pendingTransition = nil
+			m.editTextArea.Reset()
+			m.editTextArea.Blur()
+			return m, nil
+		case "alt+enter":
+			reason := m.editTextArea.Value()
+			m.editTextArea.Reset()
+			m.editTextArea.Blur()
+			if m.pendingTransition != nil {
+				transition := m.pendingTransition
+				m.pendingTransition = nil
+				return m, m.postTransitionWithReason(m.selectedIssue.Key, transition.ID, reason)
+			}
+			m.mode = detailView
+			return m, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	m.editTextArea, cmd = m.editTextArea.Update(msg)
+
+	return m, cmd
+}
+
+func (m model) renderPostCancelReasonView() string {
+	log.Printf("=== renderPostCancelReasonView called ===")
+
+	bg := m.renderDetailView()
+
+	var modalContent strings.Builder
+
+	modalContent.WriteString(ui.SectionTitleStyle.Render("Cancellation Reason") + "\n\n")
+
+	if m.issueDetail != nil {
+		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
+		modalContent.WriteString(header + "\n\n")
+	}
+
+	modalContent.WriteString(ui.StatusBarDescStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
+
+	modalWidth := int(float64(m.windowWidth) * 0.6)
+	modalHeight := int(float64(m.windowHeight) * 0.5)
+
+	m.editTextArea.SetWidth(modalWidth - 6)
+	m.editTextArea.SetHeight(modalHeight - 12)
+
+	modalContent.WriteString(m.editTextArea.View() + "\n\n")
+	modalContent.WriteString(ui.StatusBarDescStyle.Render("shift+Enter to submit | esc to cancel"))
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

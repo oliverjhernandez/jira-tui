@@ -19,6 +19,7 @@ const (
 	postCommentView
 	postWorklogView
 	postEstimateView
+	postCancelReasonView
 )
 
 // bubbletea messages from commands
@@ -134,6 +135,23 @@ func (m model) postTransition(issueKey, transitionID string) tea.Cmd {
 		}
 
 		err := m.client.PostTransition(context.Background(), issueKey, transitionID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return transitionCompleteMsg{success: true}
+	}
+}
+
+func (m model) postTransitionWithReason(issueKey, transitionID, reason string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		comment := "Motivo de cancelación: " + reason
+
+		err := m.client.PostTransitionWithComment(context.Background(), issueKey, transitionID, nil, comment)
 		if err != nil {
 			return errMsg{err}
 		}

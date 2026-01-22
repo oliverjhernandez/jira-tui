@@ -154,6 +154,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case postedEstimateMsg:
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
+			if isCancelTransition(*transition) {
+				m.editTextArea.Reset()
+				m.editTextArea.Focus()
+				m.mode = postCancelReasonView
+				return m, textarea.Blink
+			}
 			m.pendingTransition = nil
 			return m, tea.Batch(spinnerCmd, m.postTransition(m.selectedIssue.Key, transition.ID))
 		}
@@ -236,6 +242,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var tmp tea.Model
 		tmp, viewCmd = m.updatePostEstimateView(msg)
 		m = tmp.(model)
+	case postCancelReasonView:
+		var tmp tea.Model
+		tmp, viewCmd = m.updatePostCancelReasonView(msg)
+		m = tmp.(model)
 	}
 
 	return m, tea.Batch(spinnerCmd, viewCmd)
@@ -271,6 +281,8 @@ func (m model) View() string {
 		content = m.renderPostWorklogView()
 	case postEstimateView:
 		content = m.renderPostEstimateView()
+	case postCancelReasonView:
+		content = m.renderPostCancelReasonView()
 	default:
 		content = "Unknown view\n"
 	}

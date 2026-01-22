@@ -520,12 +520,50 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 }
 
 func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string) error {
+	return c.PostTransitionWithFields(ctx, issueKey, transitionID, nil)
+}
+
+func (c *Client) PostTransitionWithFields(ctx context.Context, issueKey, transitionID string, fields map[string]any) error {
+	return c.PostTransitionWithComment(ctx, issueKey, transitionID, fields, "")
+}
+
+func (c *Client) PostTransitionWithComment(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment string) error {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.jiraURL, issueKey)
 
 	body := map[string]any{
 		"transition": map[string]string{
 			"id": transitionID,
 		},
+	}
+
+	if fields != nil {
+		body["fields"] = fields
+	}
+
+	if comment != "" {
+		body["update"] = map[string]any{
+			"comment": []map[string]any{
+				{
+					"add": map[string]any{
+						"body": map[string]any{
+							"type":    "doc",
+							"version": 1,
+							"content": []map[string]any{
+								{
+									"type": "paragraph",
+									"content": []map[string]any{
+										{
+											"type": "text",
+											"text": comment,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 
 	bodyBytes, err := json.Marshal(body)
