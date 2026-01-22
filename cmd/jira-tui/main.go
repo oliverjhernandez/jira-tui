@@ -59,6 +59,8 @@ type model struct {
 	filteredUsers          []*jira.User
 	assigneeCursor         int
 	worklogData            *WorklogFormData
+	estimateData           *EstimateFormData
+	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section
 	sectionCursor          int
@@ -149,6 +151,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingDetail = true
 		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.issueDetail.Key))
 
+	case postedEstimateMsg:
+		if m.pendingTransition != nil {
+			transition := m.pendingTransition
+			m.pendingTransition = nil
+			return m, tea.Batch(spinnerCmd, m.postTransition(m.selectedIssue.Key, transition.ID))
+		}
+		m.mode = detailView
+		m.loadingDetail = true
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+
 	case assignableUsersLoadedMsg:
 		m.assignableUsersCache = msg.users
 		m.loadingAssignableUsers = false
@@ -220,6 +232,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var tmp tea.Model
 		tmp, viewCmd = m.updatePostWorklogView(msg)
 		m = tmp.(model)
+	case postEstimateView:
+		var tmp tea.Model
+		tmp, viewCmd = m.updatePostEstimateView(msg)
+		m = tmp.(model)
 	}
 
 	return m, tea.Batch(spinnerCmd, viewCmd)
@@ -253,6 +269,8 @@ func (m model) View() string {
 		content = m.renderAssignableUsersView()
 	case postWorklogView:
 		content = m.renderPostWorklogView()
+	case postEstimateView:
+		content = m.renderPostEstimateView()
 	default:
 		content = "Unknown view\n"
 	}

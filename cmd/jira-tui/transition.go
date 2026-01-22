@@ -30,6 +30,12 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if len(m.transitions) > 0 {
 				transition := m.transitions[m.transitionCursor]
+				if m.issueDetail != nil && m.issueDetail.OriginalEstimate == "" {
+					m.pendingTransition = &transition
+					m.estimateData = NewEstimateFormData()
+					m.mode = postEstimateView
+					return m, m.estimateData.Form.Init()
+				}
 				return m, m.postTransition(m.selectedIssue.Key, transition.ID)
 			}
 		}

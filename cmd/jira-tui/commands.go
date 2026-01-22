@@ -18,6 +18,7 @@ const (
 	editPriorityView
 	postCommentView
 	postWorklogView
+	postEstimateView
 )
 
 // bubbletea messages from commands
@@ -70,6 +71,10 @@ type postedCommentMsg struct {
 }
 
 type postedWorkLog struct {
+	success bool
+}
+
+type postedEstimateMsg struct {
 	success bool
 }
 
@@ -284,6 +289,21 @@ func (m model) postWorkLog(issueID, date, accountID string, time int) tea.Cmd {
 		}
 
 		return postedWorkLog{success: true}
+	}
+}
+
+func (m model) postEstimate(issueKey, estimate string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.UpdateOriginalEstimate(context.Background(), issueKey, estimate)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return postedEstimateMsg{success: true}
 	}
 }
 

@@ -112,7 +112,7 @@ type issueFields struct {
 	Comment          *commentList    `json:"comment"`
 	Priority         *priorityField  `json:"priority"`
 	Parent           *parentField    `json:"parent"`
-	OriginalEstimate string          `json:"original_estimate"`
+	OriginalEstimate *int            `json:"timeoriginalestimate"`
 }
 
 type descriptionDoc struct {
@@ -364,7 +364,24 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		}
 	}
 
+	if issue.Fields.OriginalEstimate != nil {
+		detail.OriginalEstimate = formatSecondsToTime(*issue.Fields.OriginalEstimate)
+	}
+
 	return detail, nil
+}
+
+func formatSecondsToTime(seconds int) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	if hours > 0 && minutes > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	} else if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return ""
 }
 
 func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transition, error) {
@@ -610,6 +627,49 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 	}
 
 	// NOTE: sending a request probably should be a function on its own
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
+func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, estimate string) error {
+	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
+
+	body := map[string]any{
+		"fields": map[string]any{
+			"timetracking": map[string]any{
+				"originalEstimate": estimate,
+			},
+		},
+	}
+
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
