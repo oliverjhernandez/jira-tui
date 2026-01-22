@@ -226,7 +226,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}
 	params.Add("jql", jql)
-	params.Add("maxResults", "50")
+	params.Add("maxResults", "100")
 	params.Add("fields", "id,summary,status,issuetype,assignee,priority")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
