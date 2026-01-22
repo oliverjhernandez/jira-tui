@@ -383,6 +383,11 @@ func (m *model) classifyIssues() {
 		issue := &m.issues[i]
 		categoryKey := statusCategories[strings.ToLower(issue.Status)]
 
+		// Override: "Validación" goes to Done section
+		if strings.Contains(strings.ToLower(issue.Status), "validación") {
+			categoryKey = "done"
+		}
+
 		for idx := range m.sections {
 			if m.sections[idx].CategoryKey == categoryKey {
 				m.sections[idx].Issues = append(m.sections[idx].Issues, issue)
