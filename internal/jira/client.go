@@ -45,6 +45,8 @@ type IssueDetail struct {
 	Priority         Priority
 	Parent           *Parent
 	OriginalEstimate string
+	Created          string
+	Updated          string
 }
 
 type Comment struct {
@@ -113,6 +115,8 @@ type issueFields struct {
 	Priority         *priorityField  `json:"priority"`
 	Parent           *parentField    `json:"parent"`
 	OriginalEstimate *int            `json:"timeoriginalestimate"`
+	Created          string          `json:"created"`
+	Updated          string          `json:"updated"`
 }
 
 type descriptionDoc struct {
@@ -284,7 +288,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
 	params := url.Values{}
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate,created,updated")
 
 	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
 
@@ -367,6 +371,9 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	if issue.Fields.OriginalEstimate != nil {
 		detail.OriginalEstimate = formatSecondsToTime(*issue.Fields.OriginalEstimate)
 	}
+
+	detail.Created = issue.Fields.Created
+	detail.Updated = issue.Fields.Updated
 
 	return detail, nil
 }

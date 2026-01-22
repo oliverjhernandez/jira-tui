@@ -120,7 +120,13 @@ func (m model) renderDetailView() string {
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), 30)
 	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, 30)
 	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), 30)
-	metadataRow := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
+
+	col4 := ui.RenderFieldStyled("Created", timeAgo(m.issueDetail.Created), 30)
+	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), 30)
+	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
+
+	metadataRow := metadataRow1 + "\n" + metadataRow2
 
 	var scrollContent strings.Builder
 
