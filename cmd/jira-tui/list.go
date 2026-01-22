@@ -130,7 +130,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderInfoPanel() string {
-	panelWidth := ui.ListRowWidth - 4 // Subtract for border padding
+	panelWidth := max(120, m.windowWidth-4)
 
 	// Get user display name
 	userName := "loading..."
@@ -158,27 +158,28 @@ func (m model) renderInfoPanel() string {
 	// Line 1: User (left) + Projects (right)
 	userStyled := ui.InfoPanelUserStyle.Render(userName)
 	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
-	line1Gap := panelWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
-	if line1Gap < 1 {
+	line1InnerWidth := panelWidth - 6 // Account for border and padding
+	line1Gap := line1InnerWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
+	if line1Gap < 0 {
 		line1Gap = 1
 	}
 	line1 := userStyled + strings.Repeat(" ", line1Gap) + projectsStyled
 
 	// Line 2: Status counts (left) + Total (right)
-	statusCounts := fmt.Sprintf("%s In Progress: %d  %s To Do: %d  %s Done: %d",
+	statusCounts := fmt.Sprintf("%s In Progress: %d    %s To Do: %d    %s Done: %d",
 		ui.IconInfoInProgress, inProgress,
 		ui.IconInfoToDo, toDo,
 		ui.IconInfoDone, done)
 	totalStr := ui.InfoPanelTotalStyle.Render(fmt.Sprintf("%d issues", total))
-	line2Gap := panelWidth - lipgloss.Width(statusCounts) - lipgloss.Width(totalStr)
-	if line2Gap < 1 {
+	line2Gap := line1InnerWidth - lipgloss.Width(statusCounts) - lipgloss.Width(totalStr)
+	if line2Gap < 0 {
 		line2Gap = 1
 	}
 	line2 := statusCounts + strings.Repeat(" ", line2Gap) + totalStr
 
 	// Combine lines and apply panel style
 	content := line1 + "\n" + line2
-	return ui.InfoPanelStyle.Width(panelWidth + 6).Render(content)
+	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
 }
 
 func (m model) renderListView() string {

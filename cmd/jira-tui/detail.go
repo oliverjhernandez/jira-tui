@@ -87,8 +87,9 @@ func (m model) renderDetailView() string {
 		return ui.PanelStyleActive.Render("Loading issue...")
 	}
 
+	infoPanelHeight := 5 // 2 content lines + 2 border lines + 1 newline
 	panelWidth := max(120, m.windowWidth-4)
-	panelHeight := m.windowHeight - 2
+	panelHeight := m.windowHeight - 2 - infoPanelHeight
 	contentWidth := panelWidth - 6 // padding and border
 
 	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
@@ -186,5 +187,6 @@ func (m model) renderDetailView() string {
 		Height(panelHeight).
 		Render(statusBar.String())
 
-	return detailPanel + "\n" + ui.StatusBarStyle.Render(commandsHelp)
+	infoPanel := m.renderInfoPanel()
+	return infoPanel + "\n" + detailPanel + "\n" + ui.StatusBarStyle.Render(commandsHelp)
 }
