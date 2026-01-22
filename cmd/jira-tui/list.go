@@ -200,13 +200,16 @@ func (m model) renderListView() string {
 			summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
 			assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))
+			worklogSeconds := m.worklogTotals[issue.ID]
+			timeSpent := ui.TimeSpentFieldStyle.Render(ui.FormatTimeSpent(worklogSeconds))
 
 			line := issueType + ui.EmptyHeaderSpace +
 				key +
 				priority + ui.EmptyHeaderSpace +
 				summary + ui.EmptyHeaderSpace +
 				statusBadge + ui.EmptyHeaderSpace +
-				assignee
+				assignee + ui.EmptyHeaderSpace +
+				timeSpent
 
 			if m.sectionCursor == si && m.cursor == ii {
 				cursor := ui.IconCursor

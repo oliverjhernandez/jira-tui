@@ -2,10 +2,30 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
+
+// FormatTimeSpent formats seconds into a human readable string like "3h" or "2h 30m"
+func FormatTimeSpent(seconds int) string {
+	if seconds == 0 {
+		return "-"
+	}
+
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+
+	if hours > 0 && minutes > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	} else if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return "-"
+}
 
 // RenderKeyBind - Helper to render a keybind in status bar: "q quit"
 func RenderKeyBind(key, desc string) string {

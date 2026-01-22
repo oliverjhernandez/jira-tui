@@ -6,14 +6,15 @@ import (
 )
 
 const (
-	ColWidthType     = 4
-	ColWidthKey      = 12
-	ColWidthSummary  = 50
-	ColWidthStatus   = 13
-	ColWidthAssignee = 20
-	ColWidthPriority = 1
-	ColWidthCursor   = 2
-	ColWidthEmpty    = 2
+	ColWidthType      = 4
+	ColWidthKey       = 12
+	ColWidthSummary   = 50
+	ColWidthStatus    = 13
+	ColWidthAssignee  = 20
+	ColWidthPriority  = 1
+	ColWidthCursor    = 2
+	ColWidthEmpty     = 2
+	ColWidthTimeSpent = 8
 )
 
 var (
@@ -187,6 +188,11 @@ var (
 				Width(ColWidthStatus).
 				MarginRight(1).
 				Align(lipgloss.Left)
+
+	TimeSpentFieldStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgDim).
+				Width(ColWidthTimeSpent).
+				Align(lipgloss.Right)
 )
 
 // ============================================================================

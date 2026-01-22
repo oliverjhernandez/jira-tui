@@ -66,6 +66,7 @@ type model struct {
 	sectionCursor          int
 	statuses               []jira.Status
 	spinner                spinner.Model
+	worklogTotals          map[string]int // issue ID -> total seconds from Tempo
 }
 
 func (m model) Init() tea.Cmd {
@@ -95,6 +96,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.classifyIssues()
 		}
+		// Fetch Tempo worklog totals for all issues
+		return m, tea.Batch(spinnerCmd, m.fetchAllWorklogTotals(msg.issues))
+
+	case worklogTotalsLoadedMsg:
+		m.worklogTotals = msg.totals
 		return m, spinnerCmd
 
 	case prioritiesLoadedMsg:

@@ -55,6 +55,10 @@ type workLogsLoadedMSg struct {
 	workLogs []jira.WorkLog
 }
 
+type worklogTotalsLoadedMsg struct {
+	totals map[string]int // issue ID -> total seconds
+}
+
 type transitionCompleteMsg struct {
 	success bool
 }
@@ -292,6 +296,46 @@ func (m model) fetchWorkLogs(issueID string) tea.Cmd {
 		}
 
 		return workLogsLoadedMSg{wls}
+	}
+}
+
+func (m model) fetchAllWorklogTotals(issues []jira.Issue) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		type result struct {
+			issueID string
+			total   int
+		}
+
+		results := make(chan result, len(issues))
+
+		// Fetch worklogs in parallel
+		for _, issue := range issues {
+			go func(issueID string) {
+				wls, err := m.client.GetWorkLogs(context.Background(), issueID)
+				if err != nil {
+					results <- result{issueID: issueID, total: 0}
+					return
+				}
+				var total int
+				for _, wl := range wls {
+					total += wl.Time
+				}
+				results <- result{issueID: issueID, total: total}
+			}(issue.ID)
+		}
+
+		// Collect results
+		totals := make(map[string]int)
+		for range issues {
+			r := <-results
+			totals[r.issueID] = r.total
+		}
+
+		return worklogTotalsLoadedMsg{totals}
 	}
 }
 
