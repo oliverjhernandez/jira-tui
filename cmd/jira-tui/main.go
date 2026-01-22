@@ -155,7 +155,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case postedWorkLog:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.issueDetail.Key))
+		m.loadingWorkLogs = true
+		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.selectedIssue.ID))
 
 	case postedEstimateMsg:
 		if m.pendingTransition != nil {
