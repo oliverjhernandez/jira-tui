@@ -15,6 +15,9 @@ const (
 	ColWidthCursor    = 2
 	ColWidthEmpty     = 2
 	ColWidthTimeSpent = 8
+
+	// Total width of a list row (cursor + all columns + spacing)
+	ListRowWidth = ColWidthCursor + ColWidthType + ColWidthEmpty + ColWidthKey + ColWidthPriority + ColWidthEmpty + ColWidthSummary + ColWidthEmpty + ColWidthStatus + ColWidthEmpty + ColWidthAssignee + ColWidthEmpty + ColWidthTimeSpent
 )
 
 var (
