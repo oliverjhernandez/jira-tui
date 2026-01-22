@@ -22,7 +22,9 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = detailView
 			m.postingComment = false
 			m.editTextArea.Blur()
-			return m, m.postComment(m.issueDetail.Key, m.editTextArea.Value())
+			comment := m.editTextArea.Value()
+			m.editTextArea.SetValue("")
+			return m, m.postComment(m.issueDetail.Key, comment)
 		}
 	}
 
