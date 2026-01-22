@@ -177,12 +177,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
 
+		infoPanelHeight := 5 // 2 content lines + 2 border lines + 1 newline
 		if m.listViewport == nil {
-			vp := viewport.New(m.windowWidth-4, m.windowHeight-3)
+			vp := viewport.New(m.windowWidth-4, m.windowHeight-3-infoPanelHeight)
 			m.listViewport = &vp
 		} else {
 			m.listViewport.Width = m.windowWidth - 4
-			m.listViewport.Height = m.windowHeight - 3
+			m.listViewport.Height = m.windowHeight - 3 - infoPanelHeight
 		}
 
 		if m.mode == detailView {

@@ -335,3 +335,36 @@ var (
 	StatusHeader     = lipgloss.NewStyle().Width(ColWidthStatus - ColWidthEmpty).Render("STATUS")
 	AssigneeHeader   = lipgloss.NewStyle().Width(ColWidthAssignee).Render("ASSIGNEE")
 )
+
+// ============================================================================
+// INFO PANEL STYLES
+// ============================================================================
+
+var (
+	InfoPanelStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(ThemeBorder).
+			Padding(0, 2)
+
+	InfoPanelUserStyle = lipgloss.NewStyle().
+				Foreground(ThemeAccent).
+				Bold(true)
+
+	InfoPanelProjectStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgMuted)
+
+	InfoPanelProjectSepStyle = lipgloss.NewStyle().
+					Foreground(ThemeBorder)
+
+	InfoPanelCountLabelStyle = lipgloss.NewStyle().
+					Foreground(ThemeFgMuted)
+
+	InfoPanelTotalStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgDim).
+				Italic(true)
+
+	// Status count icons
+	IconInfoInProgress = lipgloss.NewStyle().Foreground(ThemeStatusInProgress).Render("●")
+	IconInfoToDo       = lipgloss.NewStyle().Foreground(ThemeStatusToDo).Render("○")
+	IconInfoDone       = lipgloss.NewStyle().Foreground(ThemeStatusDone).Render("✓")
+)
