@@ -312,7 +312,6 @@ func (m model) fetchAllWorklogTotals(issues []jira.Issue) tea.Cmd {
 
 		results := make(chan result, len(issues))
 
-		// Fetch worklogs in parallel
 		for _, issue := range issues {
 			go func(issueID string) {
 				wls, err := m.client.GetWorkLogs(context.Background(), issueID)
@@ -328,7 +327,6 @@ func (m model) fetchAllWorklogTotals(issues []jira.Issue) tea.Cmd {
 			}(issue.ID)
 		}
 
-		// Collect results
 		totals := make(map[string]int)
 		for range issues {
 			r := <-results

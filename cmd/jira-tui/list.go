@@ -132,13 +132,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderInfoPanel() string {
 	panelWidth := max(120, m.windowWidth-4)
 
-	// Get user display name
 	userName := "loading..."
 	if m.myself != nil {
 		userName = "@" + m.myself.Name
 	}
 
-	// Count issues by status category
 	var inProgress, toDo, done int
 	for _, s := range m.sections {
 		switch s.CategoryKey {
@@ -152,20 +150,17 @@ func (m model) renderInfoPanel() string {
 	}
 	total := inProgress + toDo + done
 
-	// Build projects string with separators
 	projectsStr := strings.Join(Projects, " · ")
 
-	// Line 1: User (left) + Projects (right)
 	userStyled := ui.InfoPanelUserStyle.Render(userName)
 	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
-	line1InnerWidth := panelWidth - 6 // Account for border and padding
+	line1InnerWidth := panelWidth - 6
 	line1Gap := line1InnerWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
 	if line1Gap < 0 {
 		line1Gap = 1
 	}
 	line1 := userStyled + strings.Repeat(" ", line1Gap) + projectsStyled
 
-	// Line 2: Status counts (left) + Total (right)
 	statusCounts := fmt.Sprintf("%s In Progress: %d    %s To Do: %d    %s Done: %d",
 		ui.IconInfoInProgress, inProgress,
 		ui.IconInfoToDo, toDo,
@@ -177,7 +172,6 @@ func (m model) renderInfoPanel() string {
 	}
 	line2 := statusCounts + strings.Repeat(" ", line2Gap) + totalStr
 
-	// Combine lines and apply panel style
 	content := line1 + "\n" + line2
 	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
 }
