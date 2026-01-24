@@ -65,6 +65,7 @@ type model struct {
 	commentData            *CommentFormData
 	descriptionData        *DescriptionFormData
 	priorityData           *PriorityFormData
+	transitionData         *TransitionFormData
 	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section
@@ -141,7 +142,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
 		m.loadingTransitions = false
-		return m, spinnerCmd
+		m.transitionData = NewTransitionFormData(msg.transitions)
+		return m, tea.Batch(spinnerCmd, m.transitionData.Form.Init())
 
 	case statusesLoadedMsg:
 		m.statuses = msg.statuses
