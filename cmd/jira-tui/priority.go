@@ -64,7 +64,12 @@ func (m model) renderEditPriorityView() string {
 
 		modalContent.WriteString(line + "\n")
 	}
-	modalContent.WriteString("enter save | esc cancel")
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("j/k", "navigate"),
+		ui.RenderKeyBind("enter", "save"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString(footer)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

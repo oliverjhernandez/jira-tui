@@ -54,7 +54,11 @@ func (m model) renderPostCommentView() string {
 
 	modalContent.WriteString("Comment:\n")
 	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	modalContent.WriteString("shift+Enter save | esc cancel")
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("shift+enter", "save"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString(footer)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

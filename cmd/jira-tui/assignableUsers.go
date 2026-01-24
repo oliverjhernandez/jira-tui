@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -84,6 +85,13 @@ func (m model) renderAssignableUsersView() string {
 			modalContent.WriteString("  " + u.Name + "\n")
 		}
 	}
+
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("type", "search"),
+		ui.RenderKeyBind("enter", "select"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString("\n" + footer)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

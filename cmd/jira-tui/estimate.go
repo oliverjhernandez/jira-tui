@@ -77,6 +77,12 @@ func (m model) renderPostEstimateView() string {
 	modalHeight := m.getModalHeight(0.4)
 
 	modalContent.WriteString(m.estimateData.Form.View())
+	modalContent.WriteString("\n\n")
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("enter", "submit"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString(footer)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

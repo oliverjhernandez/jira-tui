@@ -83,7 +83,12 @@ func (m model) renderTransitionView() string {
 		}
 	}
 
-	modalContent.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("j/k", "navigate"),
+		ui.RenderKeyBind("enter", "select"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString("\n" + footer + "\n")
 
 	modalWidth := m.getSmallModalWidth()
 	modalHeight := m.getModalHeight(0.4)
@@ -154,7 +159,11 @@ func (m model) renderPostCancelReasonView() string {
 	m.editTextArea.SetHeight(modalHeight - 12)
 
 	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	modalContent.WriteString(ui.StatusBarDescStyle.Render("shift+Enter to submit | esc to cancel"))
+	cancelFooter := strings.Join([]string{
+		ui.RenderKeyBind("shift+enter", "submit"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString(cancelFooter)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

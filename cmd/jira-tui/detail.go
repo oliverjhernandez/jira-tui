@@ -165,11 +165,15 @@ func (m model) renderDetailView() string {
 	m.detailViewport.SetContent(scrollContent.String())
 
 	commandsHelp := strings.Join([]string{
-		ui.RenderKeyBind("a", "assignee"),
+		ui.RenderKeyBind("j/k", "scroll"),
+		ui.RenderKeyBind("d", "description"),
+		ui.RenderKeyBind("p", "priority"),
 		ui.RenderKeyBind("c", "comment"),
-		ui.RenderKeyBind("e", "edit"),
+		ui.RenderKeyBind("w", "worklog"),
+		ui.RenderKeyBind("a", "assignee"),
 		ui.RenderKeyBind("t", "transition"),
 		ui.RenderKeyBind("esc", "back"),
+		ui.RenderKeyBind("q", "quit"),
 	}, "  ")
 
 	var statusBar strings.Builder

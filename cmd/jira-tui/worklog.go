@@ -92,6 +92,13 @@ func (m model) renderPostWorklogView() string {
 	m.editTextArea.SetHeight(modalHeight - 8)
 
 	modalContent.WriteString(m.worklogData.Form.View())
+	modalContent.WriteString("\n\n")
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("tab", "next field"),
+		ui.RenderKeyBind("enter", "submit"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString(footer)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
