@@ -64,6 +64,7 @@ type model struct {
 	estimateData           *EstimateFormData
 	commentData            *CommentFormData
 	descriptionData        *DescriptionFormData
+	priorityData           *PriorityFormData
 	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section

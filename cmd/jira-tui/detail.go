@@ -27,16 +27,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editingDescription = true
 			return m, m.descriptionData.Form.Init()
 		case "p":
+			m.priorityData = NewPriorityFormData(m.priorityOptions, m.issueDetail.Priority.Name)
 			m.mode = editPriorityView
 			m.editingPriority = true
-			priorityIndex := -1
-			for i, p := range m.priorityOptions {
-				if p.Name == m.issueDetail.Priority.Name {
-					priorityIndex = i
-					break
-				}
-			}
-			m.priorityCursor = max(0, priorityIndex)
+			return m, m.priorityData.Form.Init()
 		case "t":
 			if m.issueDetail != nil {
 				m.mode = transitionView
