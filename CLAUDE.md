@@ -72,3 +72,7 @@ The `Projects` variable in `main.go:18` defines which Jira projects to fetch sta
 ## Debug Logging
 
 The app writes debug logs to `debug.log` in the current directory.
+
+## Coding Style
+
+- Do not add comments to code
