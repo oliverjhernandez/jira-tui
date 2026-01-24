@@ -66,6 +66,7 @@ type model struct {
 	descriptionData        *DescriptionFormData
 	priorityData           *PriorityFormData
 	transitionData         *TransitionFormData
+	cancelReasonData       *CancelReasonFormData
 	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section
@@ -183,10 +184,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			if isCancelTransition(*transition) {
-				m.editTextArea.Reset()
-				m.editTextArea.Focus()
+				m.cancelReasonData = NewCancelReasonFormData()
 				m.mode = postCancelReasonView
-				return m, textarea.Blink
+				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
 			return m, tea.Batch(spinnerCmd, m.postTransition(m.selectedIssue.Key, transition.ID))

@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -37,6 +36,27 @@ func NewTransitionFormData(transitions []jira.Transition) *TransitionFormData {
 	).WithTheme(huh.ThemeCatppuccin()).WithWidth(50)
 
 	return t
+}
+
+type CancelReasonFormData struct {
+	Reason string
+	Form   *huh.Form
+}
+
+func NewCancelReasonFormData() *CancelReasonFormData {
+	c := &CancelReasonFormData{
+		Reason: "",
+	}
+	c.Form = huh.NewForm(
+		huh.NewGroup(
+			huh.NewText().
+				Title("Cancellation Reason").
+				Value(&c.Reason).
+				Lines(10),
+		),
+	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
+
+	return c
 }
 
 func isCancelTransition(t jira.Transition) bool {
@@ -76,10 +96,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if isCancelTransition(transition) {
 					m.pendingTransition = &transition
-					m.editTextArea.Reset()
-					m.editTextArea.Focus()
+					m.cancelReasonData = NewCancelReasonFormData()
 					m.mode = postCancelReasonView
-					return m, textarea.Blink
+					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView
 				cmds = append(cmds, m.postTransition(m.selectedIssue.Key, transition.ID))
@@ -128,32 +147,34 @@ func (m model) renderTransitionView() string {
 }
 
 func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
 			m.pendingTransition = nil
-			m.editTextArea.Reset()
-			m.editTextArea.Blur()
-			return m, nil
-		case "alt+enter":
-			reason := m.editTextArea.Value()
-			m.editTextArea.Reset()
-			m.editTextArea.Blur()
-			if m.pendingTransition != nil {
-				transition := m.pendingTransition
-				m.pendingTransition = nil
-				return m, m.postTransitionWithReason(m.selectedIssue.Key, transition.ID, reason)
-			}
-			m.mode = detailView
-			return m, nil
+			return m, m.cancelReasonData.Form.Init()
 		}
 	}
 
-	var cmd tea.Cmd
-	m.editTextArea, cmd = m.editTextArea.Update(msg)
+	form, cmd := m.cancelReasonData.Form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.cancelReasonData.Form = f
+		cmds = append(cmds, cmd)
+	}
 
-	return m, cmd
+	if m.cancelReasonData.Form.State == huh.StateCompleted {
+		m.mode = detailView
+		reason := m.cancelReasonData.Reason
+		if m.pendingTransition != nil {
+			transition := m.pendingTransition
+			m.pendingTransition = nil
+			cmds = append(cmds, m.postTransitionWithReason(m.selectedIssue.Key, transition.ID, reason))
+		}
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderPostCancelReasonView() string {
@@ -162,8 +183,6 @@ func (m model) renderPostCancelReasonView() string {
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
-
-	modalContent.WriteString(ui.SectionTitleStyle.Render("Cancellation Reason") + "\n\n")
 
 	if m.issueDetail != nil {
 		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
@@ -175,15 +194,7 @@ func (m model) renderPostCancelReasonView() string {
 	modalWidth := m.getMediumModalWidth()
 	modalHeight := m.getModalHeight(0.5)
 
-	m.editTextArea.SetWidth(modalWidth - 6)
-	m.editTextArea.SetHeight(modalHeight - 12)
-
-	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	cancelFooter := strings.Join([]string{
-		ui.RenderKeyBind("shift+enter", "submit"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString(cancelFooter)
+	modalContent.WriteString(m.cancelReasonData.Form.View())
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
