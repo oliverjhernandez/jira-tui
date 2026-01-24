@@ -63,6 +63,7 @@ type model struct {
 	worklogData            *WorklogFormData
 	estimateData           *EstimateFormData
 	commentData            *CommentFormData
+	descriptionData        *DescriptionFormData
 	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section

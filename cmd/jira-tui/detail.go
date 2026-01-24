@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -23,11 +22,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "k":
 			m.detailViewport.ScrollUp(1)
 		case "d":
+			m.descriptionData = NewDescriptionFormData(m.issueDetail.Description)
 			m.mode = editDescriptionView
 			m.editingDescription = true
-			m.editTextArea.SetValue(m.issueDetail.Description)
-			m.editTextArea.Focus()
-			return m, textarea.Blink
+			return m, m.descriptionData.Form.Init()
 		case "p":
 			m.mode = editPriorityView
 			m.editingPriority = true

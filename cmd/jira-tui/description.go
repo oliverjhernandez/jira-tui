@@ -5,31 +5,58 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+type DescriptionFormData struct {
+	Description string
+	Form        *huh.Form
+}
+
+func NewDescriptionFormData(initialValue string) *DescriptionFormData {
+	d := &DescriptionFormData{
+		Description: initialValue,
+	}
+	d.Form = huh.NewForm(
+		huh.NewGroup(
+			huh.NewText().
+				Title("Description").
+				Value(&d.Description).
+				Lines(15),
+		),
+	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
+
+	return d
+}
+
 func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
 			m.editingDescription = false
-			m.editTextArea.Blur()
-			return m, nil
-		case "alt+enter": // actually shift # NOTE: maybe i should deal with this
-			m.mode = detailView
-			m.editingDescription = false
-			m.editTextArea.Blur()
-			return m, m.updateDescription(m.issueDetail.Key, m.editTextArea.Value())
+			return m, m.descriptionData.Form.Init()
 		}
 	}
 
-	var cmd tea.Cmd
-	m.editTextArea, cmd = m.editTextArea.Update(msg)
+	form, cmd := m.descriptionData.Form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.descriptionData.Form = f
+		cmds = append(cmds, cmd)
+	}
 
-	return m, cmd
+	if m.descriptionData.Form.State == huh.StateCompleted {
+		m.mode = detailView
+		m.editingDescription = false
+		description := m.descriptionData.Description
+		cmds = append(cmds, m.updateDescription(m.issueDetail.Key, description))
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderEditDescriptionView() string {
@@ -47,16 +74,7 @@ func (m model) renderEditDescriptionView() string {
 	modalWidth := m.getLargeModalWidth()
 	modalHeight := m.getModalHeight(0.6)
 
-	m.editTextArea.SetWidth(modalWidth - 6)
-	m.editTextArea.SetHeight(modalHeight - 8)
-
-	modalContent.WriteString("Description:\n")
-	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("shift+enter", "save"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString(footer)
+	modalContent.WriteString(m.descriptionData.Form.View())
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
