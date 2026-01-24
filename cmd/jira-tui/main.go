@@ -201,7 +201,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowWidth = msg.Width
 		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
 
-		infoPanelHeight := 5 // 2 content lines + 2 border lines + 1 newline
+		infoPanelHeight := 6
 		if m.listViewport == nil {
 			vp := viewport.New(m.windowWidth-4, m.windowHeight-3-infoPanelHeight)
 			m.listViewport = &vp
@@ -210,10 +210,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listViewport.Height = m.windowHeight - 3 - infoPanelHeight
 		}
 
-		if m.mode == detailView {
-			headerHeight := 15 // NOTE: Adjust based on your header size
-			footerHeight := 1  // NOTE: Adjust based on your footer size
-
+		if m.detailViewport != nil {
+			headerHeight := 15
+			footerHeight := 1
 			m.detailViewport.Width = msg.Width - 10
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
 		}

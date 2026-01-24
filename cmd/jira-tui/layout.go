@@ -9,7 +9,7 @@ func (m model) getContentWidth() int {
 }
 
 func (m model) getPanelHeight() int {
-	infoPanelHeight := 5
+	infoPanelHeight := 6
 	return m.windowHeight - 2 - infoPanelHeight
 }
 
@@ -31,4 +31,23 @@ func (m model) getMediumModalWidth() int {
 
 func (m model) getLargeModalWidth() int {
 	return m.getModalWidth(0.7)
+}
+
+func (m model) getListViewportWidth() int {
+	return m.windowWidth - 4
+}
+
+func (m model) getListViewportHeight() int {
+	infoPanelHeight := 6
+	return m.windowHeight - 3 - infoPanelHeight
+}
+
+func (m model) getDetailViewportWidth() int {
+	return m.windowWidth - 10
+}
+
+func (m model) getDetailViewportHeight() int {
+	headerHeight := 15
+	footerHeight := 1
+	return m.windowHeight - headerHeight - footerHeight
 }

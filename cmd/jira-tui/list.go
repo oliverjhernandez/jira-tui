@@ -109,10 +109,15 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadingWorkLogs = true
 				m.issueDetail = nil
 
-				width := m.windowWidth - 10
-				height := m.windowHeight - 15
-				vp := viewport.New(width, height)
-				m.detailViewport = &vp
+				if m.detailViewport == nil {
+					headerHeight := 15
+					footerHeight := 1
+					width := m.windowWidth - 10
+					height := m.windowHeight - headerHeight - footerHeight
+					vp := viewport.New(width, height)
+					m.detailViewport = &vp
+				}
+
 				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
 				wlsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
 
@@ -172,7 +177,14 @@ func (m model) renderInfoPanel() string {
 	}
 	line2 := statusCounts + strings.Repeat(" ", line2Gap) + totalStr
 
-	content := line1 + "\n" + line2
+	var totalLoggedSeconds int
+	for _, seconds := range m.worklogTotals {
+		totalLoggedSeconds += seconds
+	}
+	totalLoggedStr := ui.InfoPanelCountLabelStyle.Render(ui.IconTime + " Total Logged: " + ui.FormatTimeSpent(totalLoggedSeconds))
+	line3 := totalLoggedStr
+
+	content := line1 + "\n" + line2 + "\n" + line3
 	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
 }
 
