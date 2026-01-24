@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"maps"
 	"os"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -66,7 +67,7 @@ type model struct {
 	sectionCursor          int
 	statuses               []jira.Status
 	spinner                spinner.Model
-	worklogTotals          map[string]int // issue ID -> total seconds from Tempo
+	worklogTotals          map[string]int
 }
 
 func (m model) Init() tea.Cmd {
@@ -96,11 +97,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.classifyIssues()
 		}
-		// Fetch Tempo worklog totals for all issues
 		return m, tea.Batch(spinnerCmd, m.fetchAllWorklogTotals(msg.issues))
 
 	case worklogTotalsLoadedMsg:
-		m.worklogTotals = msg.totals
+		if m.worklogTotals == nil {
+			m.worklogTotals = make(map[string]int)
+		}
+		maps.Copy(m.worklogTotals, msg.totals)
 		return m, spinnerCmd
 
 	case prioritiesLoadedMsg:
@@ -117,6 +120,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workLogsLoadedMSg:
 		m.selectedIssueWorklogs = msg.workLogs
 		m.loadingWorkLogs = false
+		// Update worklogTotals map to keep it in sync
+		if m.selectedIssue != nil {
+			var total int
+			for _, wl := range msg.workLogs {
+				total += wl.Time
+			}
+			if m.worklogTotals == nil {
+				m.worklogTotals = make(map[string]int)
+			}
+			m.worklogTotals[m.selectedIssue.ID] = total
+		}
 		return m, spinnerCmd
 
 	case transitionsLoadedMsg:
@@ -335,15 +349,16 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		loading:      true,
-		mode:         listView,
-		client:       client,
-		filterInput:  filterBox,
-		editTextArea: editTextAreaBox,
-		windowWidth:  80,
-		windowHeight: 24,
-		sections:     sections,
-		spinner:      spinner,
+		loading:       true,
+		mode:          listView,
+		client:        client,
+		filterInput:   filterBox,
+		editTextArea:  editTextAreaBox,
+		windowWidth:   80,
+		windowHeight:  24,
+		sections:      sections,
+		spinner:       spinner,
+		worklogTotals: make(map[string]int),
 	})
 
 	if _, err := p.Run(); err != nil {

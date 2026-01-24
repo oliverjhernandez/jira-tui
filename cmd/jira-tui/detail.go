@@ -67,8 +67,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = listView
 			m.issueDetail = nil
 			m.editTextArea.SetValue("")
-			m.loading = true
-			return m, m.fetchMyIssues()
+			return m, nil
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		default:

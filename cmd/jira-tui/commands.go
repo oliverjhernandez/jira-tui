@@ -308,29 +308,37 @@ func (m model) fetchAllWorklogTotals(issues []jira.Issue) tea.Cmd {
 		type result struct {
 			issueID string
 			total   int
+			err     error
 		}
 
 		results := make(chan result, len(issues))
 
+		semaphore := make(chan struct{}, 5)
+
 		for _, issue := range issues {
 			go func(issueID string) {
+				semaphore <- struct{}{}
+				defer func() { <-semaphore }()
+
 				wls, err := m.client.GetWorkLogs(context.Background(), issueID)
 				if err != nil {
-					results <- result{issueID: issueID, total: 0}
+					results <- result{issueID: issueID, total: -1, err: err}
 					return
 				}
 				var total int
 				for _, wl := range wls {
 					total += wl.Time
 				}
-				results <- result{issueID: issueID, total: total}
+				results <- result{issueID: issueID, total: total, err: nil}
 			}(issue.ID)
 		}
 
 		totals := make(map[string]int)
 		for range issues {
 			r := <-results
-			totals[r.issueID] = r.total
+			if r.err == nil {
+				totals[r.issueID] = r.total
+			}
 		}
 
 		return worklogTotalsLoadedMsg{totals}
@@ -381,7 +389,6 @@ func (m *model) classifyIssues() {
 		issue := &m.issues[i]
 		categoryKey := statusCategories[strings.ToLower(issue.Status)]
 
-		// Override: "Validación" goes to Done section
 		if strings.Contains(strings.ToLower(issue.Status), "validación") {
 			categoryKey = "done"
 		}
