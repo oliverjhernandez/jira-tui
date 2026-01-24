@@ -62,6 +62,7 @@ type model struct {
 	assigneeCursor         int
 	worklogData            *WorklogFormData
 	estimateData           *EstimateFormData
+	commentData            *CommentFormData
 	pendingTransition      *jira.Transition
 	err                    error
 	sections               []Section

@@ -5,33 +5,58 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+type CommentFormData struct {
+	Comment string
+	Form    *huh.Form
+}
+
+func NewCommentFormData() *CommentFormData {
+	c := &CommentFormData{
+		Comment: "",
+	}
+	c.Form = huh.NewForm(
+		huh.NewGroup(
+			huh.NewText().
+				Title("Comment").
+				Value(&c.Comment).
+				Lines(10),
+		),
+	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
+
+	return c
+}
+
 func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
 			m.postingComment = false
-			m.editTextArea.Blur()
-			return m, nil
-		case "alt+enter": // actually shift # NOTE: maybe i should deal with this
-			m.mode = detailView
-			m.postingComment = false
-			m.editTextArea.Blur()
-			comment := m.editTextArea.Value()
-			m.editTextArea.SetValue("")
-			return m, m.postComment(m.issueDetail.Key, comment)
+			return m, m.commentData.Form.Init()
 		}
 	}
 
-	var cmd tea.Cmd
-	m.editTextArea, cmd = m.editTextArea.Update(msg)
+	form, cmd := m.commentData.Form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.commentData.Form = f
+		cmds = append(cmds, cmd)
+	}
 
-	return m, cmd
+	if m.commentData.Form.State == huh.StateCompleted {
+		m.mode = detailView
+		m.postingComment = false
+		comment := m.commentData.Comment
+		cmds = append(cmds, m.postComment(m.issueDetail.Key, comment))
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderPostCommentView() string {
@@ -49,16 +74,7 @@ func (m model) renderPostCommentView() string {
 	modalWidth := m.getLargeModalWidth()
 	modalHeight := m.getModalHeight(0.6)
 
-	m.editTextArea.SetWidth(modalWidth - 6)
-	m.editTextArea.SetHeight(modalHeight - 8)
-
-	modalContent.WriteString("Comment:\n")
-	modalContent.WriteString(m.editTextArea.View() + "\n\n")
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("shift+enter", "save"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString(footer)
+	modalContent.WriteString(m.commentData.Form.View())
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

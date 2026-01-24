@@ -47,10 +47,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
 		case "c":
+			m.commentData = NewCommentFormData()
 			m.mode = postCommentView
 			m.postingComment = true
-			m.editTextArea.Focus()
-			return m, nil
+			return m, m.commentData.Form.Init()
 		case "w":
 			m.worklogData = NewWorklogFormData()
 			m.mode = postWorklogView
