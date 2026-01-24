@@ -130,7 +130,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderInfoPanel() string {
-	panelWidth := max(120, m.windowWidth-4)
+	panelWidth := m.getPanelWidth()
 
 	userName := "loading..."
 	if m.myself != nil {
@@ -177,7 +177,7 @@ func (m model) renderInfoPanel() string {
 }
 
 func (m model) renderListView() string {
-	panelWidth := max(120, m.windowWidth-4)
+	panelWidth := m.getPanelWidth()
 
 	var listContent strings.Builder
 

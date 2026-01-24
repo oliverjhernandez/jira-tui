@@ -85,8 +85,8 @@ func (m model) renderTransitionView() string {
 
 	modalContent.WriteString("\nPress j/k or ↑/↓ to navigate, Enter to select, Esc to cancel.\n")
 
-	modalWidth := int(float64(m.windowWidth) * 0.4)
-	modalHeight := int(float64(m.windowHeight) * 0.4)
+	modalWidth := m.getSmallModalWidth()
+	modalHeight := m.getModalHeight(0.4)
 
 	modalStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -147,8 +147,8 @@ func (m model) renderPostCancelReasonView() string {
 
 	modalContent.WriteString(ui.StatusBarDescStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
 
-	modalWidth := int(float64(m.windowWidth) * 0.6)
-	modalHeight := int(float64(m.windowHeight) * 0.5)
+	modalWidth := m.getMediumModalWidth()
+	modalHeight := m.getModalHeight(0.5)
 
 	m.editTextArea.SetWidth(modalWidth - 6)
 	m.editTextArea.SetHeight(modalHeight - 12)

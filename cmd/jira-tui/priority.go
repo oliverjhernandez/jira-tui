@@ -49,10 +49,8 @@ func (m model) renderEditPriorityView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalWidth := int(float64(m.windowWidth) * 0.3)
-	modalHeight := int(float64(m.windowHeight) * 0.2)
-	// modalY := (m.windowHeight-modalHeight)/2 - 5
-	// modalX := (m.windowWidth / 2) - (modalWidth / 2)
+	modalWidth := m.getModalWidth(0.3)
+	modalHeight := m.getModalHeight(0.2)
 
 	modalContent.WriteString("Priority:\n")
 

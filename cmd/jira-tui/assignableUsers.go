@@ -69,7 +69,7 @@ func (m model) renderAssignableUsersView() string {
 		modalContent.WriteString("No assignable users for this issue.\n")
 	}
 
-	modalWidth := int(float64(m.windowWidth) * 0.7)
+	modalWidth := m.getLargeModalWidth()
 	modalHeight := 1
 
 	modalContent.WriteString(m.filterInput.View() + "\n\n")

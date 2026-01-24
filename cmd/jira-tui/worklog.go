@@ -85,8 +85,8 @@ func (m model) renderPostWorklogView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalWidth := int(float64(m.windowWidth) * 0.7)
-	modalHeight := int(float64(m.windowHeight) * 0.6)
+	modalWidth := m.getLargeModalWidth()
+	modalHeight := m.getModalHeight(0.6)
 
 	m.editTextArea.SetWidth(modalWidth - 6)
 	m.editTextArea.SetHeight(modalHeight - 8)
