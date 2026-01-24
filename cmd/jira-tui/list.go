@@ -189,20 +189,21 @@ func (m model) renderListView() string {
 
 		for ii, issue := range s.Issues {
 			issueType := ui.RenderIssueType(issue.Type, false)
-			key := ui.KeyFieldStyle.Render(issue.Key)
+			key := m.columnWidths.RenderKey(issue.Key)
 			priority := ui.RenderPriority(issue.Priority, false)
-			summary := ui.SummaryFieldStyle.Render(truncateLongString(issue.Summary, ui.ColWidthSummary))
+			summary := m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
-			assignee := ui.AssigneeFieldStyle.Render("@" + truncateLongString(issue.Assignee, 20))
+			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
 			worklogSeconds := m.worklogTotals[issue.ID]
-			timeSpent := ui.TimeSpentFieldStyle.Render(ui.FormatTimeSpent(worklogSeconds))
+			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
 
-			line := issueType + ui.EmptyHeaderSpace +
+			emptySpace := m.columnWidths.RenderEmptySpace()
+			line := issueType + emptySpace +
 				key +
-				priority + ui.EmptyHeaderSpace +
-				summary + ui.EmptyHeaderSpace +
-				statusBadge + ui.EmptyHeaderSpace +
-				assignee + ui.EmptyHeaderSpace +
+				priority + emptySpace +
+				summary + emptySpace +
+				statusBadge + emptySpace +
+				assignee + emptySpace +
 				timeSpent
 
 			if m.sectionCursor == si && m.cursor == ii {

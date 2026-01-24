@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/oliverjhernandez/jira-tui/internal/config"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
@@ -68,6 +69,7 @@ type model struct {
 	statuses               []jira.Status
 	spinner                spinner.Model
 	worklogTotals          map[string]int
+	columnWidths           ui.ColumnWidths
 }
 
 func (m model) Init() tea.Cmd {
@@ -197,6 +199,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
+		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
 
 		infoPanelHeight := 5 // 2 content lines + 2 border lines + 1 newline
 		if m.listViewport == nil {
@@ -359,6 +362,7 @@ func main() {
 		sections:      sections,
 		spinner:       spinner,
 		worklogTotals: make(map[string]int),
+		columnWidths:  ui.CalculateColumnWidths(80),
 	})
 
 	if _, err := p.Run(); err != nil {
