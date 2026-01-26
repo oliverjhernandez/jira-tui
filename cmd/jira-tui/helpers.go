@@ -120,11 +120,8 @@ func parseTimeToSeconds(input string) (int, error) {
 func (m model) getAbsoluteCursorLine() int {
 	lines := 0
 
-	// columnHeader := 3
 	headerLines := 3
 	sectionSpacing := 1
-
-	// lines += columnHeader
 
 	for i := 0; i < m.sectionCursor; i++ {
 		lines += headerLines + sectionSpacing
