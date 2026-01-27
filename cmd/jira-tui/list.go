@@ -95,6 +95,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = lenIssues
 			m.sectionCursor = lenSection
 			return m, nil
+
+		case "ctrl+p":
+			sortSectionsByPriority(m.sections)
+			return m, nil
+
 		case "/":
 			m.filtering = true
 			m.filterInput.SetValue("")

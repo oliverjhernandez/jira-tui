@@ -3,12 +3,22 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
+
+var priorityOrder = map[string]int{
+	"Crítica": 1,
+	"Highest": 2,
+	"High":    3,
+	"Medium":  4,
+	"Low":     5,
+	"Lowest":  6,
+}
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
 	var filtered []jira.Issue
@@ -132,4 +142,13 @@ func (m model) getAbsoluteCursorLine() int {
 	lines += m.cursor + 1
 
 	return lines
+}
+
+func sortSectionsByPriority(sections []Section) {
+	for si := range sections {
+		sort.Slice(sections[si].Issues, func(i, j int) bool {
+			log.Printf("Key: %s, Priority: %s\n", sections[si].Issues[i].Key, sections[si].Issues[i].Priority)
+			return priorityOrder[sections[si].Issues[i].Priority] < priorityOrder[sections[si].Issues[j].Priority]
+		})
+	}
 }
