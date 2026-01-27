@@ -55,11 +55,12 @@ var (
 	ThemeStatusDefault    = CatOverlay1
 
 	// Priority colors
-	ThemePriorityHighest = CatRed
-	ThemePriorityHigh    = CatPeach
-	ThemePriorityMedium  = CatYellow
-	ThemePriorityLow     = CatGreen
-	ThemePriorityLowest  = CatTeal
+	ThemePriorityCritical = CatRed
+	ThemePriorityHighest  = CatRed
+	ThemePriorityHigh     = CatPeach
+	ThemePriorityMedium   = CatYellow
+	ThemePriorityLow      = CatGreen
+	ThemePriorityLowest   = CatTeal
 
 	// Special
 	ThemeKey     = CatMauve
@@ -84,11 +85,12 @@ var (
 	IconDefault       = `󰧞`
 
 	// Priority
-	IconPriorityHighest = `󰶼`
-	IconPriorityHigh    = `󰄿`
-	IconPriorityMedium  = `󰇼`
-	IconPriorityLow     = `󰄼`
-	IconPriorityLowest  = `󰶹`
+	IconPriorityCritical = `󰈸`
+	IconPriorityHighest  = `󰶼`
+	IconPriorityHigh     = `󰄿`
+	IconPriorityMedium   = `󰇼`
+	IconPriorityLow      = `󰄼`
+	IconPriorityLowest   = `󰶹`
 
 	// Status indicators
 	IconStatusInProgress = `󰐊`
@@ -238,7 +240,10 @@ var (
 // ============================================================================
 
 var (
-	PriorityBaseStyle    = lipgloss.NewStyle()
+	PriorityBaseStyle     = lipgloss.NewStyle()
+	PriorityCriticalStyle = PriorityBaseStyle.
+				Foreground(ThemePriorityCritical).
+				Bold(true)
 	PriorityHighestStyle = PriorityBaseStyle.
 				Foreground(ThemePriorityHighest).
 				Bold(true)

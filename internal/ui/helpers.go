@@ -82,6 +82,9 @@ func RenderPriority(priority string, showText bool) string {
 	var icon string
 
 	switch {
+	case strings.Contains(p, "crítica"):
+		style = PriorityCriticalStyle
+		icon = IconPriorityCritical
 	case strings.Contains(p, "highest"):
 		style = PriorityHighestStyle
 		icon = IconPriorityHighest
