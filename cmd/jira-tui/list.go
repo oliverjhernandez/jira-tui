@@ -119,9 +119,9 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
-				wlsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
+				worklogsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
 
-				return m, tea.Batch(detailCmd, wlsCmd, m.spinner.Tick)
+				return m, tea.Batch(detailCmd, worklogsCmd, m.spinner.Tick)
 			}
 
 		case "esc":
