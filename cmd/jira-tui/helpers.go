@@ -32,6 +32,27 @@ func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
 	return filtered
 }
 
+func filterSections(sections []Section, filter string) []Section {
+	var filteredSections []Section
+
+	for _, s := range sections {
+		var filteredIssues []*jira.Issue
+		for _, i := range s.Issues {
+			if issueMatchesFilter(*i, filter) {
+				filteredIssues = append(filteredIssues, i)
+			}
+		}
+		if len(filteredIssues) > 0 {
+			s.Issues = filteredIssues
+		} else {
+			s.Issues = nil
+		}
+
+		filteredSections = append(filteredSections, s)
+	}
+	return filteredSections
+}
+
 func truncateLongString(s string, max int) string {
 	runes := []rune(s)
 	if len(runes) > max {
@@ -43,8 +64,7 @@ func truncateLongString(s string, max int) string {
 func issueMatchesFilter(issue jira.Issue, filter string) bool {
 	filterLower := strings.ToLower(filter)
 	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||
-		strings.Contains(strings.ToLower(issue.Key), filterLower) ||
-		strings.Contains(strings.ToLower(issue.Status), filterLower)
+		strings.Contains(strings.ToLower(issue.Key), filterLower)
 }
 
 func timeAgo(date string) string {
@@ -147,7 +167,6 @@ func (m model) getAbsoluteCursorLine() int {
 func sortSectionsByPriority(sections []Section) {
 	for si := range sections {
 		sort.Slice(sections[si].Issues, func(i, j int) bool {
-			log.Printf("Key: %s, Priority: %s\n", sections[si].Issues[i].Key, sections[si].Issues[i].Priority)
 			return priorityOrder[sections[si].Issues[i].Priority] < priorityOrder[sections[si].Issues[j].Priority]
 		})
 	}

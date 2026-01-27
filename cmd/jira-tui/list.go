@@ -14,11 +14,6 @@ import (
 func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 
-		// issuesToShow := m.issues
-		// if m.filterInput.Value() != "" {
-		// 	issuesToShow = filterIssues(m.issues, m.filterInput.Value())
-		// }
-
 		if m.filtering {
 			switch keyMsg.String() {
 			case "esc":
@@ -26,15 +21,41 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.filterInput.SetValue("")
 				m.filterInput.Blur()
 				m.cursor = 0
+				m.sectionCursor = 0
+				m.filteredSections = nil
 				return m, nil
 			case "enter":
 				m.filtering = false
 				m.filterInput.Blur()
+				m.sectionCursor = 0
+				m.cursor = 0
+				for i, s := range m.filteredSections {
+					if len(s.Issues) > 0 {
+						m.sectionCursor = i
+						m.cursor = 0
+						break
+					}
+				}
 				return m, nil
 			}
 
 			var cmd tea.Cmd
 			m.filterInput, cmd = m.filterInput.Update(msg)
+
+			if m.filterInput.Value() != "" {
+				m.filteredSections = filterSections(m.sections, m.filterInput.Value())
+
+				for i, s := range m.filteredSections {
+					if len(s.Issues) > 0 {
+						m.sectionCursor = i
+						m.cursor = 0
+						break
+					}
+				}
+
+			} else {
+				m.filteredSections = nil
+			}
 
 			return m, cmd
 		}
@@ -44,10 +65,18 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "up", "k":
+			sectionsToNavigate := m.sections
+			if m.filteredSections != nil {
+				sectionsToNavigate = m.filteredSections
+			}
+
 			if m.cursor == 0 {
-				if m.sectionCursor > 0 {
-					m.sectionCursor--
-					m.cursor = len(m.sections[m.sectionCursor].Issues) - 1
+				for prevSection := m.sectionCursor - 1; prevSection >= 0; prevSection-- {
+					if len(sectionsToNavigate[prevSection].Issues) > 0 {
+						m.sectionCursor = prevSection
+						m.cursor = len(sectionsToNavigate[prevSection].Issues) - 1
+						break
+					}
 				}
 			} else {
 				m.cursor--
@@ -67,11 +96,19 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "down", "j":
-			sectionIssues := m.sections[m.sectionCursor].Issues
+			sectionsToNavigate := m.sections
+			if m.filteredSections != nil {
+				sectionsToNavigate = m.filteredSections
+			}
+
+			sectionIssues := sectionsToNavigate[m.sectionCursor].Issues
 			if m.cursor == len(sectionIssues)-1 {
-				if m.sectionCursor < len(m.sections)-1 {
-					m.sectionCursor++
-					m.cursor = 0
+				for nextSection := m.sectionCursor + 1; nextSection < len(sectionsToNavigate); nextSection++ {
+					if len(sectionsToNavigate[nextSection].Issues) > 0 {
+						m.sectionCursor = nextSection
+						m.cursor = 0
+						break
+					}
 				}
 			} else {
 				m.cursor++
@@ -105,11 +142,17 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filterInput.SetValue("")
 			m.filterInput.Focus()
 			m.cursor = 0
+			m.sectionCursor = 0
 			return m, textinput.Blink
 
 		case "enter":
-			if m.sectionCursor < len(m.sections) && m.cursor < len(m.sections[m.sectionCursor].Issues) {
-				m.selectedIssue = m.sections[m.sectionCursor].Issues[m.cursor]
+			sectionsToNavigate := m.sections
+			if m.filteredSections != nil {
+				sectionsToNavigate = m.filteredSections
+			}
+
+			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
+				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				m.loadingDetail = true
 				m.loadingWorkLogs = true
 				m.issueDetail = nil
@@ -131,9 +174,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "esc":
 			m.filterInput.SetValue("")
+			m.filteredSections = nil
 			m.cursor = 0
+			m.sectionCursor = 0
 		}
-
 	}
 
 	return m, nil
@@ -198,7 +242,12 @@ func (m model) renderListView() string {
 
 	var listContent strings.Builder
 
-	for si, s := range m.sections {
+	sectionsToRender := m.sections
+	if m.filteredSections != nil {
+		sectionsToRender = m.filteredSections
+	}
+
+	for si, s := range sectionsToRender {
 		paddingLeft := ui.SeparatorStyle.Render("───")
 		sectionHeader := fmt.Sprintf("%s (%d) ", s.Name, len(s.Issues))
 		paddingRight := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-lipgloss.Width(sectionHeader)))

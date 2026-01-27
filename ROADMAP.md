@@ -1,7 +1,5 @@
 # jira-tui Roadmap
 
-<!--toc:start-->
-
 - [jira-tui Roadmap](#jira-tui-roadmap)
   - [High Priority](#high-priority)
     - [Bug Fixes](#bug-fixes)
@@ -37,6 +35,7 @@ This document tracks planned features and improvements for jira-tui.
       terminal width
 - [x] **Terminal resize handling** - Handle terminal resize events gracefully
       without breaking layout
+- [ ] Priority is different in m.issues than m.issueDetail
 
 ### UI/UX Improvements
 
@@ -59,15 +58,23 @@ This document tracks planned features and improvements for jira-tui.
   - Post worklog
   - Post estimate
   - Cancel reason
-- [x] **Fix command descriptions** - Review and improve help text/keybind descriptions across all views and modals
-- [ ] **Loading screen** - Add initial loading screen when starting the app (implement last)
+- [x] **Fix command descriptions** - Review and improve help text/keybind
+      descriptions across all views and modals
+- [ ] **Loading screen** - Add initial loading screen when starting the app
+      (implement last)
+- [ ] **Improve visibility for critical items** - critical items should be
+      more visible
 
 ### List View Enhancements
 
-- [ ] **Secondary sort by priority** - Within status groups, sort issues by priority (High → Medium → Low)
-- [ ] **Real-time filtering** - Implement `/` filter system for live issue filtering by Key, Summary, or Status
-- [ ] **Tab system** - Add tab structure (Active Work | Completed) with `[` `]` navigation
-- [ ] **Completed tab** - JQL query for Done issues: `status = Done AND updated >= -7d`, sorted by completion date
+- [x] **Secondary sort by priority** - Within status groups, sort issues by
+      priority (High → Medium → Low)
+- [x] **Real-time filtering** - Implement `/` filter system for live issue
+      filtering by Key, Summary, or Status
+- [ ] **Tab system** - Add tab structure (Active Work | Completed) with `[`
+      `]` navigation
+- [ ] **Completed tab** - JQL query for Done issues: `status = Done AND
+updated >= -7d`, sorted by completion date
 
 ### Core Features
 

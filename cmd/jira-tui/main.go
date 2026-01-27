@@ -59,6 +59,7 @@ type model struct {
 	listViewport           *viewport.Model
 	assignableUsersCache   []jira.User
 	filteredUsers          []*jira.User
+	filteredSections       []Section
 	assigneeCursor         int
 	worklogData            *WorklogFormData
 	estimateData           *EstimateFormData

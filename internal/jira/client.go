@@ -902,7 +902,6 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 
 func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, error) {
 	apiURL := fmt.Sprintf("%s/4/worklogs/issue/%s", c.tempoURL, issueID)
-	log.Printf("API URL: %s", apiURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
