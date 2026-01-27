@@ -221,7 +221,7 @@ func (c *Client) GetMySelf() (*User, error) {
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved  ORDER BY status DESC"
+	jql := "assignee = currentUser() AND resolution = Unresolved ORDER BY status DESC"
 
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}

@@ -375,29 +375,34 @@ func (m model) postEstimate(issueKey, estimate string) tea.Cmd {
 	}
 }
 
-func (m *model) classifyIssues() {
-	for idx := range m.sections {
-		m.sections[idx].Issues = nil
+func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Section {
+
+	sections := []Section{
+		{Name: "In Progress", CategoryKey: "indeterminate"},
+		{Name: "To Do", CategoryKey: "new"},
+		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
 
 	statusCategories := make(map[string]string)
-	for _, s := range m.statuses {
+	for _, s := range statuses {
 		statusCategories[strings.ToLower(s.Name)] = s.StatusCategory.Key
 	}
 
-	for i := range m.issues {
-		issue := &m.issues[i]
+	for i := range issues {
+		issue := &issues[i]
 		categoryKey := statusCategories[strings.ToLower(issue.Status)]
 
 		if strings.Contains(strings.ToLower(issue.Status), "validación") {
 			categoryKey = "done"
-		}
+		} // NOTE: probably should find a better way to show validación status
 
-		for idx := range m.sections {
-			if m.sections[idx].CategoryKey == categoryKey {
-				m.sections[idx].Issues = append(m.sections[idx].Issues, issue)
+		for idx := range sections {
+			if sections[idx].CategoryKey == categoryKey {
+				sections[idx].Issues = append(sections[idx].Issues, issue)
 				break
 			}
 		}
 	}
+
+	return sections
 }

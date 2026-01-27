@@ -102,7 +102,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.issues = msg.issues
 		m.loading = false
 		if len(m.statuses) > 0 {
-			m.classifyIssues()
+			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
 		return m, tea.Batch(spinnerCmd, m.fetchAllWorklogTotals(msg.issues))
 
@@ -149,7 +149,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusesLoadedMsg:
 		m.statuses = msg.statuses
 		if len(m.statuses) > 0 {
-			m.classifyIssues()
+			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
 		return m, spinnerCmd
 
@@ -347,12 +347,6 @@ func main() {
 	editTextAreaBox.MaxHeight = 20
 	editTextAreaBox.MaxHeight = 80
 
-	sections := []Section{
-		{Name: "In Progress", CategoryKey: "indeterminate"},
-		{Name: "To Do", CategoryKey: "new"},
-		{Name: "Done", CategoryKey: "done", Collapsed: true},
-	}
-
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
@@ -363,7 +357,6 @@ func main() {
 		editTextArea:  editTextAreaBox,
 		windowWidth:   80,
 		windowHeight:  24,
-		sections:      sections,
 		spinner:       spinner,
 		worklogTotals: make(map[string]int),
 		columnWidths:  ui.CalculateColumnWidths(80),
