@@ -1,24 +1,56 @@
 # jira-tui Roadmap
 
+<!--toc:start-->
+
+- [jira-tui Roadmap](#jira-tui-roadmap)
+  - [High Priority](#high-priority)
+    - [Bug Fixes](#bug-fixes)
+    - [UI/UX Improvements](#uiux-improvements)
+    - [List View Enhancements](#list-view-enhancements)
+    - [Core Features](#core-features)
+    - [Workflow & Time Tracking](#workflow-time-tracking)
+  - [Medium Priority](#medium-priority)
+    - [New Views](#new-views)
+    - [Issue Management](#issue-management)
+    - [Project Management](#project-management)
+    - [Notifications](#notifications)
+  - [Low Priority / Future Exploration](#low-priority-future-exploration)
+    - [Automation](#automation)
+    - [Advanced Features](#advanced-features)
+  - [Implementation Notes](#implementation-notes)
+    - [Architecture Considerations](#architecture-considerations)
+    - [Technical Debt](#technical-debt)
+  - [Completed Features](#completed-features)
+  <!--toc:end-->
+
 This document tracks planned features and improvements for jira-tui.
 
 ## High Priority
 
 ### Bug Fixes
 
-- [ ] **Fix worklog totals inconsistency** - Worklog totals column changes/disappears when navigating between list and detail views
-- [ ] **Consistent width management** - Ensure all views (list, detail, modals) use the same width calculation for consistent layout
-- [ ] **Dynamic column widths** - Calculate column widths dynamically based on terminal width
-- [ ] **Terminal resize handling** - Handle terminal resize events gracefully without breaking layout
+- [x] **Fix worklog totals inconsistency** - Worklog totals column changes/disappears
+      when navigating between list and detail views
+- [x] **Consistent width management** - Ensure all views (list, detail, modals)
+      use the same width calculation for consistent layout
+- [x] **Dynamic column widths** - Calculate column widths dynamically based on
+      terminal width
+- [x] **Terminal resize handling** - Handle terminal resize events gracefully
+      without breaking layout
 
 ### UI/UX Improvements
 
-- [ ] **Top panel across all views** - Display info panel (user, projects, status counts) consistently across list view, detail view, and modals
-- [ ] **Include worklog totals in top panel** - Add total logged time across all issues to the info panel
-- [ ] **Contextual footer keybindings** - Show footer with relevant keybindings for current view/modal
-- [ ] **Description formatting** - Format description text properly (preserve line breaks, formatting)
-- [ ] **Empty description handling** - Handle missing/empty descriptions gracefully
-- [ ] **Revamp modals** - Improve modal appearance, size, and positioning:
+- [x] **Top panel across all views** - Display info panel (user, projects,
+      status counts) consistently across list view, detail view, and modals
+- [x] **Include worklog totals in top panel** - Add total logged time across
+      all issues to the info panel
+- [x] **Contextual footer keybindings** - Show footer with relevant
+      keybindings for current view/modal
+- [x] **Description formatting** - Format description text properly (preserve
+      line breaks, formatting)
+- [x] **Empty description handling** - Handle missing/empty descriptions
+      gracefully
+- [x] **Revamp modals** - Improve modal appearance, size, and positioning:
   - Transition view
   - Assignable users search
   - Edit description
@@ -27,7 +59,7 @@ This document tracks planned features and improvements for jira-tui.
   - Post worklog
   - Post estimate
   - Cancel reason
-- [ ] **Fix command descriptions** - Review and improve help text/keybind descriptions across all views and modals
+- [x] **Fix command descriptions** - Review and improve help text/keybind descriptions across all views and modals
 - [ ] **Loading screen** - Add initial loading screen when starting the app (implement last)
 
 ### List View Enhancements
