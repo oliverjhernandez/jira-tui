@@ -76,6 +76,7 @@ type model struct {
 	spinner                spinner.Model
 	worklogTotals          map[string]int
 	columnWidths           ui.ColumnWidths
+	lastKey                string
 }
 
 func (m model) Init() tea.Cmd {
@@ -222,8 +223,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport.Width = msg.Width - 10
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
 		}
-
 		return m, spinnerCmd
+
+	case keyTimeoutMsg:
+		m.lastKey = ""
+		return m, nil
 
 	case errMsg:
 		m.err = msg.err

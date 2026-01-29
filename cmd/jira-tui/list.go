@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -58,6 +59,23 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return m, cmd
+		}
+
+		// sequential keybindings
+		switch {
+		case keyMsg.String() == "g" && m.lastKey == "":
+			m.lastKey = "g"
+			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+				return keyTimeoutMsg{}
+			})
+			return m, tick
+		case keyMsg.String() == "g" && m.lastKey == "g":
+			m.lastKey = ""
+			m.cursor = 0
+			m.sectionCursor = 0
+			m.listViewport.GotoTop()
+		default:
+			m.lastKey = ""
 		}
 
 		switch keyMsg.String() {
@@ -128,9 +146,9 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "G":
 			lenSection := len(m.sections) - 1
 			lenIssues := len(m.sections[lenSection].Issues) - 1
-
 			m.cursor = lenIssues
 			m.sectionCursor = lenSection
+			m.listViewport.GotoBottom()
 			return m, nil
 
 		case "ctrl+p":

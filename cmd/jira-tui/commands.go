@@ -83,6 +83,10 @@ type postedEstimateMsg struct {
 	success bool
 }
 
+type keyTimeoutMsg struct {
+	err error
+}
+
 type errMsg struct {
 	err error
 }
