@@ -162,7 +162,8 @@ func (m model) renderDetailView() string {
 
 	m.detailViewport.SetContent(scrollContent.String())
 
-	commandsHelp := strings.Join([]string{
+	var statusBar strings.Builder
+	statusBar.WriteString(strings.Join([]string{
 		ui.RenderKeyBind("j/k", "scroll"),
 		ui.RenderKeyBind("d", "description"),
 		ui.RenderKeyBind("p", "priority"),
@@ -172,22 +173,23 @@ func (m model) renderDetailView() string {
 		ui.RenderKeyBind("t", "transition"),
 		ui.RenderKeyBind("esc", "back"),
 		ui.RenderKeyBind("q", "quit"),
-	}, "  ")
+	}, "  "))
 
-	var statusBar strings.Builder
-	statusBar.WriteString(header + "\n\n")
-	statusBar.WriteString(metadataRow + "\n\n")
-	statusBar.WriteString(m.detailViewport.View())
+	var main strings.Builder
+	main.WriteString(header + "\n\n")
+	main.WriteString(metadataRow + "\n\n")
+	main.WriteString(m.detailViewport.View())
 
-	if m.loadingTransitions {
-		statusBar.WriteString(m.spinner.View() + "Loading transitions...\n")
+	if m.loadingDetail || m.loadingTransitions {
+		statusBar.Reset()
+		statusBar.WriteString(m.spinner.View() + "Loading...")
 	}
 
 	detailPanel := ui.PanelStyleActive.
 		Width(panelWidth).
 		Height(panelHeight).
-		Render(statusBar.String())
+		Render(main.String())
 
 	infoPanel := m.renderInfoPanel()
-	return infoPanel + "\n" + detailPanel + "\n" + ui.StatusBarStyle.Render(commandsHelp)
+	return infoPanel + "\n" + detailPanel + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

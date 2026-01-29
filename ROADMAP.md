@@ -78,7 +78,7 @@ updated >= -7d`, sorted by completion date
 
 ### Core Features
 
-- [ ] **Manual refresh command** - Add keybind to manually refresh current view data
+- [x] **Manual refresh command** - Add keybind to manually refresh current view data
 - [ ] **Data persistence** - Cache issues, worklogs, and user data locally to improve startup performance
 - [ ] **Auto-refresh persistence** - Refresh cached data every few minutes to sync with remote changes
 - [ ] **Cancel issue from list view** - Add ability to transition issue to cancelled status directly from list view

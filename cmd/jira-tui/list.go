@@ -316,27 +316,26 @@ func (m model) renderListView() string {
 	m.listViewport.SetContent(listContent.String())
 	m.listViewport.YPosition = 0
 
-	var statusBar string
+	var statusBar strings.Builder
 	if m.filtering {
-		statusBar = ui.StatusBarKeyStyle.Render("Filter: ") + m.filterInput.View() +
-			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)")
+		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.filterInput.View() +
+			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
 	} else if m.filterInput.Value() != "" {
-		statusBar = fmt.Sprintf("%s '%s' %s | %s | %s",
+		fmt.Fprintf(&statusBar, "%s '%s' %s | %s | %s",
 			ui.StatusBarDescStyle.Render("Filtered:"),
 			ui.StatusBarKeyStyle.Render(m.filterInput.Value()),
 			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", 10, len(m.issues))),
 			ui.RenderKeyBind("/", "change"),
-			ui.RenderKeyBind("esc", "clear"),
-		)
+			ui.RenderKeyBind("esc", "clear"))
 	} else {
-		statusBar = strings.Join([]string{
+		statusBar.WriteString(strings.Join([]string{
 			ui.RenderKeyBind("/", "filter"),
 			ui.RenderKeyBind("enter", "detail"),
 			ui.RenderKeyBind("t", "transition"),
 			ui.RenderKeyBind("q", "quit"),
-		}, "  ")
+		}, "  "))
 	}
 
 	infoPanel := m.renderInfoPanel()
-	return infoPanel + "\n" + m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar)
+	return infoPanel + "\n" + m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

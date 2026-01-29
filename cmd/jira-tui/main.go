@@ -92,13 +92,16 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var spinnerCmd tea.Cmd
-	m.spinner, spinnerCmd = m.spinner.Update(msg)
+	if tickMsg, ok := msg.(spinner.TickMsg); ok {
+		if m.loading || m.loadingDetail || m.loadingTransitions || m.loadingWorkLogs {
+			m.spinner, spinnerCmd = m.spinner.Update(tickMsg)
+		}
+	}
 
 	switch msg := msg.(type) {
-
 	case myselfLoadedMsg:
 		m.myself = msg.me
-		return m, spinnerCmd
+		return m, nil
 
 	case issuesLoadedMsg:
 		m.issues = msg.issues
@@ -106,25 +109,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
-		return m, tea.Batch(spinnerCmd, m.fetchAllWorklogTotals(msg.issues))
+		return m, tea.Batch(m.fetchAllWorklogTotals(msg.issues))
 
 	case worklogTotalsLoadedMsg:
 		if m.worklogTotals == nil {
 			m.worklogTotals = make(map[string]int)
 		}
 		maps.Copy(m.worklogTotals, msg.totals)
-		return m, spinnerCmd
+		return m, nil
 
 	case prioritiesLoadedMsg:
 		m.priorityOptions = msg.priorities
 		m.loading = false
-		return m, spinnerCmd
+		return m, nil
 
 	case issueDetailLoadedMsg:
 		m.issueDetail = msg.detail
 		m.loadingDetail = false
 		m.mode = detailView
-		return m, spinnerCmd
+		return m, nil
 
 	case workLogsLoadedMSg:
 		m.selectedIssueWorklogs = msg.workLogs
@@ -140,47 +143,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.worklogTotals[m.selectedIssue.ID] = total
 		}
-		return m, spinnerCmd
+		return m, nil
 
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
 		m.loadingTransitions = false
 		m.transitionData = NewTransitionFormData(msg.transitions)
-		return m, tea.Batch(spinnerCmd, m.transitionData.Form.Init())
+		return m, tea.Batch(m.transitionData.Form.Init())
 
 	case statusesLoadedMsg:
 		m.statuses = msg.statuses
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
-		return m, spinnerCmd
+		return m, nil
 
 	case transitionCompleteMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		m.issueDetail = nil
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case editedDescriptionMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case editedPriorityMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case postedCommentMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case postedWorkLog:
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.selectedIssue.ID))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.selectedIssue.ID))
 
 	case postedEstimateMsg:
 		if m.pendingTransition != nil {
@@ -191,17 +194,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
-			return m, tea.Batch(spinnerCmd, m.postTransition(m.selectedIssue.Key, transition.ID))
+			return m, tea.Batch(m.postTransition(m.selectedIssue.Key, transition.ID))
 		}
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(spinnerCmd, m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
 	case assignableUsersLoadedMsg:
 		m.assignableUsersCache = msg.users
 		m.loadingAssignableUsers = false
 		m.mode = assignableUsersSearchView
-		return m, spinnerCmd
+		return m, nil
 
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
@@ -223,7 +226,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport.Width = msg.Width - 10
 			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
 		}
-		return m, spinnerCmd
+		return m, nil
 
 	case keyTimeoutMsg:
 		m.lastKey = ""
@@ -235,7 +238,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingDetail = false
 		m.loadingTransitions = false
 
-		return m, spinnerCmd
+		return m, nil
 	}
 
 	var viewCmd tea.Cmd
