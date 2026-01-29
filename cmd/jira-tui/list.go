@@ -163,6 +163,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sectionCursor = 0
 			return m, textinput.Blink
 
+		case "ctrl+r":
+			if m.loading {
+				return m, nil
+			}
+			m.loading = true
+			return m, m.fetchMyIssues()
+
 		case "enter":
 			sectionsToNavigate := m.sections
 			if m.filteredSections != nil {

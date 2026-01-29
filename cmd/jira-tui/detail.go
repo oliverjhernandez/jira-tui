@@ -15,7 +15,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
-
 		switch keyPressMsg.String() {
 		case "j":
 			m.detailViewport.ScrollDown(1)
@@ -55,6 +54,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filterInput.Focus()
 			m.cursor = 0
 			return m, m.fetchAssignableUsers(m.issueDetail.Key)
+		case "ctrl+r":
+			if m.loadingDetail {
+				return m, nil
+			}
+			m.loadingDetail = true
+			return m, m.fetchIssueDetail(m.issueDetail.Key)
 		case "esc":
 			m.mode = listView
 			m.issueDetail = nil
