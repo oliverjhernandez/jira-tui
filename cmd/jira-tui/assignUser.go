@@ -15,15 +15,15 @@ func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
-			m.filterInput.SetValue("")
-			m.filterInput.Blur()
+			m.statusBarInput.SetValue("")
+			m.statusBarInput.Blur()
 			m.cursor = 0
 			m.mode = detailView
 			return m, nil
 		case "enter":
 			m.filtering = false
-			m.filterInput.SetValue("")
-			m.filterInput.Blur()
+			m.statusBarInput.SetValue("")
+			m.statusBarInput.Blur()
 			m.mode = detailView
 
 			if len(m.filteredUsers) > 0 {
@@ -37,10 +37,10 @@ func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		var cmd tea.Cmd
-		m.filterInput, cmd = m.filterInput.Update(msg)
+		m.statusBarInput, cmd = m.statusBarInput.Update(msg)
 
 		m.filteredUsers = nil
-		match := m.filterInput.Value()
+		match := m.statusBarInput.Value()
 		if len(match) >= 2 {
 			for _, u := range m.assignableUsersCache {
 				if strings.HasPrefix(strings.ToLower(u.Name), strings.ToLower(match)) {
@@ -73,7 +73,7 @@ func (m model) renderAssignableUsersView() string {
 	modalWidth := m.getLargeModalWidth()
 	modalHeight := 1
 
-	modalContent.WriteString(m.filterInput.View() + "\n\n")
+	modalContent.WriteString(m.statusBarInput.View() + "\n\n")
 
 	log.Printf("Filtered List: %+v", m.filteredUsers)
 

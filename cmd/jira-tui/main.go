@@ -46,7 +46,7 @@ type model struct {
 	issueDetail            *jira.IssueDetail
 	client                 *jira.Client
 	transitions            []jira.Transition
-	filterInput            textinput.Model
+	statusBarInput         textinput.Model
 	filtering              bool
 	editTextArea           textarea.Model
 	editingDescription     bool

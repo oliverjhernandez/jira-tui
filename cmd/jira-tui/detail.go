@@ -50,8 +50,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "a":
 			m.mode = assignableUsersSearchView
 			m.loadingAssignableUsers = true
-			m.filterInput.SetValue("")
-			m.filterInput.Focus()
+			m.statusBarInput.SetValue("")
+			m.statusBarInput.Focus()
 			m.cursor = 0
 			return m, m.fetchAssignableUsers(m.issueDetail.Key)
 		case "ctrl+r":
