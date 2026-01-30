@@ -9,19 +9,6 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 )
 
-const (
-	listView viewMode = iota
-	detailView
-	transitionView
-	assignableUsersSearchView
-	editDescriptionView
-	editPriorityView
-	postCommentView
-	postWorklogView
-	postEstimateView
-	postCancelReasonView
-)
-
 // bubbletea messages from commands
 type issuesLoadedMsg struct {
 	issues []jira.Issue

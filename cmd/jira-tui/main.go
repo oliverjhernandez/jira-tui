@@ -79,6 +79,20 @@ type model struct {
 	lastKey                string
 }
 
+const (
+	listView viewMode = iota
+	detailView
+	transitionView
+	assignableUsersSearchView
+	editDescriptionView
+	editPriorityView
+	postCommentView
+	postWorklogView
+	postEstimateView
+	postCancelReasonView
+	postSearchView
+)
+
 func (m model) Init() tea.Cmd {
 
 	var cmds []tea.Cmd
