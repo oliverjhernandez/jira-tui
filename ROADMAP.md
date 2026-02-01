@@ -78,12 +78,18 @@ updated >= -7d`, sorted by completion date
 
 ### Core Features
 
-- [x] **Manual refresh command** - Add keybind to manually refresh current view data
-- [ ] **Data persistence** - Cache issues, worklogs, and user data locally to improve startup performance
-- [ ] **Auto-refresh persistence** - Refresh cached data every few minutes to sync with remote changes
-- [ ] **Cancel issue from list view** - Add ability to transition issue to cancelled status directly from list view
-- [ ] **Pre-fetch next/previous issue** - Background fetch of adjacent issues in detail view for instant navigation
-- [ ] **API caching** - Implement caching strategy to avoid redundant API calls (transitions, users, etc.)
+- [x] **Manual refresh command** - Add keybind to manually refresh current view
+      data
+- [ ] **Data persistence** - Cache issues, worklogs, and user data locally
+      to improve startup performance
+- [ ] **Auto-refresh persistence** - Refresh cached data every few minutes to
+      sync with remote changes
+- [ ] **Cancel issue from list view** - Add ability to transition issue to
+      cancelled status directly from list view
+- [ ] **API caching** - Implement caching strategy to avoid redundant API
+      calls (transitions, users, etc.)
+- [ ] **Pre-fetch next/previous issue** - Background fetch of adjacent issue
+      s in detail view for instant navigation
 - [ ] **Optimistic UI updates** - Update UI immediately, sync with API in background
 
 ### Workflow & Time Tracking
@@ -99,6 +105,7 @@ updated >= -7d`, sorted by completion date
 ### New Views
 
 - [ ] **Unassigned tasks view** - Dedicated view to browse and manage unassigned issues
+- [ ] **Epic View** - Specific view for Epics with subtasks, etc
 - [ ] **Search view** - Search for specific issues by key, summary, assignee, etc.
 - [ ] **Team Work tab** - View issues assigned to others in same project
 - [ ] **All Issues tab** - No assignee filter, show all issues in projects
