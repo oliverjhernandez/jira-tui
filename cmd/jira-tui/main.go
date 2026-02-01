@@ -83,7 +83,7 @@ const (
 	listView viewMode = iota
 	detailView
 	transitionView
-	assignableUsersSearchView
+	assignUsersSearchView
 	editDescriptionView
 	editPriorityView
 	postCommentView
@@ -214,10 +214,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
 
-	case assignableUsersLoadedMsg:
-		m.assignableUsersCache = msg.users
-		m.loadingAssignableUsers = false
-		m.mode = assignableUsersSearchView
+	case assignUsersLoadedMsg:
+		m.assignUsersCache = msg.users
+		m.loadingAssignUsers = false
+		m.mode = assignUsersSearchView
 		return m, nil
 
 	case tea.WindowSizeMsg:

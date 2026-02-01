@@ -10,7 +10,7 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateAssignUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
@@ -42,7 +42,7 @@ func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.filteredUsers = nil
 		match := m.statusBarInput.Value()
 		if len(match) >= 2 {
-			for _, u := range m.assignableUsersCache {
+			for _, u := range m.assignUsersCache {
 				if strings.HasPrefix(strings.ToLower(u.Name), strings.ToLower(match)) {
 					m.filteredUsers = append(m.filteredUsers, &u)
 				}
@@ -55,8 +55,8 @@ func (m model) updateAssignableUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) renderAssignableUsersView() string {
-	log.Printf("=== renderAssignableUsersView called ===")
+func (m model) renderAssignUsersView() string {
+	log.Printf("=== renderAssignUsersView called ===")
 
 	bg := m.renderDetailView()
 
@@ -64,9 +64,9 @@ func (m model) renderAssignableUsersView() string {
 	fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.selectedIssue.Key)
 	modalContent.WriteString(strings.Repeat("=", 50) + "\n\n")
 
-	if m.loadingAssignableUsers {
+	if m.loadingAssignUsers {
 		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
-	} else if len(m.assignableUsersCache) == 0 {
+	} else if len(m.assignUsersCache) == 0 {
 		modalContent.WriteString("No assignable users for this issue.\n")
 	}
 

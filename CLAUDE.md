@@ -22,6 +22,7 @@ go run ./cmd/jira-tui
 ## Required Environment Variables
 
 The application requires these environment variables (typically in `.env`):
+
 - `JIRA_URL` - Jira instance base URL
 - `JIRA_EMAIL` - User email for authentication
 - `JIRA_TOKEN` - Jira API token
@@ -33,6 +34,7 @@ The application requires these environment variables (typically in `.env`):
 ### Bubble Tea Pattern
 
 The app follows the Elm architecture via Bubble Tea:
+
 - **Model** (`cmd/jira-tui/main.go`): Central state struct holding all application state including current view mode, issues, cursors, and UI components
 - **Update**: Handles messages and returns new state + commands. View-specific update handlers are in separate files (e.g., `list.go`, `detail.go`)
 - **View**: Renders current state to string. Each view mode has its own render function
@@ -40,10 +42,11 @@ The app follows the Elm architecture via Bubble Tea:
 ### View Modes
 
 The app uses `viewMode` enum to track current screen (`cmd/jira-tui/commands.go:12-22`):
+
 - `listView` - Main issue list grouped by status category
 - `detailView` - Single issue detail with comments
 - `transitionView` - Status transition picker
-- `assignableUsersSearchView` - User search for assignment
+- `assignUsersSearchView` - User search for assignment
 - `editDescriptionView`, `editPriorityView`, `postCommentView`, `postWorklogView`, `postEstimateView` - Edit forms
 
 ### Key Packages
@@ -56,6 +59,7 @@ The app uses `viewMode` enum to track current screen (`cmd/jira-tui/commands.go:
 ### Command Pattern
 
 Async operations use Bubble Tea commands that return messages:
+
 - Commands are defined in `commands.go` (e.g., `fetchMyIssues()`, `fetchIssueDetail()`)
 - Each command returns a `tea.Cmd` that performs API calls and returns a message type
 - Messages are handled in `Update()` to update state
@@ -63,6 +67,7 @@ Async operations use Bubble Tea commands that return messages:
 ### Issue Classification
 
 Issues are grouped into sections by status category (`classifyIssues()` in `commands.go:291`):
+
 - "In Progress" (`indeterminate`)
 - "To Do" (`new`)
 - "Done" (`done`)

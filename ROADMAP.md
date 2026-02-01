@@ -51,7 +51,7 @@ This document tracks planned features and improvements for jira-tui.
       gracefully
 - [x] **Revamp modals** - Improve modal appearance, size, and positioning:
   - Transition view
-  - Assignable users search
+  - Assign users search
   - Edit description
   - Edit priority
   - Post comment

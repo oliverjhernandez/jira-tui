@@ -34,7 +34,7 @@ type transitionsLoadedMsg struct {
 	transitions []jira.Transition
 }
 
-type assignableUsersLoadedMsg struct {
+type assignUsersLoadedMsg struct {
 	users []jira.User
 }
 
@@ -260,7 +260,7 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 	}
 }
 
-func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
+func (m model) fetchAssignUsers(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -271,7 +271,7 @@ func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return assignableUsersLoadedMsg{users}
+		return assignUsersLoadedMsg{users}
 	}
 }
 

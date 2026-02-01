@@ -48,12 +48,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.postingComment = true
 			return m, m.worklogData.Form.Init()
 		case "a":
-			m.mode = assignableUsersSearchView
-			m.loadingAssignableUsers = true
+			m.mode = assignUsersSearchView
+			m.loadingAssignUsers = true
 			m.statusBarInput.SetValue("")
 			m.statusBarInput.Focus()
 			m.cursor = 0
-			return m, m.fetchAssignableUsers(m.issueDetail.Key)
+			return m, m.fetchAssignUsers(m.issueDetail.Key)
 		case "ctrl+r":
 			if m.loadingDetail {
 				return m, nil
