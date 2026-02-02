@@ -15,6 +15,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
+		m.statusMessage = ""
+
 		switch keyPressMsg.String() {
 		case "j":
 			m.detailViewport.ScrollDown(1)
@@ -32,6 +34,16 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.priorityData.Form.Init()
 		case "t":
 			if m.issueDetail != nil {
+				if m.issueDetail.Description == "" {
+					m.statusMessage = "Cannot transition, missing description."
+					return m, nil
+				}
+
+				if m.issueDetail.OriginalEstimate == "" {
+					m.statusMessage = "Cannot transition, missing original estimate"
+					return m, nil
+				}
+
 				m.mode = transitionView
 				m.loadingTransitions = true
 				m.transitionCursor = 0
@@ -163,17 +175,22 @@ func (m model) renderDetailView() string {
 	m.detailViewport.SetContent(scrollContent.String())
 
 	var statusBar strings.Builder
-	statusBar.WriteString(strings.Join([]string{
-		ui.RenderKeyBind("j/k", "scroll"),
-		ui.RenderKeyBind("d", "description"),
-		ui.RenderKeyBind("p", "priority"),
-		ui.RenderKeyBind("c", "comment"),
-		ui.RenderKeyBind("w", "worklog"),
-		ui.RenderKeyBind("a", "assignee"),
-		ui.RenderKeyBind("t", "transition"),
-		ui.RenderKeyBind("esc", "back"),
-		ui.RenderKeyBind("q", "quit"),
-	}, "  "))
+
+	if m.statusMessage != "" {
+		statusBar.WriteString(m.statusMessage)
+	} else {
+		statusBar.WriteString(strings.Join([]string{
+			ui.RenderKeyBind("j/k", "scroll"),
+			ui.RenderKeyBind("d", "description"),
+			ui.RenderKeyBind("p", "priority"),
+			ui.RenderKeyBind("c", "comment"),
+			ui.RenderKeyBind("w", "worklog"),
+			ui.RenderKeyBind("a", "assignee"),
+			ui.RenderKeyBind("t", "transition"),
+			ui.RenderKeyBind("esc", "back"),
+			ui.RenderKeyBind("q", "quit"),
+		}, "  "))
+	}
 
 	var main strings.Builder
 	main.WriteString(header + "\n\n")

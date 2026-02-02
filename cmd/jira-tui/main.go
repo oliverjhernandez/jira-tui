@@ -78,6 +78,7 @@ type model struct {
 	worklogTotals         map[string]int
 	columnWidths          ui.ColumnWidths
 	lastKey               string
+	statusMessage         string
 }
 
 const (
