@@ -64,6 +64,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusBarInput.Focus()
 			m.cursor = 0
 			return m, m.fetchAssignUsers(m.issueDetail.Key)
+		case "e":
+			m.mode = postEstimateView
+			m.estimateData = NewEstimateFormData()
+			return m, m.estimateData.Form.Init()
 		case "ctrl+r":
 			if m.loadingDetail {
 				return m, nil
