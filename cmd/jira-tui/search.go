@@ -74,18 +74,5 @@ func (m model) renderSearchView() string {
 		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchData.Err.Error()))
 	}
 
-	// footer := strings.Join([]string{
-	// 	ui.RenderKeyBind("enter", "submit"),
-	// 	ui.RenderKeyBind("esc", "cancel"),
-	// }, "  ")
-	// modalContent.WriteString(footer)
-
-	contentWidth := ui.GetPanelWidth(m.windowWidth) - 6
-	contentHeight := 6
-	x, y := ui.GetCenteredModalPosition(m.windowWidth, m.windowHeight, contentWidth, contentHeight)
-
-	styledModal := ui.ModalTextInputStyle.Render(modalContent.String())
-	overlay := PlaceOverlay(x, y, styledModal, bg, false)
-
-	return overlay
+	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalTextInputStyle)
 }

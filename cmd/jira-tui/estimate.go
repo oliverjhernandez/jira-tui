@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -73,9 +72,6 @@ func (m model) renderPostEstimateView() string {
 
 	modalContent.WriteString(ui.StatusBarDescStyle.Render("You must set an original estimate before transitioning this issue.") + "\n\n")
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.5)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.4)
-
 	modalContent.WriteString(m.estimateData.Form.View())
 	modalContent.WriteString("\n\n")
 	footer := strings.Join([]string{
@@ -84,16 +80,5 @@ func (m model) renderPostEstimateView() string {
 	}, "  ")
 	modalContent.WriteString(footer)
 
-	modalStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2).
-		Width(modalWidth).
-		Height(modalHeight).
-		Background(lipgloss.Color("235"))
-
-	styledModal := modalStyle.Render(modalContent.String())
-	overlay := PlaceOverlay(10, 20, styledModal, bg, false)
-
-	return overlay
+	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalMultiSelectFormStyle)
 }

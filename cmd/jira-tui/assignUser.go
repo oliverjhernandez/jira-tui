@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -62,7 +61,6 @@ func (m model) renderAssignUsersView() string {
 
 	var modalContent strings.Builder
 	fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.selectedIssue.Key)
-	modalContent.WriteString(strings.Repeat("=", 50) + "\n\n")
 
 	if m.loadingAssignUsers {
 		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
@@ -70,15 +68,9 @@ func (m model) renderAssignUsersView() string {
 		modalContent.WriteString("No assignable users for this issue.\n")
 	}
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
-	modalHeight := 1
-
 	modalContent.WriteString(m.statusBarInput.View() + "\n\n")
 
-	log.Printf("Filtered List: %+v", m.filteredUsers)
-
 	for i, u := range m.filteredUsers {
-		modalHeight = 5 + len(m.filteredUsers)
 		if i == m.assigneeCursor {
 			modalContent.WriteString("> " + u.Name + "\n")
 		} else {
@@ -93,16 +85,11 @@ func (m model) renderAssignUsersView() string {
 	}, "  ")
 	modalContent.WriteString("\n" + footer)
 
-	modalStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2).
-		Width(modalWidth).
-		Height(modalHeight).
-		Background(lipgloss.Color("235"))
-
-	styledModal := modalStyle.Render(modalContent.String())
-	overlay := PlaceOverlay(10, 10, styledModal, bg, false)
-
-	return overlay
+	return ui.RenderCenteredModal(
+		modalContent.String(),
+		bg,
+		m.windowWidth,
+		m.windowHeight,
+		ui.ModalTextInputStyle,
+	)
 }

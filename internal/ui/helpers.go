@@ -155,13 +155,16 @@ func RenderIssueType(issueType string, showText bool) string {
 	}
 }
 
-func GetCenteredModalPosition(windowWidth, windowHeight, contentWidth, contentHeight int) (x, y int) {
-	totalWidth := contentWidth + 4 + 2
-	totalHeight := contentHeight + 2 + 2
+func RenderCenteredModal(content string, background string, windowWidth, windowHeight int, style lipgloss.Style) string {
+	styledModal := style.Render(content)
 
-	x = (windowWidth - totalWidth) / 2
-	y = (windowHeight - totalHeight) / 2
-	return x, y
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	x := (windowWidth - modalWidth) / 2
+	y := (windowHeight - modalHeight) / 2
+
+	return placeOverlay(x, y, styledModal, background, false)
 }
 
 func GetPanelWidth(windowWidth int) int {

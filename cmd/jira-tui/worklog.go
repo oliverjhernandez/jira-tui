@@ -7,7 +7,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -92,24 +91,6 @@ func (m model) renderPostWorklogView() string {
 	m.editTextArea.SetHeight(modalHeight - 8)
 
 	modalContent.WriteString(m.worklogData.Form.View())
-	modalContent.WriteString("\n\n")
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("tab", "next field"),
-		ui.RenderKeyBind("enter", "submit"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString(footer)
 
-	modalStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2).
-		Width(modalWidth).
-		Height(modalHeight).
-		Background(lipgloss.Color("235"))
-
-	styledModal := modalStyle.Render(modalContent.String())
-	overlay := PlaceOverlay(10, 20, styledModal, bg, false)
-
-	return overlay
+	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.Modal3InputFormStyle)
 }

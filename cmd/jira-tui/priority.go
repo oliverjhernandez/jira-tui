@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -68,7 +67,7 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderEditPriorityView() string {
 	log.Printf("=== renderEditPriorityView called ===")
 
-	background := m.renderDetailView()
+	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
 
@@ -77,21 +76,7 @@ func (m model) renderEditPriorityView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
-
 	modalContent.WriteString(m.priorityData.Form.View())
 
-	modalStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2).
-		Width(modalWidth).
-		Height(modalHeight).
-		Background(lipgloss.Color("235"))
-
-	styledModal := modalStyle.Render(modalContent.String())
-	overlay := PlaceOverlay(10, 20, styledModal, background, false)
-
-	return overlay
+	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalBlockInputStyle)
 }

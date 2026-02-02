@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ type whitespace struct {
 	chars string
 }
 
-func PlaceOverlay(
+func placeOverlay(
 	x, y int,
 	fg, bg string,
 	shadow bool, opts ...WhitespaceOption,
@@ -39,7 +39,7 @@ func PlaceOverlay(
 			}
 		}
 
-		fg = PlaceOverlay(0, 0, fg, shadowbg.String(), false, opts...)
+		fg = placeOverlay(0, 0, fg, shadowbg.String(), false, opts...)
 		fgLines, fgWidth = getLines(fg)
 		fgHeight = len(fgLines)
 	}
