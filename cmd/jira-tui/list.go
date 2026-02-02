@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -155,6 +154,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			sortSectionsByPriority(m.sections)
 			return m, nil
 
+		case "ctrl+s":
+			m.mode = searchView
+			m.searchData = NewSearchFormData()
+			return m, m.searchData.Form.Init()
+
 		case "/":
 			m.filtering = true
 			m.statusBarInput.SetValue("")
@@ -181,15 +185,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadingDetail = true
 				m.loadingWorkLogs = true
 				m.issueDetail = nil
-
-				if m.detailViewport == nil {
-					headerHeight := 15
-					footerHeight := 1
-					width := m.windowWidth - 10
-					height := m.windowHeight - headerHeight - footerHeight
-					vp := viewport.New(width, height)
-					m.detailViewport = &vp
-				}
 
 				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
 				worklogsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
@@ -263,8 +258,6 @@ func (m model) renderInfoPanel() string {
 }
 
 func (m model) renderListView() string {
-	panelWidth := m.getPanelWidth()
-
 	var listContent strings.Builder
 
 	sectionsToRender := m.sections
@@ -273,10 +266,8 @@ func (m model) renderListView() string {
 	}
 
 	for si, s := range sectionsToRender {
-		paddingLeft := ui.SeparatorStyle.Render("───")
-		sectionHeader := fmt.Sprintf("%s (%d) ", s.Name, len(s.Issues))
-		paddingRight := ui.SeparatorStyle.Render(ui.RepeatChar("─", panelWidth-lipgloss.Width(sectionHeader)))
-		fmt.Fprintf(&listContent, "%s%s%s\n", paddingLeft, sectionHeader, paddingRight)
+		sectionHeader := ui.SectionTitleStyle.Render(fmt.Sprintf("%s (%d)", s.Name, len(s.Issues)))
+		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
 
 		for ii, issue := range s.Issues {
 			issueType := ui.RenderIssueType(issue.Type, false)
@@ -319,9 +310,6 @@ func (m model) renderListView() string {
 	var statusBar strings.Builder
 	if m.filtering {
 		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.statusBarInput.View() +
-			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
-	} else if m.searching {
-		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Search: ") + m.statusBarInput.View() +
 			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
 	} else if m.statusBarInput.Value() != "" {
 		fmt.Fprintf(&statusBar, "%s '%s' %s | %s | %s",

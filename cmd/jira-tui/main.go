@@ -29,54 +29,55 @@ type Section struct {
 }
 
 type model struct {
-	myself                 *jira.User
-	issues                 []jira.Issue
-	mode                   viewMode
-	cursor                 int
-	priorityCursor         int
-	transitionCursor       int
-	priorityOptions        []jira.Priority
-	loading                bool
-	loadingDetail          bool
-	loadingTransitions     bool
-	loadingAssignableUsers bool
-	loadingWorkLogs        bool
-	selectedIssue          *jira.Issue
-	selectedIssueWorklogs  []jira.WorkLog
-	issueDetail            *jira.IssueDetail
-	client                 *jira.Client
-	transitions            []jira.Transition
-	statusBarInput         textinput.Model
-	filtering              bool
-	editTextArea           textarea.Model
-	editingDescription     bool
-	editingPriority        bool
-	postingComment         bool
-	postingWorkLog         bool
-	windowWidth            int
-	windowHeight           int
-	detailViewport         *viewport.Model
-	listViewport           *viewport.Model
-	assignableUsersCache   []jira.User
-	filteredUsers          []*jira.User
-	filteredSections       []Section
-	assigneeCursor         int
-	worklogData            *WorklogFormData
-	estimateData           *EstimateFormData
-	commentData            *CommentFormData
-	descriptionData        *DescriptionFormData
-	priorityData           *PriorityFormData
-	transitionData         *TransitionFormData
-	cancelReasonData       *CancelReasonFormData
-	pendingTransition      *jira.Transition
-	err                    error
-	sections               []Section
-	sectionCursor          int
-	statuses               []jira.Status
-	spinner                spinner.Model
-	worklogTotals          map[string]int
-	columnWidths           ui.ColumnWidths
-	lastKey                string
+	myself                *jira.User
+	issues                []jira.Issue
+	mode                  viewMode
+	cursor                int
+	priorityCursor        int
+	transitionCursor      int
+	priorityOptions       []jira.Priority
+	loading               bool
+	loadingDetail         bool
+	loadingTransitions    bool
+	loadingAssignUsers    bool
+	loadingWorkLogs       bool
+	selectedIssue         *jira.Issue
+	selectedIssueWorklogs []jira.WorkLog
+	issueDetail           *jira.IssueDetail
+	client                *jira.Client
+	transitions           []jira.Transition
+	statusBarInput        textinput.Model
+	filtering             bool
+	editTextArea          textarea.Model
+	editingDescription    bool
+	editingPriority       bool
+	postingComment        bool
+	postingWorkLog        bool
+	windowWidth           int
+	windowHeight          int
+	detailViewport        *viewport.Model
+	listViewport          *viewport.Model
+	assignUsersCache      []jira.User
+	filteredUsers         []*jira.User
+	filteredSections      []Section
+	assigneeCursor        int
+	worklogData           *WorklogFormData
+	estimateData          *EstimateFormData
+	searchData            *SearchFormData
+	commentData           *CommentFormData
+	descriptionData       *DescriptionFormData
+	priorityData          *PriorityFormData
+	transitionData        *TransitionFormData
+	cancelReasonData      *CancelReasonFormData
+	pendingTransition     *jira.Transition
+	err                   error
+	sections              []Section
+	sectionCursor         int
+	statuses              []jira.Status
+	spinner               spinner.Model
+	worklogTotals         map[string]int
+	columnWidths          ui.ColumnWidths
+	lastKey               string
 }
 
 const (
@@ -90,7 +91,7 @@ const (
 	postWorklogView
 	postEstimateView
 	postCancelReasonView
-	postSearchView
+	searchView
 )
 
 func (m model) Init() tea.Cmd {
@@ -138,6 +139,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case issueDetailLoadedMsg:
+		if m.detailViewport == nil {
+			headerHeight := 15
+			footerHeight := 1
+			// NOTE: determine window
+			width := m.windowWidth - 10
+			height := m.windowHeight - headerHeight - footerHeight
+			vp := viewport.New(width, height)
+			m.detailViewport = &vp
+		}
+
 		m.issueDetail = msg.detail
 		m.loadingDetail = false
 		m.mode = detailView
@@ -247,58 +258,46 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case errMsg:
-		m.err = msg.err
 		m.loading = false
 		m.loadingDetail = false
 		m.loadingTransitions = false
+
+		if m.mode == searchView && m.searchData != nil {
+			m.searchData = NewSearchFormData()
+			m.searchData.Err = msg.err
+		}
 
 		return m, nil
 	}
 
 	var viewCmd tea.Cmd
+	var tmpModel tea.Model
 	switch m.mode {
 	case listView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateListView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updateListView(msg)
 	case detailView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateDetailView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updateDetailView(msg)
 	case editDescriptionView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateEditDescriptionView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updateEditDescriptionView(msg)
 	case editPriorityView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateEditPriorityView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateTransitionView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updateTransitionView(msg)
 	case postCommentView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updatePostCommentView(msg)
-		m = tmp.(model)
-	case assignableUsersSearchView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updateAssignableUsersView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updatePostCommentView(msg)
+	case assignUsersSearchView:
+		tmpModel, viewCmd = m.updateAssignUsersView(msg)
 	case postWorklogView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updatePostWorklogView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updatePostWorklogView(msg)
 	case postEstimateView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updatePostEstimateView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updatePostEstimateView(msg)
 	case postCancelReasonView:
-		var tmp tea.Model
-		tmp, viewCmd = m.updatePostCancelReasonView(msg)
-		m = tmp.(model)
+		tmpModel, viewCmd = m.updatePostCancelReasonView(msg)
+	case searchView:
+		tmpModel, viewCmd = m.updateSearchView(msg)
 	}
 
+	m = tmpModel.(model)
 	return m, tea.Batch(spinnerCmd, viewCmd)
 }
 
@@ -334,6 +333,8 @@ func (m model) View() string {
 		content = m.renderPostEstimateView()
 	case postCancelReasonView:
 		content = m.renderPostCancelReasonView()
+	case searchView:
+		content = m.renderSearchView()
 	default:
 		content = "Unknown view\n"
 	}
@@ -372,16 +373,16 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		loading:       true,
-		mode:          listView,
-		client:        client,
-		filterInput:   filterBox,
-		editTextArea:  editTextAreaBox,
-		windowWidth:   80,
-		windowHeight:  24,
-		spinner:       spinner,
-		worklogTotals: make(map[string]int),
-		columnWidths:  ui.CalculateColumnWidths(80),
+		loading:        true,
+		mode:           listView,
+		client:         client,
+		statusBarInput: filterBox,
+		editTextArea:   editTextAreaBox,
+		windowWidth:    80,
+		windowHeight:   24,
+		spinner:        spinner,
+		worklogTotals:  make(map[string]int),
+		columnWidths:   ui.CalculateColumnWidths(80),
 	})
 
 	if _, err := p.Run(); err != nil {
