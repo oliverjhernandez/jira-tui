@@ -326,8 +326,8 @@ func (m model) View() string {
 		content = m.renderEditPriorityView()
 	case postCommentView:
 		content = m.renderPostCommentView()
-	case assignableUsersSearchView:
-		content = m.renderAssignableUsersView()
+	case assignUsersSearchView:
+		content = m.renderAssignUsersView()
 	case postWorklogView:
 		content = m.renderPostWorklogView()
 	case postEstimateView:

@@ -71,8 +71,8 @@ func (m model) renderEditDescriptionView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalWidth := m.getLargeModalWidth()
-	modalHeight := m.getModalHeight(0.6)
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.6)
 
 	modalContent.WriteString(m.descriptionData.Form.View())
 

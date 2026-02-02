@@ -8,6 +8,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// var (
+// 	modalWidth  = getModalWidth(0.8)
+// 	modalHeight = getModalHeight(0.7)
+// 	x, y        = getCenteredModalPosition(modalWidth, modalHeight)
+// )
+
 // FormatTimeSpent formats seconds into a human readable string like "3h" or "2h 30m"
 func FormatTimeSpent(seconds int) string {
 	if seconds == 0 {
@@ -147,4 +153,53 @@ func RenderIssueType(issueType string, showText bool) string {
 	} else {
 		return style.Render(icon)
 	}
+}
+
+func GetCenteredModalPosition(windowWidth, windowHeight, contentWidth, contentHeight int) (x, y int) {
+	totalWidth := contentWidth + 4 + 2
+	totalHeight := contentHeight + 2 + 2
+
+	x = (windowWidth - totalWidth) / 2
+	y = (windowHeight - totalHeight) / 2
+	return x, y
+}
+
+func GetPanelWidth(windowWidth int) int {
+	return max(120, windowWidth-4)
+}
+
+func GetPanelHeight(windowHeight int) int {
+	infoPanelHeight := 6
+	return windowHeight - 2 - infoPanelHeight
+}
+
+func GetModalWidth(windowWidth int, scale float64) int {
+	return int(float64(windowWidth) * scale)
+}
+
+func GetModalHeight(windowHeight int, scale float64) int {
+	return int(float64(windowHeight) * scale)
+}
+
+// func GetLargeModalWidth(windowWidth int) int {
+// 	return getModalWidth(windowWidth, 0.7)
+// }
+
+func GetListViewportWidth(windowWidth int) int {
+	return windowWidth - 4
+}
+
+func GetListViewportHeight(windowHeight int) int {
+	infoPanelHeight := 6
+	return windowHeight - 3 - infoPanelHeight
+}
+
+func GetDetailViewportWidth(windowWidth int) int {
+	return windowWidth - 10
+}
+
+func GetDetailViewportHeight(windowHeight int) int {
+	headerHeight := 15
+	footerHeight := 1
+	return windowHeight - headerHeight - footerHeight
 }

@@ -85,9 +85,9 @@ func (m model) renderDetailView() string {
 		return ui.PanelStyleActive.Render("Loading issue...")
 	}
 
-	panelWidth := m.getPanelWidth()
-	panelHeight := m.getPanelHeight()
-	contentWidth := m.getContentWidth()
+	panelWidth := ui.GetPanelWidth(m.windowWidth)
+	panelHeight := ui.GetPanelHeight(m.windowHeight)
+	contentWidth := panelWidth - 6
 
 	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
 

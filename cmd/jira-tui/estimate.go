@@ -73,8 +73,8 @@ func (m model) renderPostEstimateView() string {
 
 	modalContent.WriteString(ui.StatusBarDescStyle.Render("You must set an original estimate before transitioning this issue.") + "\n\n")
 
-	modalWidth := m.getModalWidth(0.5)
-	modalHeight := m.getModalHeight(0.4)
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.5)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.4)
 
 	modalContent.WriteString(m.estimateData.Form.View())
 	modalContent.WriteString("\n\n")
