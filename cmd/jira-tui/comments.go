@@ -37,7 +37,6 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
-			m.postingComment = false
 			return m, m.commentData.Form.Init()
 		}
 	}
@@ -50,7 +49,6 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.commentData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		m.postingComment = false
 		comment := m.commentData.Comment
 		cmds = append(cmds, m.postComment(m.issueDetail.Key, comment))
 	}

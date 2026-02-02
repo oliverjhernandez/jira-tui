@@ -51,8 +51,6 @@ type model struct {
 	editTextArea          textarea.Model
 	editingDescription    bool
 	editingPriority       bool
-	postingComment        bool
-	postingWorkLog        bool
 	windowWidth           int
 	windowHeight          int
 	detailViewport        *viewport.Model

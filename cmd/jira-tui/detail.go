@@ -52,12 +52,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 			m.commentData = NewCommentFormData()
 			m.mode = postCommentView
-			m.postingComment = true
 			return m, m.commentData.Form.Init()
 		case "w":
 			m.worklogData = NewWorklogFormData()
 			m.mode = postWorklogView
-			m.postingComment = true
 			return m, m.worklogData.Form.Init()
 		case "a":
 			m.mode = assignUsersSearchView

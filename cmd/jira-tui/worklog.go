@@ -50,7 +50,6 @@ func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
-			m.postingComment = false
 			return m, m.worklogData.Form.Init()
 		}
 
@@ -64,7 +63,6 @@ func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.worklogData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		m.postingWorkLog = false
 		log.Printf("User ID: %s", m.myself.ID)
 		timeSeconds, _ := parseTimeToSeconds(m.worklogData.Time)
 		cmds = append(cmds, m.postWorkLog(m.selectedIssue.ID, m.worklogData.Date, m.myself.ID, timeSeconds))
