@@ -64,6 +64,7 @@ This document tracks planned features and improvements for jira-tui.
       (implement last)
 - [ ] **Improve visibility for critical items** - critical items should be
       more visible
+- [ ] **Error descriptions** - write a helper to parse errors from the API
 
 ### List View Enhancements
 
