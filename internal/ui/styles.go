@@ -33,7 +33,7 @@ var (
 	ThemeFgDim   = CatOverlay1
 
 	// Borders
-	ThemeBorder       = CatSurface1
+	ThemeBorder       = CatOverlay2
 	ThemeBorderActive = CatBlue
 
 	// Accents
@@ -136,6 +136,21 @@ var (
 				Foreground(ThemeFgDim).
 				Bold(true).
 				Padding(0, 1)
+
+	ErrorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196"))
+)
+
+// ============================================================================
+// MODAL STYLES
+// ============================================================================
+
+var (
+	ModalTextInputStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		// Padding(1, 2).
+		Background(lipgloss.Color("235"))
 )
 
 // ============================================================================
@@ -298,6 +313,7 @@ var (
 
 	SectionTitleStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
+				PaddingLeft(4).
 				Bold(true)
 )
 
