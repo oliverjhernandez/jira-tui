@@ -172,9 +172,11 @@ type jiraComment struct {
 }
 
 type WorkLog struct {
-	ID     int    `json:"tempoWorklogId"`
-	Time   int    `json:"timeSpentSeconds"`
-	Author Author `json:"author"`
+	ID          int    `json:"tempoWorklogId"`
+	Time        int    `json:"timeSpentSeconds"`
+	Author      Author `json:"author"`
+	Description string `json:"description"`
+	UpdatedAt   string `json:"updatedAt"`
 }
 
 type Author struct {

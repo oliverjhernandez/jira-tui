@@ -137,6 +137,9 @@ var (
 				Bold(true).
 				Padding(0, 1)
 
+	PanelSecondaryStyle = lipgloss.NewStyle().
+				Padding(1, 2)
+
 	ErrorStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("196"))
 )

@@ -68,11 +68,21 @@ func issueMatchesFilter(issue jira.Issue, filter string) bool {
 }
 
 func timeAgo(date string) string {
-	jiraFormat := "2006-01-02T15:04:05.000-0700"
+	formats := []string{
+		"2006-01-02T15:04:05.000-0700", // Original format
+		time.RFC3339,                   // "2025-10-23T18:02:52Z"
+	}
 	defaultDatetime := "NA" // NOTE: to define
 	now := time.Now()
 
-	datetime, err := time.Parse(jiraFormat, date)
+	var datetime time.Time
+	var err error
+	for _, f := range formats {
+		datetime, err = time.Parse(f, date)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		log.Printf("error parsing comment date: %s ", err.Error())
 		return defaultDatetime

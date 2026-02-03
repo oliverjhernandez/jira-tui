@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -99,9 +100,19 @@ func (m model) renderDetailView() string {
 		return ui.PanelStyleActive.Render("Loading issue...")
 	}
 
+	infoPanel := m.renderInfoPanel()
+
 	panelWidth := ui.GetPanelWidth(m.windowWidth)
-	panelHeight := ui.GetPanelHeight(m.windowHeight)
-	contentWidth := panelWidth - 6
+	leftColumnWidth := int(float64(panelWidth) * 0.6)
+	rightColumnWidth := int(float64(panelWidth) * 0.4)
+
+	m.detailViewport.Width = leftColumnWidth
+
+	panelsHeight := 6 + // infoPanel height
+		11 + // detailPanel height
+		1 // statusBar height
+	m.detailViewport.Height = m.windowHeight - panelsHeight
+	leftViewport := m.detailViewport.View()
 
 	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
 
@@ -112,10 +123,10 @@ func (m model) renderDetailView() string {
 	}
 
 	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
-	summaryMaxWidth := contentWidth - 30
+	summaryMaxWidth := 50
 	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
 
-	headerLine1 := index + " " + parent + issueKey + "  " + issueSummary
+	leftHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
 	status := ui.RenderStatusBadge(m.issueDetail.Status)
 	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
@@ -125,9 +136,9 @@ func (m model) renderDetailView() string {
 		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.selectedIssueWorklogs))
 	}
 
-	headerLine2 := status + "  " + assignee + "  " + logged
+	leftHeaderLine2 := status + "  " + assignee + "  " + logged
 
-	header := headerLine1 + "\n" + headerLine2
+	leftHeader := leftHeaderLine1 + "\n" + leftHeaderLine2
 
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), 30)
 	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, 30)
@@ -144,10 +155,10 @@ func (m model) renderDetailView() string {
 
 	scrollContent.WriteString(ui.SeparatorStyle.Render(strings.Repeat("─", 4)+" ") +
 		ui.SectionTitleStyle.Render("󰠮 Description ") +
-		ui.SeparatorStyle.Render(strings.Repeat("─", 60)) + "\n\n")
+		ui.SeparatorStyle.Render(strings.Repeat("─", 20)) + "\n\n")
 
 	if m.issueDetail.Description != "" {
-		wrappedDesc := ui.DetailValueStyle.Width(contentWidth - 4).Render(m.issueDetail.Description)
+		wrappedDesc := ui.DetailValueStyle.Width(leftColumnWidth - 4).Render(m.issueDetail.Description)
 		scrollContent.WriteString(wrappedDesc + "\n\n")
 	} else {
 		scrollContent.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")
@@ -163,7 +174,7 @@ func (m model) renderDetailView() string {
 			author := ui.CommentAuthorStyle.Render(c.Author)
 			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
 			scrollContent.WriteString(author + timestamp + "\n")
-			wrappedBody := ui.CommentBodyStyle.Width(contentWidth - 4).Render(c.Body)
+			wrappedBody := ui.CommentBodyStyle.Width(leftColumnWidth - 4).Render(c.Body)
 			scrollContent.WriteString(wrappedBody + "\n")
 
 			if i < commentCount-1 {
@@ -174,7 +185,23 @@ func (m model) renderDetailView() string {
 		}
 	}
 
-	m.detailViewport.SetContent(scrollContent.String())
+	styledScrollContent := ui.PanelSecondaryStyle.
+		Width(leftColumnWidth).
+		Render(scrollContent.String())
+
+	m.detailViewport.SetContent(styledScrollContent)
+
+	var worklogs strings.Builder
+
+	for _, w := range m.selectedIssueWorklogs {
+		logHours := w.Time / 60 / 60
+		timeAgo := timeAgo(w.UpdatedAt)
+
+		worklogs.WriteString(ui.CommentTimestampStyle.Render(strconv.Itoa(logHours)+"h"+" • "+timeAgo) + "\n")
+		worklogs.WriteString(w.Author.AccountID + "\n") // TODO: map to proper user name
+		worklogs.WriteString("\"" + w.Description + "\"" + "\n")
+		worklogs.WriteString(strings.Repeat("-", 10) + "\n")
+	}
 
 	var statusBar strings.Builder
 
@@ -195,9 +222,8 @@ func (m model) renderDetailView() string {
 	}
 
 	var main strings.Builder
-	main.WriteString(header + "\n\n")
+	main.WriteString(leftHeader + "\n\n")
 	main.WriteString(metadataRow + "\n\n")
-	main.WriteString(m.detailViewport.View())
 
 	if m.loadingDetail || m.loadingTransitions {
 		statusBar.Reset()
@@ -205,10 +231,15 @@ func (m model) renderDetailView() string {
 	}
 
 	detailPanel := ui.PanelStyleActive.
-		Width(panelWidth).
-		Height(panelHeight).
+		Width(leftColumnWidth).
 		Render(main.String())
 
-	infoPanel := m.renderInfoPanel()
-	return infoPanel + "\n" + detailPanel + "\n" + ui.StatusBarStyle.Render(statusBar.String())
+	worklogsPanel := ui.PanelStyleActive.Width(rightColumnWidth).Render(worklogs.String())
+
+	leftColumn := lipgloss.JoinVertical(lipgloss.Left, detailPanel, leftViewport)
+	rightColumn := worklogsPanel
+
+	both := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+
+	return infoPanel + "\n" + both + "\n\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

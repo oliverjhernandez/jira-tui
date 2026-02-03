@@ -153,10 +153,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 		return m, nil
 
-	case workLogsLoadedMSg:
+	case workLogsLoadedMsg:
 		m.selectedIssueWorklogs = msg.workLogs
 		m.loadingWorkLogs = false
-		// Update worklogTotals map to keep it in sync
 		if m.selectedIssue != nil {
 			var total int
 			for _, wl := range msg.workLogs {

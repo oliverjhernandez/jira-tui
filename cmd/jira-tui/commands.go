@@ -38,7 +38,7 @@ type assignUsersLoadedMsg struct {
 	users []jira.User
 }
 
-type workLogsLoadedMSg struct {
+type workLogsLoadedMsg struct {
 	workLogs []jira.WorkLog
 }
 
@@ -286,7 +286,7 @@ func (m model) fetchWorkLogs(issueID string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return workLogsLoadedMSg{wls}
+		return workLogsLoadedMsg{wls}
 	}
 }
 

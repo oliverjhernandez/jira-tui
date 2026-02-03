@@ -95,11 +95,11 @@ updated >= -7d`, sorted by completion date
 
 ### Workflow & Time Tracking
 
-- [ ] **Transition validation** - Check required fields before allowing transitions, show warnings for missing prerequisites
-- [ ] **Original Estimate field** - Display in header, add `o` keybind to edit, validate format (e.g., "8h", "2d")
-- [ ] **Time logging on Done** - Automatic worklog prompt when transitioning to Done status
-- [ ] **Standalone time logging** - `l` keybind to log time without transition
-- [ ] **Worklog history** - Display all worklog entries in detail view with author, time, date, comment
+- [x] **Transition validation** - Check required fields before allowing transitions, show warnings for missing prerequisites
+- [x] **Original Estimate field** - Display in header, add `e` keybind to edit, validate format (e.g., "8h", "2d")
+- [x] **Time logging on Done** - Automatic worklog prompt when transitioning to Done status
+- [x] **Standalone time logging** - `w` keybind to log time without transition
+- [x] **Worklog history** - Display all worklog entries in detail view with author, time, date, comment
 
 ## Medium Priority
 
