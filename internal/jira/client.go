@@ -38,11 +38,11 @@ type IssueDetail struct {
 	Summary          string
 	Status           string
 	Type             string
-	Description      string
 	Assignee         string
+	Priority         Priority
+	Description      string
 	Reporter         string
 	Comments         []Comment
-	Priority         Priority
 	Parent           *Parent
 	OriginalEstimate string
 	Created          string
