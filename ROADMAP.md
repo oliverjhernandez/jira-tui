@@ -65,6 +65,7 @@ This document tracks planned features and improvements for jira-tui.
 - [ ] **Improve visibility for critical items** - critical items should be
       more visible
 - [ ] **Error descriptions** - write a helper to parse errors from the API
+- [ ] **Username Mapping** - map accountID to proper user names
 
 ### List View Enhancements
 
@@ -76,6 +77,11 @@ This document tracks planned features and improvements for jira-tui.
       `]` navigation
 - [ ] **Completed tab** - JQL query for Done issues: `status = Done AND
 updated >= -7d`, sorted by completion date
+
+### Detail View Enhancements
+
+- [ ] **Description blocks** - improve handling of text blocks in description
+- [ ] **Comment blocks** - improve handling of text blocks in comments
 
 ### Core Features
 
