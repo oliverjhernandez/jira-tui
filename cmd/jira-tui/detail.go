@@ -193,14 +193,16 @@ func (m model) renderDetailView() string {
 
 	var worklogs strings.Builder
 
-	for _, w := range m.selectedIssueWorklogs {
+	for i, w := range m.selectedIssueWorklogs {
 		logHours := w.Time / 60 / 60
 		timeAgo := timeAgo(w.UpdatedAt)
 
 		worklogs.WriteString(ui.CommentTimestampStyle.Render(strconv.Itoa(logHours)+"h"+" • "+timeAgo) + "\n")
 		worklogs.WriteString(w.Author.AccountID + "\n") // TODO: map to proper user name
 		worklogs.WriteString("\"" + w.Description + "\"" + "\n")
-		worklogs.WriteString(strings.Repeat("-", 10) + "\n")
+		if i != len(m.selectedIssueWorklogs)-1 {
+			worklogs.WriteString(strings.Repeat("-", 10) + "\n")
+		}
 	}
 
 	var statusBar strings.Builder
