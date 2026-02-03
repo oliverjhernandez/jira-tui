@@ -33,7 +33,6 @@ type model struct {
 	issues                []jira.Issue
 	mode                  viewMode
 	cursor                int
-	priorityCursor        int
 	transitionCursor      int
 	priorityOptions       []jira.Priority
 	loading               bool
@@ -156,7 +155,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workLogsLoadedMsg:
 		m.selectedIssueWorklogs = msg.workLogs
 		m.loadingWorkLogs = false
-		if m.selectedIssue != nil {
+		if m.issueDetail != nil {
 			var total int
 			for _, wl := range msg.workLogs {
 				total += wl.Time
@@ -164,7 +163,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.worklogTotals == nil {
 				m.worklogTotals = make(map[string]int)
 			}
-			m.worklogTotals[m.selectedIssue.ID] = total
+			m.worklogTotals[m.issueDetail.ID] = total
 		}
 		return m, nil
 
@@ -184,29 +183,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionCompleteMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		m.issueDetail = nil
-		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case editedDescriptionMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case editedPriorityMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case postedCommentMsg:
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case postedWorkLog:
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.selectedIssue.ID))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.issueDetail.ID))
 
 	case postedEstimateMsg:
 		if m.pendingTransition != nil {
@@ -217,11 +215,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
-			return m, tea.Batch(m.postTransition(m.selectedIssue.Key, transition.ID))
+			return m, tea.Batch(m.postTransition(m.issueDetail.Key, transition.ID))
 		}
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.selectedIssue.Key))
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case assignUsersLoadedMsg:
 		m.assignUsersCache = msg.users

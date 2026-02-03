@@ -100,7 +100,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView
-				cmds = append(cmds, m.postTransition(m.selectedIssue.Key, transition.ID))
+				cmds = append(cmds, m.postTransition(m.issueDetail.Key, transition.ID))
 			}
 		}
 	}
@@ -115,8 +115,8 @@ func (m model) renderTransitionView() string {
 
 	var modalContent strings.Builder
 
-	if m.selectedIssue != nil {
-		header := fmt.Sprintf("Change Status for %s", m.selectedIssue.Key)
+	if m.issueDetail != nil {
+		header := fmt.Sprintf("Change Status for %s", m.issueDetail.Key)
 		modalContent.WriteString(header + "\n\n")
 	}
 
@@ -155,7 +155,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
-			cmds = append(cmds, m.postTransitionWithReason(m.selectedIssue.Key, transition.ID, reason))
+			cmds = append(cmds, m.postTransitionWithReason(m.issueDetail.Key, transition.ID, reason))
 		}
 	}
 

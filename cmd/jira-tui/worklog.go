@@ -65,7 +65,7 @@ func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 		log.Printf("User ID: %s", m.myself.ID)
 		timeSeconds, _ := parseTimeToSeconds(m.worklogData.Time)
-		cmds = append(cmds, m.postWorkLog(m.selectedIssue.ID, m.worklogData.Date, m.myself.ID, timeSeconds))
+		cmds = append(cmds, m.postWorkLog(m.issueDetail.ID, m.worklogData.Date, m.myself.ID, timeSeconds))
 	}
 	return m, tea.Batch(cmds...)
 }

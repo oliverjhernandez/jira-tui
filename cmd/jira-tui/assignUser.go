@@ -10,7 +10,6 @@ import (
 )
 
 func (m model) updateAssignUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
-
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
@@ -28,7 +27,7 @@ func (m model) updateAssignUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.filteredUsers) > 0 {
 				assignee := m.filteredUsers[m.assigneeCursor]
 				assigneeCmd := m.postAssignee(m.issueDetail.Key, assignee.ID)
-				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
+				detailCmd := m.fetchIssueDetail(m.issueDetail.Key)
 				listCmd := m.fetchMyIssues()
 				m.filteredUsers = nil
 				return m, tea.Batch(assigneeCmd, detailCmd, listCmd)
@@ -60,7 +59,10 @@ func (m model) renderAssignUsersView() string {
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
-	fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.selectedIssue.Key)
+
+	if m.issueDetail != nil {
+		fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.issueDetail.Key)
+	}
 
 	if m.loadingAssignUsers {
 		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
