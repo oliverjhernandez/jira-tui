@@ -304,7 +304,13 @@ func (m model) renderListView() string {
 		}
 	}
 
-	m.listViewport.SetContent(listContent.String())
+	styledListContent := ui.PanelSecondaryStyle.
+		Render(listContent.String())
+
+	panelsHeight := 6 + // infoPanel height
+		1 // statusBar height
+	m.listViewport.Height = m.windowHeight - panelsHeight
+	m.listViewport.SetContent(styledListContent)
 	m.listViewport.YPosition = 0
 
 	var statusBar strings.Builder
