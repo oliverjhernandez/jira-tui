@@ -125,7 +125,7 @@ func RenderIssueType(issueType string, showText bool) string {
 	var icon string
 
 	switch {
-	case strings.Contains(t, "bug"):
+	case strings.Contains(t, "bug") || strings.Contains(t, "defecto qa"):
 		style = TypeBugStyle
 		icon = IconBug
 	case strings.Contains(t, "task"):
