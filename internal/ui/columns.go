@@ -47,10 +47,7 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		fixedWidths.Assignee + fixedWidths.Empty +
 		fixedWidths.TimeSpent
 
-	summaryWidth := availableWidth - fixedTotal
-	if summaryWidth < 30 {
-		summaryWidth = 30
-	}
+	summaryWidth := max(availableWidth-fixedTotal, 30)
 
 	fixedWidths.Summary = summaryWidth
 
@@ -63,19 +60,19 @@ func (c ColumnWidths) TotalWidth() int {
 }
 
 func (c ColumnWidths) RenderKey(text string) string {
-	return KeyFieldStyle.Copy().Width(c.Key).Render(text)
+	return KeyFieldStyle.Width(c.Key).Render(text)
 }
 
 func (c ColumnWidths) RenderSummary(text string) string {
-	return SummaryFieldStyle.Copy().Width(c.Summary).Render(text)
+	return SummaryFieldStyle.Width(c.Summary).Render(text)
 }
 
 func (c ColumnWidths) RenderAssignee(text string) string {
-	return AssigneeFieldStyle.Copy().Width(c.Assignee).Render(text)
+	return AssigneeFieldStyle.Width(c.Assignee).Render(text)
 }
 
 func (c ColumnWidths) RenderTimeSpent(text string) string {
-	return TimeSpentFieldStyle.Copy().Width(c.TimeSpent).Render(text)
+	return TimeSpentFieldStyle.Width(c.TimeSpent).Render(text)
 }
 
 func (c ColumnWidths) RenderEmptySpace() string {
