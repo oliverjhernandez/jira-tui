@@ -14,6 +14,10 @@ type issuesLoadedMsg struct {
 	issues []jira.Issue
 }
 
+type epicChildrenLoadedMsg struct {
+	children []jira.Issue
+}
+
 type myselfLoadedMsg struct {
 	me *jira.User
 }
@@ -215,6 +219,21 @@ func (m model) fetchMyIssues() tea.Cmd {
 	}
 }
 
+func (m model) fetchEpicChildren(epicKey string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		children, err := m.client.GetEpicChildren(context.Background(), epicKey)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return epicChildrenLoadedMsg{children}
+	}
+}
+
 func (m model) fetchPriorities() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -396,4 +415,12 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 	}
 
 	return sections
+}
+
+func (m *model) toggleRightColumnView() {
+	if m.rightColumnView == worklogsView {
+		m.rightColumnView = epicChildrenView
+	} else {
+		m.rightColumnView = worklogsView
+	}
 }

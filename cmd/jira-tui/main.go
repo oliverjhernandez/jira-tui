@@ -43,6 +43,7 @@ type model struct {
 	selectedIssue         *jira.Issue
 	selectedIssueWorklogs []jira.WorkLog
 	issueDetail           *jira.IssueDetail
+	epicChildren          []jira.Issue
 	client                *jira.Client
 	transitions           []jira.Transition
 	statusBarInput        textinput.Model
@@ -76,6 +77,7 @@ type model struct {
 	columnWidths          ui.ColumnWidths
 	lastKey               string
 	statusMessage         string
+	rightColumnView       rightColumnView
 }
 
 const (
@@ -123,6 +125,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
 		return m, tea.Batch(m.fetchAllWorklogTotals(msg.issues))
+
+	case epicChildrenLoadedMsg:
+		m.epicChildren = nil
+		m.epicChildren = msg.children
+		return m, nil
 
 	case worklogTotalsLoadedMsg:
 		if m.worklogTotals == nil {

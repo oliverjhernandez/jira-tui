@@ -11,6 +11,13 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+type rightColumnView int
+
+const (
+	worklogsView rightColumnView = iota
+	epicChildrenView
+)
+
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	log.Printf(">>> updateDetailView called with: %T", msg)
 	var cmd tea.Cmd
@@ -33,6 +40,11 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = editPriorityView
 			m.editingPriority = true
 			return m, m.priorityData.Form.Init()
+		case "tab":
+			if m.issueDetail.Type == "Epic" && len(m.epicChildren) > 0 {
+				m.toggleRightColumnView()
+			}
+			return m, nil
 		case "t":
 			if m.issueDetail != nil {
 				if m.issueDetail.Description == "" {
@@ -205,6 +217,18 @@ func (m model) renderDetailView() string {
 		}
 	}
 
+	var epicChildren strings.Builder
+
+	if m.epicChildren != nil {
+		for _, ec := range m.epicChildren {
+			epicChildren.WriteString(ui.RenderIssueType(ec.Type, false) + " ")
+			epicChildren.WriteString(ui.DetailHeaderStyle.Render(ec.Key) + " ")
+			epicChildren.WriteString(ui.StatusBarDescStyle.Render("@"+strings.ToLower(strings.Split(ec.Assignee, " ")[0])) + "\n")
+			epicChildren.WriteString(truncateLongString(ec.Summary, summaryMaxWidth) + "\n")
+
+		}
+	}
+
 	var statusBar strings.Builder
 
 	if m.statusMessage != "" {
@@ -237,9 +261,17 @@ func (m model) renderDetailView() string {
 		Render(main.String())
 
 	worklogsPanel := ui.PanelStyleActive.Width(rightColumnWidth).Render(worklogs.String())
+	epicChildrenPanel := ui.PanelStyleActive.Width(rightColumnWidth).Render(epicChildren.String())
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, detailPanel, leftViewport)
-	rightColumn := worklogsPanel
+
+	var rightColumn string
+	switch m.rightColumnView {
+	case worklogsView:
+		rightColumn = worklogsPanel
+	case epicChildrenView:
+		rightColumn = epicChildrenPanel
+	}
 
 	both := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 

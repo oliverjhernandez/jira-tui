@@ -222,9 +222,7 @@ func (c *Client) GetMySelf() (*User, error) {
 	return &result, nil
 }
 
-func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
-	jql := "assignee = currentUser() AND resolution = Unresolved ORDER BY status DESC"
-
+func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, error) {
 	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}
 	params.Add("jql", jql)
@@ -285,6 +283,16 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	}
 
 	return result, nil
+}
+
+func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
+	jql := "assignee = currentUser() AND resolution = Unresolved ORDER BY status DESC"
+	return c.SearchIssuesJql(ctx, jql)
+}
+
+func (c *Client) GetEpicChildren(ctx context.Context, epicKey string) ([]Issue, error) {
+	jql := fmt.Sprintf("parent = %s ORDER BY status DESC", epicKey)
+	return c.SearchIssuesJql(ctx, jql)
 }
 
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
