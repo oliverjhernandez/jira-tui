@@ -63,6 +63,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.transitionCursor = 0
 				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
+		case "l":
+			m.mode = issueSearchView
+			m.searchData = NewSearchFormData()
+			m.issueSelectionMode = linkIssue
+			return m, m.searchData.Form.Init()
+
 		case "c":
 			m.textArea = textarea.New()
 			m.textArea.Placeholder = "Add a comment..."

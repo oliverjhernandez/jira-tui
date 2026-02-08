@@ -54,6 +54,10 @@ type transitionCompleteMsg struct {
 	success bool
 }
 
+type linkIssueCompleteMsg struct {
+	success bool
+}
+
 type editedDescriptionMsg struct {
 	success bool
 }
@@ -422,5 +426,20 @@ func (m *model) toggleRightColumnView() {
 		m.rightColumnView = epicChildrenView
 	} else {
 		m.rightColumnView = worklogsView
+	}
+}
+
+func (m model) linkIssue(fromKey, toKey string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostIssueLink(context.Background(), fromKey, toKey)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return linkIssueCompleteMsg{success: true}
 	}
 }

@@ -23,6 +23,8 @@ type viewMode int
 
 type userSelectionMode int
 
+type issueSelectionMode int
+
 type Section struct {
 	Name        string
 	CategoryKey string
@@ -66,10 +68,11 @@ type model struct {
 	transitions       []jira.Transition
 	pendingTransition *jira.Transition
 
-	// Users & Selection
-	usersCache        []jira.User
-	filteredUsers     []*jira.User
-	userSelectionMode userSelectionMode
+	//  Selection
+	usersCache         []jira.User
+	filteredUsers      []*jira.User
+	userSelectionMode  userSelectionMode
+	issueSelectionMode issueSelectionMode
 
 	// Navigation & Cursors
 	cursor           int
@@ -91,7 +94,7 @@ type model struct {
 	// Form Data
 	worklogData      *WorklogFormData
 	estimateData     *EstimateFormData
-	searchData       *SearchFormData
+	searchData       *SearchIssueFormData
 	commentData      *CommentFormData
 	descriptionData  *DescriptionFormData
 	priorityData     *PriorityFormData
@@ -127,6 +130,11 @@ const (
 const (
 	assignUser = iota
 	insertMention
+)
+
+const (
+	standardIssueSearch = iota
+	linkIssue
 )
 
 func (m model) Init() tea.Cmd {
@@ -223,6 +231,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case transitionCompleteMsg:
+		m.mode = detailView
+		m.loadingDetail = true
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+
+	case linkIssueCompleteMsg:
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
