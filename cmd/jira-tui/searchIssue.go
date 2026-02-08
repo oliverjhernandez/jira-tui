@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,14 +8,14 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-type SearchFormData struct {
+type SearchIssueFormData struct {
 	Query string
 	Form  *huh.Form
 	Err   error
 }
 
-func NewSearchFormData() *SearchFormData {
-	e := &SearchFormData{
+func NewSearchFormData() *SearchIssueFormData {
+	e := &SearchIssueFormData{
 		Query: "",
 	}
 	e.Form = huh.NewForm(
@@ -31,7 +30,7 @@ func NewSearchFormData() *SearchFormData {
 	return e
 }
 
-func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
@@ -51,18 +50,22 @@ func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.searchData.Form.State == huh.StateCompleted {
-		m.searchData.Err = nil
-		m.loadingDetail = true
-		log.Printf("Search form completed with value: %s", m.searchData.Query)
-		cmds = append(cmds, m.fetchIssueDetail(m.searchData.Query))
+		switch m.issueSelectionMode {
+		case standardIssueSearch:
+			m.loadingDetail = true
+			cmds = append(cmds, m.fetchIssueDetail(m.searchData.Query))
+		case linkIssue:
+			m.loadingDetail = true
+			cmds = append(cmds, m.linkIssue(m.issueDetail.Key, m.searchData.Query))
+		}
 	}
+
+	m.searchData.Err = nil
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) renderSearchView() string {
-	log.Printf("=== renderSearchView called ===")
-
+func (m model) renderSearchIssueView() string {
 	bg := m.renderListView()
 
 	var modalContent strings.Builder

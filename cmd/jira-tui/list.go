@@ -155,7 +155,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "ctrl+s":
-			m.mode = searchView
+			m.mode = issueSearchView
 			m.searchData = NewSearchFormData()
 			return m, m.searchData.Form.Init()
 

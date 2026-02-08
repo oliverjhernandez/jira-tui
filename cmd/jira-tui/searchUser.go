@@ -8,7 +8,7 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func (m model) updateUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
@@ -62,7 +62,7 @@ func (m model) updateUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) renderUsersView() string {
+func (m model) renderSearchUserView() string {
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder

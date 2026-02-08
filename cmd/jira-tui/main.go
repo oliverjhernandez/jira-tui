@@ -121,7 +121,7 @@ const (
 	worklogView
 	estimateView
 	cancelReasonView
-	searchView
+	issueSearchView
 )
 
 const (
@@ -300,7 +300,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingDetail = false
 		m.loadingTransitions = false
 
-		if m.mode == searchView && m.searchData != nil {
+		if m.mode == issueSearchView && m.searchData != nil {
 			m.searchData = NewSearchFormData()
 			m.searchData.Err = msg.err
 		}
@@ -326,15 +326,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commentView:
 		tmpModel, viewCmd = m.updatePostCommentView(msg)
 	case userSearchView:
-		tmpModel, viewCmd = m.updateUsersView(msg)
+		tmpModel, viewCmd = m.updateSearchUserView(msg)
 	case worklogView:
 		tmpModel, viewCmd = m.updatePostWorklogView(msg)
 	case estimateView:
 		tmpModel, viewCmd = m.updatePostEstimateView(msg)
 	case cancelReasonView:
 		tmpModel, viewCmd = m.updatePostCancelReasonView(msg)
-	case searchView:
-		tmpModel, viewCmd = m.updateSearchView(msg)
+	case issueSearchView:
+		tmpModel, viewCmd = m.updateSearchIssueView(msg)
 	}
 
 	m = tmpModel.(model)
@@ -366,15 +366,15 @@ func (m model) View() string {
 	case commentView:
 		content = m.renderPostCommentView()
 	case userSearchView:
-		content = m.renderUsersView()
+		content = m.renderSearchUserView()
 	case worklogView:
 		content = m.renderPostWorklogView()
 	case estimateView:
 		content = m.renderPostEstimateView()
 	case cancelReasonView:
 		content = m.renderPostCancelReasonView()
-	case searchView:
-		content = m.renderSearchView()
+	case issueSearchView:
+		content = m.renderSearchIssueView()
 	default:
 		content = "Unknown view\n"
 	}
