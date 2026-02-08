@@ -31,56 +31,83 @@ type Section struct {
 }
 
 type model struct {
-	myself                *jira.User
-	issues                []jira.Issue
-	mode                  viewMode
-	cursor                int
-	transitionCursor      int
-	priorityOptions       []jira.Priority
-	loading               bool
-	loadingDetail         bool
-	loadingTransitions    bool
-	loadingAssignUsers    bool
-	loadingWorkLogs       bool
-	selectedIssue         *jira.Issue
+	// Core
+	client *jira.Client
+	mode   viewMode
+	err    error
+
+	// Window & Layout
+	windowWidth    int
+	windowHeight   int
+	columnWidths   ui.ColumnWidths
+	listViewport   *viewport.Model
+	detailViewport *viewport.Model
+
+	// User Data
+	myself *jira.User
+
+	// Issue Data
+	issues        []jira.Issue
+	selectedIssue *jira.Issue
+	issueDetail   *jira.IssueDetail
+	epicChildren  []jira.Issue
+
+	// Issue Metadata
+	sections         []Section
+	filteredSections []Section
+	statuses         []jira.Status
+	priorityOptions  []jira.Priority
+
+	// Worklogs
 	selectedIssueWorklogs []jira.WorkLog
-	issueDetail           *jira.IssueDetail
-	epicChildren          []jira.Issue
-	client                *jira.Client
-	transitions           []jira.Transition
-	textInput             textinput.Model
-	filtering             bool
-	textArea              textarea.Model
-	editingDescription    bool
-	editingPriority       bool
-	windowWidth           int
-	windowHeight          int
-	detailViewport        *viewport.Model
-	listViewport          *viewport.Model
-	usersCache            []jira.User
-	filteredUsers         []*jira.User
-	userSelectionMode     userSelectionMode
-	filteredSections      []Section
-	userCursor            int
-	worklogData           *WorklogFormData
-	estimateData          *EstimateFormData
-	searchData            *SearchFormData
-	commentData           *CommentFormData
-	descriptionData       *DescriptionFormData
-	priorityData          *PriorityFormData
-	transitionData        *TransitionFormData
-	cancelReasonData      *CancelReasonFormData
-	pendingTransition     *jira.Transition
-	err                   error
-	sections              []Section
-	sectionCursor         int
-	statuses              []jira.Status
-	spinner               spinner.Model
 	worklogTotals         map[string]int
-	columnWidths          ui.ColumnWidths
-	lastKey               string
-	statusMessage         string
-	rightColumnView       rightColumnView
+
+	// Transitions
+	transitions       []jira.Transition
+	pendingTransition *jira.Transition
+
+	// Users & Selection
+	usersCache        []jira.User
+	filteredUsers     []*jira.User
+	userSelectionMode userSelectionMode
+
+	// Navigation & Cursors
+	cursor           int
+	sectionCursor    int
+	transitionCursor int
+	userCursor       int
+	rightColumnView  rightColumnView
+
+	// Input Components
+	textInput textinput.Model
+	textArea  textarea.Model
+	filtering bool
+	lastKey   string
+
+	// Editing State
+	editingDescription bool
+	editingPriority    bool
+
+	// Form Data
+	worklogData      *WorklogFormData
+	estimateData     *EstimateFormData
+	searchData       *SearchFormData
+	commentData      *CommentFormData
+	descriptionData  *DescriptionFormData
+	priorityData     *PriorityFormData
+	transitionData   *TransitionFormData
+	cancelReasonData *CancelReasonFormData
+
+	// Loading States
+	loading            bool
+	loadingDetail      bool
+	loadingTransitions bool
+	loadingAssignUsers bool
+	loadingWorkLogs    bool
+
+	// UI Elements
+	spinner       spinner.Model
+	statusMessage string
 }
 
 const (
