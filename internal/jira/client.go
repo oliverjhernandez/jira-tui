@@ -7,11 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
-	"regexp"
-	"strings"
+	"slices"
 )
 
 type Client struct {
@@ -197,70 +195,149 @@ type StatusCategory struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) GetMySelf() (*User, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/myself", c.jiraURL)
-
-	req, err := http.NewRequest("GET", apiURL, nil)
-	if err != nil {
-		return nil, err
+func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, queryParams url.Values, body any, result any, expectedStatus ...int) error {
+	apiURL := fmt.Sprintf("%s%s", c.jiraURL, endpoint)
+	if len(queryParams) > 0 {
+		apiURL = fmt.Sprintf("%s?%s", apiURL, queryParams.Encode())
 	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request: %w", err)
+		}
+		bodyReader = bytes.NewReader(bodyBytes)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, apiURL, bodyReader)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
 	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
+	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
+	defer resp.Body.Close()
+
+	if len(expectedStatus) == 0 {
+		expectedStatus = []int{http.StatusOK, http.StatusCreated}
+	}
+
+	statusOK := slices.Contains(expectedStatus, resp.StatusCode)
+
+	if !statusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	if result != nil {
+		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
 		}
-	}()
-
-	var result User
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
 	}
 
-	return &result, nil
+	return nil
+}
+
+func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, queryParams url.Values, body any, result any, expectedStatus ...int) error {
+	apiURL := fmt.Sprintf("%s%s", c.tempoURL, endpoint)
+
+	if len(queryParams) > 0 {
+		apiURL = fmt.Sprintf("%s?%s", apiURL, queryParams.Encode())
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request: %w", err)
+		}
+		bodyReader = bytes.NewReader(bodyBytes)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, apiURL, bodyReader)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Tempo uses Bearer token, not BasicAuth
+	req.Header.Set("Authorization", "Bearer "+c.tempoToken)
+	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check status
+	if len(expectedStatus) == 0 {
+		expectedStatus = []int{http.StatusOK, http.StatusCreated}
+	}
+
+	statusOK := false
+	for _, status := range expectedStatus {
+		if resp.StatusCode == status {
+			statusOK = true
+			break
+		}
+	}
+
+	if !statusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	if result != nil {
+		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) GetMySelf(ctx context.Context) (*User, error) {
+	var result User
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		"/rest/api/3/myself",
+		nil,
+		nil,
+		&result,
+	)
+
+	return &result, err
 }
 
 func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/search/jql", c.jiraURL)
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
 	params.Add("fields", "id,summary,status,issuetype,assignee,priority")
 
-	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		fmt.Printf("JSON: %v", string(bodyBytes))
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
 	var searchResp searchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
+
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		"/rest/api/3/search/jql",
+		params,
+		nil,
+		&searchResp,
+	)
 
 	result := make([]Issue, 0, len(searchResp.Issues))
 
@@ -284,7 +361,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 		})
 	}
 
-	return result, nil
+	return result, err
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
@@ -298,44 +375,12 @@ func (c *Client) GetEpicChildren(ctx context.Context, epicKey string) ([]Issue, 
 }
 
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 	params := url.Values{}
 	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate,created,updated")
 
-	fullURL := fmt.Sprintf("%s?%s", apiURL, params.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("failed to close response body: %s", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
 	var issue jiraIssue
-	// body2 := resp.Body
-	// bodyBytes, _ := io.ReadAll(body2)
-	// prettyJSON, _ := json.MarshalIndent(string(bodyBytes), "", " ")
-	// log.Printf("JSON: %s", string(prettyJSON))
-
-	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
+	err := c.doJiraRequest(ctx, "GET", apiURL, params, nil, &issue)
 
 	detail := &IssueDetail{
 		ID:          issue.ID,
@@ -387,47 +432,11 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	detail.Created = issue.Fields.Created
 	detail.Updated = issue.Fields.Updated
 
-	return detail, nil
-}
-
-func formatSecondsToTime(seconds int) string {
-	hours := seconds / 3600
-	minutes := (seconds % 3600) / 60
-	if hours > 0 && minutes > 0 {
-		return fmt.Sprintf("%dh %dm", hours, minutes)
-	} else if hours > 0 {
-		return fmt.Sprintf("%dh", hours)
-	} else if minutes > 0 {
-		return fmt.Sprintf("%dm", minutes)
-	}
-	return ""
+	return detail, err
 }
 
 func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transition, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.jiraURL, issueKey)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/transitions", issueKey)
 
 	var result struct {
 		Transitions []struct {
@@ -439,9 +448,7 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 		} `json:"transitions"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
+	err := c.doJiraRequest(ctx, "GET", apiURL, nil, nil, &result)
 
 	transitions := make([]Transition, 0, len(result.Transitions))
 	for _, t := range result.Transitions {
@@ -451,40 +458,22 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 		})
 	}
 
-	return transitions, nil
+	return transitions, err
 }
 
 func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/user/assignable/search?issueKey=%s", c.jiraURL, issueKey)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
+	apiURL := fmt.Sprintf("/rest/api/3/user/assignable/search?issueKey=%s", issueKey)
 
 	var result []User
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&result,
+	)
 
 	users := make([]User, 0, len(result))
 	for _, t := range result {
@@ -494,48 +483,19 @@ func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) 
 		})
 	}
 
-	return users, nil
+	return users, err
 }
 
 func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/assignee", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/assignee", issueKey)
 
 	body := map[string]any{
 		"accountId": assigneeID,
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doJiraRequest(ctx, "PUT", apiURL, nil, body, nil)
 
-	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		log.Printf("failed to execute request: %s", err.Error())
-		return nil // TODO: manage error upwards
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-		return nil
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string) error {
@@ -547,7 +507,7 @@ func (c *Client) PostTransitionWithFields(ctx context.Context, issueKey, transit
 }
 
 func (c *Client) PostTransitionWithComment(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/transitions", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/transitions", issueKey)
 
 	body := map[string]any{
 		"transition": map[string]string{
@@ -585,40 +545,13 @@ func (c *Client) PostTransitionWithComment(ctx context.Context, issueKey, transi
 		}
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doJiraRequest(ctx, "POST", apiURL, nil, body, nil)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) UpdateDescription(ctx context.Context, issueKey string, description string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 
 	body := map[string]any{
 		"fields": map[string]any{
@@ -640,40 +573,20 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 		},
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
 
-	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 
 	body := map[string]any{
 		"fields": map[string]any{
@@ -683,41 +596,20 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 		},
 	}
 
-	// NOTE: sending a request probably should be a function on its own
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
 
-	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, estimate string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 
 	body := map[string]any{
 		"fields": map[string]any{
@@ -727,73 +619,32 @@ func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, es
 		},
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
 
-	req, err := http.NewRequestWithContext(ctx, "PUT", apiURL, strings.NewReader(string(bodyBytes)))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
-	apiURL := fmt.Sprintf("%s/rest/api/3/priority", c.jiraURL)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("Body: %+v", string(bodyBytes))
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
 	var result []struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		"/rest/api/3/priority",
+		nil,
+		nil,
+		&result,
+	)
 
 	priorities := make([]Priority, 0, len(result))
 	for _, t := range result {
@@ -803,7 +654,7 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 		})
 	}
 
-	return priorities, nil
+	return priorities, err
 }
 
 func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, error) {
@@ -811,38 +662,22 @@ func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, 
 	seen := make(map[string]bool)
 
 	for _, p := range projects {
-		apiURL := fmt.Sprintf("%s/rest/api/3/project/%s/statuses", c.jiraURL, p)
-
-		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
-		}
-
-		req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-		req.Header.Set("Accept", "application/json")
-
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("failed to execute request: %w", err)
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				log.Printf("error: %v", err)
-			}
-		}()
-
-		if resp.StatusCode != http.StatusOK {
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			log.Printf("Body: %+v", string(bodyBytes))
-			return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-		}
+		apiURL := fmt.Sprintf("/rest/api/3/project/%s/statuses", p)
 
 		var result []struct {
 			Statuses []Status `json:"statuses"`
 		}
 
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, fmt.Errorf("failed to decode response: %w", err)
+		err := c.doJiraRequest(
+			ctx,
+			"GET",
+			apiURL,
+			nil,
+			nil,
+			&result,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get statuses for project %s: %w", p, err)
 		}
 
 		for _, r := range result {
@@ -859,9 +694,9 @@ func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, 
 }
 
 func (c *Client) PostComment(ctx context.Context, issueKey string, comment string, usersCache []User) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.jiraURL, issueKey)
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/comment", issueKey)
 
-	content, err := c.parseCommentContent(comment, usersCache)
+	content, err := parseCommentContent(comment, usersCache)
 	if err != nil {
 		return fmt.Errorf("failed to parse comment.: %w", err)
 	}
@@ -879,80 +714,34 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 		},
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err = c.doJiraRequest(
+		ctx,
+		"POST",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
 
-	var prettyJSON bytes.Buffer
-	json.Indent(&prettyJSON, bodyBytes, "", "  ")
-	log.Printf("Full request body:\n%s", prettyJSON.String())
-
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.SetBasicAuth(c.jiraEmail, c.jiraToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, error) {
-	apiURL := fmt.Sprintf("%s/4/worklogs/issue/%s", c.tempoURL, issueID)
+	apiURL := fmt.Sprintf("/4/worklogs/issue/%s", issueID)
+	var result worklogsResponse
+	err := c.doTempoRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&result,
+	)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.tempoToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("Body: %+v", string(bodyBytes))
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var wl worklogsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&wl); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return wl.Results, nil
+	return result.Results, err
 }
 
 func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID string, time int) error {
-	apiURL := fmt.Sprintf("%s/4/worklogs", c.tempoURL)
-
 	body := map[string]any{
 		"issueId":          issueID,
 		"timeSpentSeconds": time,
@@ -960,102 +749,41 @@ func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID strin
 		"authorAccountId":  accountID,
 	}
 
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
+	err := c.doTempoRequest(
+		ctx,
+		"POST",
+		"/4/worklogs",
+		nil,
+		body,
+		nil,
+	)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.tempoToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	return nil
+	return err
 }
 
-func (c *Client) parseCommentContent(comment string, users []User) ([]map[string]any, error) {
-	mentionRegex := regexp.MustCompile(`@\[([^\]]+)\]`)
+func (c *Client) PostIssueLink(ctx context.Context, fromKey, toKey string) error {
+	apiURL := fmt.Sprintf("%s/rest/api/3/issueLink", c.jiraURL)
 
-	matches := mentionRegex.FindAllStringSubmatchIndex(comment, -1)
-
-	if len(matches) == 0 {
-		return []map[string]any{
-			{
-				"type": "text",
-				"text": comment,
-			},
-		}, nil
+	body := map[string]any{
+		"type": map[string]string{
+			"name": "Relates",
+		},
+		"inwardIssue": map[string]string{
+			"key": fromKey,
+		},
+		"outwardIssue": map[string]string{
+			"key": toKey,
+		},
 	}
 
-	var content []map[string]any
-	lastEnd := 0
+	err := c.doJiraRequest(
+		ctx,
+		"POST",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
 
-	for _, match := range matches {
-		matchStart := match[0]
-		matchEnd := match[1]
-		nameStart := match[2]
-		nameEnd := match[3]
-
-		if matchStart > lastEnd {
-			content = append(content, map[string]any{
-				"type": "text",
-				"text": comment[lastEnd:matchStart],
-			})
-		}
-
-		displayName := comment[nameStart:nameEnd]
-
-		var accountID string
-		for _, user := range users {
-			if user.Name == displayName {
-				accountID = user.ID
-				break
-			}
-		}
-
-		if accountID == "" {
-			content = append(content, map[string]any{
-				"type": "text",
-				"text": comment[matchStart:matchEnd],
-			})
-		} else {
-			content = append(content, map[string]any{
-				"type": "mention",
-				"attrs": map[string]string{
-					"id":   accountID,
-					"text": "@" + displayName,
-				},
-			})
-		}
-
-		lastEnd = matchEnd
-	}
-
-	if lastEnd < len(comment) {
-		content = append(content, map[string]any{
-			"type": "text",
-			"text": comment[lastEnd:],
-		})
-	}
-
-	return content, nil
+	return err
 }
