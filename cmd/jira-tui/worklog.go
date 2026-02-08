@@ -85,8 +85,8 @@ func (m model) renderPostWorklogView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.6)
 
-	m.editTextArea.SetWidth(modalWidth - 6)
-	m.editTextArea.SetHeight(modalHeight - 8)
+	m.textArea.SetWidth(modalWidth - 6)
+	m.textArea.SetHeight(modalHeight - 8)
 
 	modalContent.WriteString(m.worklogData.Form.View())
 

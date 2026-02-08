@@ -90,13 +90,13 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.issueDetail != nil && m.issueDetail.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()
-					m.mode = postEstimateView
+					m.mode = estimateView
 					return m, m.estimateData.Form.Init()
 				}
 				if isCancelTransition(transition) {
 					m.pendingTransition = &transition
 					m.cancelReasonData = NewCancelReasonFormData()
-					m.mode = postCancelReasonView
+					m.mode = cancelReasonView
 					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView

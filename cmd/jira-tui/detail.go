@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -32,12 +33,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport.ScrollUp(1)
 		case "d":
 			m.descriptionData = NewDescriptionFormData(m.issueDetail.Description)
-			m.mode = editDescriptionView
+			m.mode = descriptionView
 			m.editingDescription = true
 			return m, m.descriptionData.Form.Init()
 		case "p":
 			m.priorityData = NewPriorityFormData(m.priorityOptions, m.issueDetail.Priority.Name)
-			m.mode = editPriorityView
+			m.mode = priorityView
 			m.editingPriority = true
 			return m, m.priorityData.Form.Init()
 		case "tab":
@@ -63,22 +64,26 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
 		case "c":
+			m.textArea = textarea.New()
+			m.textArea.Placeholder = "Add a comment..."
+			m.textArea.Focus()
+			m.textArea.SetWidth(80)
 			m.commentData = NewCommentFormData()
-			m.mode = postCommentView
+			m.mode = commentView
 			return m, m.commentData.Form.Init()
 		case "w":
 			m.worklogData = NewWorklogFormData()
-			m.mode = postWorklogView
+			m.mode = worklogView
 			return m, m.worklogData.Form.Init()
 		case "a":
-			m.mode = assignUsersSearchView
+			m.mode = userSearchView
 			m.loadingAssignUsers = true
-			m.statusBarInput.SetValue("")
-			m.statusBarInput.Focus()
+			m.textInput.SetValue("")
+			m.textInput.Focus()
 			m.cursor = 0
-			return m, m.fetchAssignUsers(m.issueDetail.Key)
+			return m, m.fetchUsers(m.issueDetail.Key)
 		case "e":
-			m.mode = postEstimateView
+			m.mode = estimateView
 			m.estimateData = NewEstimateFormData()
 			return m, m.estimateData.Form.Init()
 		case "ctrl+r":
@@ -90,7 +95,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = listView
 			m.issueDetail = nil
-			m.editTextArea.SetValue("")
+			m.textArea.SetValue("")
 			m.loading = true
 			return m, m.fetchMyIssues()
 		case "q", "ctrl+c":

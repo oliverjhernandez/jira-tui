@@ -21,6 +21,8 @@ var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
 
 type viewMode int
 
+type userSelectionMode int
+
 type Section struct {
 	Name        string
 	CategoryKey string
@@ -46,19 +48,20 @@ type model struct {
 	epicChildren          []jira.Issue
 	client                *jira.Client
 	transitions           []jira.Transition
-	statusBarInput        textinput.Model
+	textInput             textinput.Model
 	filtering             bool
-	editTextArea          textarea.Model
+	textArea              textarea.Model
 	editingDescription    bool
 	editingPriority       bool
 	windowWidth           int
 	windowHeight          int
 	detailViewport        *viewport.Model
 	listViewport          *viewport.Model
-	assignUsersCache      []jira.User
+	usersCache            []jira.User
 	filteredUsers         []*jira.User
+	userSelectionMode     userSelectionMode
 	filteredSections      []Section
-	assigneeCursor        int
+	userCursor            int
 	worklogData           *WorklogFormData
 	estimateData          *EstimateFormData
 	searchData            *SearchFormData
@@ -84,14 +87,19 @@ const (
 	listView viewMode = iota
 	detailView
 	transitionView
-	assignUsersSearchView
-	editDescriptionView
-	editPriorityView
-	postCommentView
-	postWorklogView
-	postEstimateView
-	postCancelReasonView
+	userSearchView
+	descriptionView
+	priorityView
+	commentView
+	worklogView
+	estimateView
+	cancelReasonView
 	searchView
+)
+
+const (
+	assignUser = iota
+	insertMention
 )
 
 func (m model) Init() tea.Cmd {
@@ -218,7 +226,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			transition := m.pendingTransition
 			if isCancelTransition(*transition) {
 				m.cancelReasonData = NewCancelReasonFormData()
-				m.mode = postCancelReasonView
+				m.mode = cancelReasonView
 				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
@@ -229,9 +237,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case assignUsersLoadedMsg:
-		m.assignUsersCache = msg.users
+		m.usersCache = msg.users
 		m.loadingAssignUsers = false
-		m.mode = assignUsersSearchView
+		m.mode = userSearchView
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -270,6 +278,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searchData.Err = msg.err
 		}
 
+		log.Printf("ERROR: %w", msg.err)
+
 		return m, nil
 	}
 
@@ -280,21 +290,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateListView(msg)
 	case detailView:
 		tmpModel, viewCmd = m.updateDetailView(msg)
-	case editDescriptionView:
+	case descriptionView:
 		tmpModel, viewCmd = m.updateEditDescriptionView(msg)
-	case editPriorityView:
+	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
 		tmpModel, viewCmd = m.updateTransitionView(msg)
-	case postCommentView:
+	case commentView:
 		tmpModel, viewCmd = m.updatePostCommentView(msg)
-	case assignUsersSearchView:
-		tmpModel, viewCmd = m.updateAssignUsersView(msg)
-	case postWorklogView:
+	case userSearchView:
+		tmpModel, viewCmd = m.updateUsersView(msg)
+	case worklogView:
 		tmpModel, viewCmd = m.updatePostWorklogView(msg)
-	case postEstimateView:
+	case estimateView:
 		tmpModel, viewCmd = m.updatePostEstimateView(msg)
-	case postCancelReasonView:
+	case cancelReasonView:
 		tmpModel, viewCmd = m.updatePostCancelReasonView(msg)
 	case searchView:
 		tmpModel, viewCmd = m.updateSearchView(msg)
@@ -322,19 +332,19 @@ func (m model) View() string {
 		content = m.renderDetailView()
 	case transitionView:
 		content = m.renderTransitionView()
-	case editDescriptionView:
+	case descriptionView:
 		content = m.renderEditDescriptionView()
-	case editPriorityView:
+	case priorityView:
 		content = m.renderEditPriorityView()
-	case postCommentView:
+	case commentView:
 		content = m.renderPostCommentView()
-	case assignUsersSearchView:
-		content = m.renderAssignUsersView()
-	case postWorklogView:
+	case userSearchView:
+		content = m.renderUsersView()
+	case worklogView:
 		content = m.renderPostWorklogView()
-	case postEstimateView:
+	case estimateView:
 		content = m.renderPostEstimateView()
-	case postCancelReasonView:
+	case cancelReasonView:
 		content = m.renderPostCancelReasonView()
 	case searchView:
 		content = m.renderSearchView()
@@ -365,27 +375,27 @@ func main() {
 	}()
 	log.SetOutput(logFile)
 
-	filterBox := textinput.New()
-	filterBox.CharLimit = 50
+	textInput := textinput.New()
+	textInput.CharLimit = 50
 
-	editTextAreaBox := textarea.New()
-	editTextAreaBox.CharLimit = 3000
-	editTextAreaBox.MaxHeight = 20
-	editTextAreaBox.MaxHeight = 80
+	textAreaBox := textarea.New()
+	textAreaBox.CharLimit = 3000
+	textAreaBox.MaxHeight = 20
+	textAreaBox.MaxHeight = 80
 
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		loading:        true,
-		mode:           listView,
-		client:         client,
-		statusBarInput: filterBox,
-		editTextArea:   editTextAreaBox,
-		windowWidth:    80,
-		windowHeight:   24,
-		spinner:        spinner,
-		worklogTotals:  make(map[string]int),
-		columnWidths:   ui.CalculateColumnWidths(80),
+		loading:       true,
+		mode:          listView,
+		client:        client,
+		textInput:     textInput,
+		textArea:      textAreaBox,
+		windowWidth:   80,
+		windowHeight:  24,
+		spinner:       spinner,
+		worklogTotals: make(map[string]int),
+		columnWidths:  ui.CalculateColumnWidths(80),
 	})
 
 	if _, err := p.Run(); err != nil {

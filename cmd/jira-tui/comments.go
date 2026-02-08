@@ -32,19 +32,33 @@ func NewCommentFormData() *CommentFormData {
 
 func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+	var cmd tea.Cmd
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
 			return m, m.commentData.Form.Init()
-		}
-	}
 
-	form, cmd := m.commentData.Form.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		m.commentData.Form = f
-		cmds = append(cmds, cmd)
+		case "@":
+			m.mode = userSearchView
+			m.userSelectionMode = insertMention
+			m.loadingAssignUsers = true
+			m.textInput.SetValue("")
+			m.textInput.Focus()
+			m.cursor = 0
+			return m, m.fetchUsers(m.issueDetail.Key)
+
+		case "alt+enter", "ctrl+s":
+			log.Printf("Issue: %s", m.issueDetail.Summary)
+			if m.textArea.Value() != "" {
+				comment := m.textArea.Value()
+				m.textArea.Reset()
+				m.mode = detailView
+				return m, m.postComment(m.issueDetail.Key, comment)
+			}
+			return m, nil
+		}
 	}
 
 	if m.commentData.Form.State == huh.StateCompleted {
@@ -53,12 +67,13 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.postComment(m.issueDetail.Key, comment))
 	}
 
+	m.textArea, cmd = m.textArea.Update(msg)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderPostCommentView() string {
-	log.Printf("=== renderPostCommentView called ===")
-
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
@@ -68,7 +83,13 @@ func (m model) renderPostCommentView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalContent.WriteString(m.commentData.Form.View())
+	modalContent.WriteString(m.textArea.View())
+
+	footer := strings.Join([]string{
+		ui.RenderKeyBind("ctrl+enter", "submit"),
+		ui.RenderKeyBind("esc", "cancel"),
+	}, "  ")
+	modalContent.WriteString("\n" + footer)
 
 	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalBlockInputStyle)
 }

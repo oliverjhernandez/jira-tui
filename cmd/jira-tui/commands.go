@@ -270,7 +270,7 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.PostComment(context.Background(), issueKey, comment)
+		err := m.client.PostComment(context.Background(), issueKey, comment, m.usersCache)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -279,7 +279,7 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 	}
 }
 
-func (m model) fetchAssignUsers(issueKey string) tea.Cmd {
+func (m model) fetchUsers(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}

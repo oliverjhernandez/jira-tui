@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -137,6 +138,7 @@ type contentNode struct {
 
 type attrs struct {
 	Text string `json:"text,omitempty"`
+	ID   string `json:"id,omitempty"`
 }
 
 type statusField struct {
@@ -856,9 +858,13 @@ func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, 
 	return statuses, nil
 }
 
-func (c *Client) PostComment(ctx context.Context, issueKey string, comment string) error {
-
+func (c *Client) PostComment(ctx context.Context, issueKey string, comment string, usersCache []User) error {
 	apiURL := fmt.Sprintf("%s/rest/api/3/issue/%s/comment", c.jiraURL, issueKey)
+
+	content, err := c.parseCommentContent(comment, usersCache)
+	if err != nil {
+		return fmt.Errorf("failed to parse comment.: %w", err)
+	}
 
 	body := map[string]any{
 		"body": map[string]any{
@@ -866,13 +872,8 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 			"version": 1,
 			"content": []map[string]any{
 				{
-					"content": []map[string]any{
-						{
-							"text": comment,
-							"type": "text",
-						},
-					},
-					"type": "paragraph",
+					"content": content,
+					"type":    "paragraph",
 				},
 			},
 		},
@@ -882,6 +883,10 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
+
+	var prettyJSON bytes.Buffer
+	json.Indent(&prettyJSON, bodyBytes, "", "  ")
+	log.Printf("Full request body:\n%s", prettyJSON.String())
 
 	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(bodyBytes))
 	if err != nil {
@@ -985,4 +990,72 @@ func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID strin
 	}
 
 	return nil
+}
+
+func (c *Client) parseCommentContent(comment string, users []User) ([]map[string]any, error) {
+	mentionRegex := regexp.MustCompile(`@\[([^\]]+)\]`)
+
+	matches := mentionRegex.FindAllStringSubmatchIndex(comment, -1)
+
+	if len(matches) == 0 {
+		return []map[string]any{
+			{
+				"type": "text",
+				"text": comment,
+			},
+		}, nil
+	}
+
+	var content []map[string]any
+	lastEnd := 0
+
+	for _, match := range matches {
+		matchStart := match[0]
+		matchEnd := match[1]
+		nameStart := match[2]
+		nameEnd := match[3]
+
+		if matchStart > lastEnd {
+			content = append(content, map[string]any{
+				"type": "text",
+				"text": comment[lastEnd:matchStart],
+			})
+		}
+
+		displayName := comment[nameStart:nameEnd]
+
+		var accountID string
+		for _, user := range users {
+			if user.Name == displayName {
+				accountID = user.ID
+				break
+			}
+		}
+
+		if accountID == "" {
+			content = append(content, map[string]any{
+				"type": "text",
+				"text": comment[matchStart:matchEnd],
+			})
+		} else {
+			content = append(content, map[string]any{
+				"type": "mention",
+				"attrs": map[string]string{
+					"id":   accountID,
+					"text": "@" + displayName,
+				},
+			})
+		}
+
+		lastEnd = matchEnd
+	}
+
+	if lastEnd < len(comment) {
+		content = append(content, map[string]any{
+			"type": "text",
+			"text": comment[lastEnd:],
+		})
+	}
+
+	return content, nil
 }

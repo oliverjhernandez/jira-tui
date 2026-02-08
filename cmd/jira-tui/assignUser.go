@@ -2,45 +2,54 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func (m model) updateAssignUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
-			m.statusBarInput.SetValue("")
-			m.statusBarInput.Blur()
+			m.textInput.SetValue("")
+			m.textInput.Blur()
 			m.cursor = 0
 			m.mode = detailView
 			return m, nil
 		case "enter":
 			m.filtering = false
-			m.statusBarInput.SetValue("")
-			m.statusBarInput.Blur()
+			m.textInput.SetValue("")
+			m.textInput.Blur()
 			m.mode = detailView
 
 			if len(m.filteredUsers) > 0 {
-				assignee := m.filteredUsers[m.assigneeCursor]
-				assigneeCmd := m.postAssignee(m.issueDetail.Key, assignee.ID)
-				detailCmd := m.fetchIssueDetail(m.issueDetail.Key)
-				listCmd := m.fetchMyIssues()
-				m.filteredUsers = nil
-				return m, tea.Batch(assigneeCmd, detailCmd, listCmd)
+				user := m.filteredUsers[m.userCursor]
+
+				switch m.userSelectionMode {
+				case assignUser:
+					assigneeCmd := m.postAssignee(m.issueDetail.Key, user.ID)
+					detailCmd := m.fetchIssueDetail(m.issueDetail.Key)
+					listCmd := m.fetchMyIssues()
+					m.filteredUsers = nil
+					return m, tea.Batch(assigneeCmd, detailCmd, listCmd)
+				case insertMention:
+					mention := "@[" + user.Name + "]"
+					value := m.textArea.Value() + mention
+					m.textArea.SetValue(value)
+					m.mode = commentView
+					return m, nil
+				}
 			}
 		}
 
 		var cmd tea.Cmd
-		m.statusBarInput, cmd = m.statusBarInput.Update(msg)
+		m.textInput, cmd = m.textInput.Update(msg)
 
 		m.filteredUsers = nil
-		match := m.statusBarInput.Value()
+		match := m.textInput.Value()
 		if len(match) >= 2 {
-			for _, u := range m.assignUsersCache {
+			for _, u := range m.usersCache {
 				if strings.HasPrefix(strings.ToLower(u.Name), strings.ToLower(match)) {
 					m.filteredUsers = append(m.filteredUsers, &u)
 				}
@@ -53,9 +62,7 @@ func (m model) updateAssignUsersView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) renderAssignUsersView() string {
-	log.Printf("=== renderAssignUsersView called ===")
-
+func (m model) renderUsersView() string {
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
@@ -66,14 +73,14 @@ func (m model) renderAssignUsersView() string {
 
 	if m.loadingAssignUsers {
 		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
-	} else if len(m.assignUsersCache) == 0 {
+	} else if len(m.usersCache) == 0 {
 		modalContent.WriteString("No assignable users for this issue.\n")
 	}
 
-	modalContent.WriteString(m.statusBarInput.View() + "\n\n")
+	modalContent.WriteString(m.textInput.View() + "\n\n")
 
 	for i, u := range m.filteredUsers {
-		if i == m.assigneeCursor {
+		if i == m.userCursor {
 			modalContent.WriteString("> " + u.Name + "\n")
 		} else {
 			modalContent.WriteString("  " + u.Name + "\n")

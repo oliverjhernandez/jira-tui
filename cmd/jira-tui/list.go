@@ -18,15 +18,15 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch keyMsg.String() {
 			case "esc":
 				m.filtering = false
-				m.statusBarInput.SetValue("")
-				m.statusBarInput.Blur()
+				m.textInput.SetValue("")
+				m.textInput.Blur()
 				m.cursor = 0
 				m.sectionCursor = 0
 				m.filteredSections = nil
 				return m, nil
 			case "enter":
 				m.filtering = false
-				m.statusBarInput.Blur()
+				m.textInput.Blur()
 				m.sectionCursor = 0
 				m.cursor = 0
 				for i, s := range m.filteredSections {
@@ -40,10 +40,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			var cmd tea.Cmd
-			m.statusBarInput, cmd = m.statusBarInput.Update(msg)
+			m.textInput, cmd = m.textInput.Update(msg)
 
-			if m.statusBarInput.Value() != "" {
-				m.filteredSections = filterSections(m.sections, m.statusBarInput.Value())
+			if m.textInput.Value() != "" {
+				m.filteredSections = filterSections(m.sections, m.textInput.Value())
 
 				for i, s := range m.filteredSections {
 					if len(s.Issues) > 0 {
@@ -161,8 +161,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "/":
 			m.filtering = true
-			m.statusBarInput.SetValue("")
-			m.statusBarInput.Focus()
+			m.textInput.SetValue("")
+			m.textInput.Focus()
 			m.cursor = 0
 			m.sectionCursor = 0
 			return m, textinput.Blink
@@ -204,7 +204,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "esc":
-			m.statusBarInput.SetValue("")
+			m.textInput.SetValue("")
 			m.filteredSections = nil
 			m.cursor = 0
 			m.sectionCursor = 0
@@ -326,12 +326,12 @@ func (m model) renderListView() string {
 
 	var statusBar strings.Builder
 	if m.filtering {
-		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.statusBarInput.View() +
+		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.textInput.View() +
 			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
-	} else if m.statusBarInput.Value() != "" {
+	} else if m.textInput.Value() != "" {
 		fmt.Fprintf(&statusBar, "%s '%s' %s | %s | %s",
 			ui.StatusBarDescStyle.Render("Filtered:"),
-			ui.StatusBarKeyStyle.Render(m.statusBarInput.Value()),
+			ui.StatusBarKeyStyle.Render(m.textInput.Value()),
 			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", 10, len(m.issues))),
 			ui.RenderKeyBind("/", "change"),
 			ui.RenderKeyBind("esc", "clear"))
