@@ -92,7 +92,7 @@ func (m model) fetchMySelf() tea.Cmd {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		me, err := m.client.GetMySelf()
+		me, err := m.client.GetMySelf(context.Background())
 		if err != nil {
 			return errMsg{err}
 		}
@@ -436,6 +436,21 @@ func (m model) linkIssue(fromKey, toKey string) tea.Cmd {
 		}
 
 		err := m.client.PostIssueLink(context.Background(), fromKey, toKey)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return linkIssueCompleteMsg{success: true}
+	}
+}
+
+func (m model) unlinkIssue(linkID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.DeleteIssueLink(context.Background(), linkID)
 		if err != nil {
 			return errMsg{err}
 		}

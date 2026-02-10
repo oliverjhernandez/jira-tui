@@ -21,7 +21,6 @@ const (
 )
 
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	log.Printf(">>> updateDetailView called with: %T", msg)
 	var cmd tea.Cmd
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
@@ -64,11 +63,21 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.transitionCursor = 0
 				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
+
 		case "l":
 			m.mode = issueSearchView
 			m.searchData = NewSearchFormData()
 			m.issueSelectionMode = linkIssue
 			return m, m.searchData.Form.Init()
+
+		case "L":
+			m.mode = detailView
+			m.issueSelectionMode = linkIssue
+			if m.issueDetail.IsLinkedToChange {
+				m.loadingDetail = true
+				return m, m.unlinkIssue(m.issueDetail.ChangeIssueLinkID)
+			}
+			return m, nil
 
 		case "c":
 			m.textArea = textarea.New()
@@ -151,8 +160,12 @@ func (m model) renderDetailView() string {
 	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
 	summaryMaxWidth := 50
 	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
+	var linkedIssue string
+	if m.issueDetail.IsLinkedToChange {
+		linkedIssue = "🔗 " + jira.MonthlyChangeIssue
+	}
 
-	leftHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
+	leftHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary + " " + linkedIssue
 
 	status := ui.RenderStatusBadge(m.issueDetail.Status)
 	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))

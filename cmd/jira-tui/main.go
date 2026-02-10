@@ -197,6 +197,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailViewport = &vp
 		}
 
+		if m.searchData != nil {
+			m.searchData = NewSearchFormData()
+		}
+
 		m.issueDetail = msg.detail
 		m.loadingDetail = false
 		m.mode = detailView
@@ -309,6 +313,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case errMsg:
+		log.Printf("ERROR: %s", msg.err)
 		m.loading = false
 		m.loadingDetail = false
 		m.loadingTransitions = false

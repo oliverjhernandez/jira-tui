@@ -32,20 +32,22 @@ type Issue struct {
 }
 
 type IssueDetail struct {
-	ID               string
-	Key              string
-	Summary          string
-	Status           string
-	Type             string
-	Assignee         string
-	Priority         Priority
-	Description      string
-	Reporter         string
-	Comments         []Comment
-	Parent           *Parent
-	OriginalEstimate string
-	Created          string
-	Updated          string
+	ID                string
+	Key               string
+	Summary           string
+	Status            string
+	Type              string
+	Assignee          string
+	Priority          Priority
+	Description       string
+	Reporter          string
+	Comments          []Comment
+	Parent            *Parent
+	IsLinkedToChange  bool
+	ChangeIssueLinkID string
+	OriginalEstimate  string
+	Created           string
+	Updated           string
 }
 
 type Comment struct {
@@ -103,6 +105,29 @@ type jiraIssue struct {
 	Fields issueFields `json:"fields"`
 }
 
+type IssueLink struct {
+	ID           string       `json:"id"`
+	InwardIssue  *LinkedIssue `json:"inwardIssue,omitempty"`
+	OutwardIssue *LinkedIssue `json:"outwardIssue,omitempty"`
+	Type         Link         `json:"type"`
+}
+
+const MonthlyChangeIssue = "IN-912"
+
+type LinkedIssue struct {
+	ID     string         `json:"id"`
+	Key    string         `json:"key"`
+	Self   string         `json:"self"`
+	Fields map[string]any `json:"fields"`
+}
+
+type Link struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Inward  string `json:"inward"`
+	Outward string `json:"outward"`
+}
+
 type issueFields struct {
 	Summary          string          `json:"summary"`
 	Description      *descriptionDoc `json:"description"`
@@ -113,6 +138,7 @@ type issueFields struct {
 	Comment          *commentList    `json:"comment"`
 	Priority         *priorityField  `json:"priority"`
 	Parent           *parentField    `json:"parent"`
+	IssueLinks       []IssueLink     `json:"issueLinks"`
 	OriginalEstimate *int            `json:"timeoriginalestimate"`
 	Created          string          `json:"created"`
 	Updated          string          `json:"updated"`
@@ -286,13 +312,7 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 		expectedStatus = []int{http.StatusOK, http.StatusCreated}
 	}
 
-	statusOK := false
-	for _, status := range expectedStatus {
-		if resp.StatusCode == status {
-			statusOK = true
-			break
-		}
-	}
+	statusOK := slices.Contains(expectedStatus, resp.StatusCode)
 
 	if !statusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -377,7 +397,7 @@ func (c *Client) GetEpicChildren(ctx context.Context, epicKey string) ([]Issue, 
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 	params := url.Values{}
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,timeoriginalestimate,created,updated")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
 
 	var issue jiraIssue
 	err := c.doJiraRequest(ctx, "GET", apiURL, params, nil, &issue)
@@ -422,6 +442,22 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	if issue.Fields.Priority != nil {
 		detail.Priority = Priority{
 			Name: issue.Fields.Priority.Name,
+		}
+	}
+
+	for _, link := range issue.Fields.IssueLinks {
+		var linkedKey string
+
+		if link.InwardIssue != nil {
+			linkedKey = link.InwardIssue.Key
+		} else if link.OutwardIssue != nil {
+			linkedKey = link.OutwardIssue.Key
+		}
+
+		if linkedKey == MonthlyChangeIssue {
+			detail.IsLinkedToChange = true
+			detail.ChangeIssueLinkID = link.ID
+			break
 		}
 	}
 
@@ -762,8 +798,6 @@ func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID strin
 }
 
 func (c *Client) PostIssueLink(ctx context.Context, fromKey, toKey string) error {
-	apiURL := fmt.Sprintf("%s/rest/api/3/issueLink", c.jiraURL)
-
 	body := map[string]any{
 		"type": map[string]string{
 			"name": "Relates",
@@ -779,10 +813,26 @@ func (c *Client) PostIssueLink(ctx context.Context, fromKey, toKey string) error
 	err := c.doJiraRequest(
 		ctx,
 		"POST",
-		apiURL,
+		"/rest/api/3/issueLink",
 		nil,
 		body,
 		nil,
+	)
+
+	return err
+}
+
+func (c *Client) DeleteIssueLink(ctx context.Context, linkID string) error {
+	apiURL := fmt.Sprintf("/rest/api/3/issueLink/%s", linkID)
+
+	err := c.doJiraRequest(
+		ctx,
+		"DELETE",
+		apiURL,
+		nil,
+		nil,
+		nil,
+		http.StatusNoContent,
 	)
 
 	return err

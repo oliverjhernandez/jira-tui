@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -56,7 +57,15 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.fetchIssueDetail(m.searchData.Query))
 		case linkIssue:
 			m.loadingDetail = true
-			cmds = append(cmds, m.linkIssue(m.issueDetail.Key, m.searchData.Query))
+			if m.searchData.Query == jira.MonthlyChangeIssue {
+				m.issueDetail.IsLinkedToChange = true
+			}
+
+			if m.issueDetail.IsLinkedToChange {
+				cmds = append(cmds, m.unlinkIssue(m.issueDetail.ChangeIssueLinkID))
+			} else {
+				cmds = append(cmds, m.linkIssue(m.issueDetail.Key, jira.MonthlyChangeIssue))
+			}
 		}
 	}
 
@@ -66,7 +75,16 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchIssueView() string {
-	bg := m.renderListView()
+	var bg string
+	if m.issueSelectionMode == linkIssue {
+		bg = m.renderDetailView()
+	} else {
+		bg = m.renderListView()
+	}
+
+	if m.searchData.Form.State == huh.StateCompleted {
+		return m.renderDetailView()
+	}
 
 	var modalContent strings.Builder
 
