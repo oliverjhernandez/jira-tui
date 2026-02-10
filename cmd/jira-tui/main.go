@@ -21,10 +21,33 @@ var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
 
 type viewMode int
 
+const (
+	listView viewMode = iota
+	detailView
+	transitionView
+	userSearchView
+	descriptionView
+	priorityView
+	commentView
+	worklogView
+	estimateView
+	cancelReasonView
+	issueSearchView
+)
+
 type userSelectionMode int
+
+const (
+	assignUser userSelectionMode = iota
+	insertMention
+)
 
 type issueSelectionMode int
 
+const (
+	standardIssueSearch issueSelectionMode = iota
+	linkIssue
+)
 type Section struct {
 	Name        string
 	CategoryKey string
@@ -112,30 +135,6 @@ type model struct {
 	spinner       spinner.Model
 	statusMessage string
 }
-
-const (
-	listView viewMode = iota
-	detailView
-	transitionView
-	userSearchView
-	descriptionView
-	priorityView
-	commentView
-	worklogView
-	estimateView
-	cancelReasonView
-	issueSearchView
-)
-
-const (
-	assignUser = iota
-	insertMention
-)
-
-const (
-	standardIssueSearch = iota
-	linkIssue
-)
 
 func (m model) Init() tea.Cmd {
 
