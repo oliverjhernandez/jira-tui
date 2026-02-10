@@ -45,7 +45,7 @@ This document tracks planned features and improvements for jira-tui.
       all issues to the info panel
 - [x] **Contextual footer keybindings** - Show footer with relevant
       keybindings for current view/modal
-- [x] **Description formatting** - Format description text properly (preserve
+- [ ] **Description formatting** - Format description text properly (preserve
       line breaks, formatting)
 - [x] **Empty description handling** - Handle missing/empty descriptions
       gracefully
@@ -64,6 +64,7 @@ This document tracks planned features and improvements for jira-tui.
       (implement last)
 - [ ] **Improve visibility for critical items** - critical items should be
       more visible
+- [x] **Mention** - Add auto complete when mentioning a user with @ sign
 - [ ] **Error descriptions** - write a helper to parse errors from the API
 - [ ] **Username Mapping** - map accountID to proper user names
 
@@ -124,12 +125,11 @@ updated >= -7d`, sorted by completion date
 
 ### Issue Management
 
-- [ ] **Link issues** - Add ability to link current issue to another issue (blocks, is blocked by, relates to, etc.)
+- [x] **Link issues** - Add ability to link current issue to another issue (blocks, is blocked by, relates to, etc.)
 - [ ] **Create new issue** - Form to create new Jira issues from the TUI with required fields
 - [ ] **Bulk actions from search** - Perform actions (assign, comment, edit) on issues found via search
 - [ ] **Edit/delete own comments** - Allow modifying or removing comments you posted
-- [ ] **Custom fields support** - Display and edit custom Jira fields
-- [ ] **Time tracking column** - Optional "Logged" column in list view showing total time per issue
+- [x] **Time tracking column** - Optional "Logged" column in list view showing total time per issue
 
 ### Project Management
 
