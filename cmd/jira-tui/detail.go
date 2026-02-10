@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -137,7 +138,9 @@ func (m model) renderDetailView() string {
 	m.detailViewport.Height = m.windowHeight - panelsHeight
 	leftViewport := m.detailViewport.View()
 
-	index := ui.StatusBarDescStyle.Render(fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)))
+	index := ui.StatusBarDescStyle.Render(
+		fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
+	)
 
 	parent := ""
 	if m.issueDetail.Parent != nil {

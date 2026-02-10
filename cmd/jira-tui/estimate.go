@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -49,7 +48,7 @@ func (m model) updatePostEstimateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.estimateData.Form.State == huh.StateCompleted {
-		log.Printf("Estimate form completed with value: %s", m.estimateData.Estimate)
+		m.mode = detailView
 		cmds = append(cmds, m.postEstimate(m.issueDetail.Key, m.estimateData.Estimate))
 	}
 
@@ -57,28 +56,16 @@ func (m model) updatePostEstimateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostEstimateView() string {
-	log.Printf("=== renderPostEstimateView called ===")
-
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
-
-	modalContent.WriteString(ui.SectionTitleStyle.Render("Original Estimate Required") + "\n\n")
 
 	if m.issueDetail != nil {
 		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalContent.WriteString(ui.StatusBarDescStyle.Render("You must set an original estimate before transitioning this issue.") + "\n\n")
-
 	modalContent.WriteString(m.estimateData.Form.View())
-	modalContent.WriteString("\n\n")
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("enter", "submit"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString(footer)
 
 	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalMultiSelectFormStyle)
 }
