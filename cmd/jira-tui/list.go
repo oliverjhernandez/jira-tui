@@ -315,13 +315,12 @@ func (m model) renderListView() string {
 		}
 	}
 
-	styledListContent := ui.PanelSecondaryStyle.
-		Render(listContent.String())
-
 	panelsHeight := 6 + // infoPanel height
+		4 + // horizontal borders
 		1 // statusBar height
 	m.listViewport.Height = m.windowHeight - panelsHeight
-	m.listViewport.SetContent(styledListContent)
+	m.listViewport.Width = ui.GetPanelWidth(m.windowWidth) - 4
+	m.listViewport.SetContent(listContent.String())
 	m.listViewport.YPosition = 0
 
 	var statusBar strings.Builder
@@ -345,5 +344,5 @@ func (m model) renderListView() string {
 	}
 
 	infoPanel := m.renderInfoPanel()
-	return infoPanel + "\n" + m.listViewport.View() + "\n" + ui.StatusBarStyle.Render(statusBar.String())
+	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

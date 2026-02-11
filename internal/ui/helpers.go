@@ -52,9 +52,20 @@ func RepeatChar(char string, count int) string {
 }
 
 func RenderFieldStyled(label, value string, width int) string {
-	style := lipgloss.NewStyle().Width(width)
 	content := DetailLabelStyle.Render(label+": ") + DetailValueStyle.Render(value)
-	return style.Render(content)
+
+	return lipgloss.NewStyle().
+		Width(width).
+		MaxWidth(width).
+		Inline(true).
+		Render(content)
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
 }
 
 func RenderStatusBadge(status string) string {
@@ -168,7 +179,7 @@ func RenderCenteredModal(content string, background string, windowWidth, windowH
 }
 
 func GetPanelWidth(windowWidth int) int {
-	return max(120, windowWidth-4)
+	return max(120, windowWidth-2)
 }
 
 func GetPanelHeight(windowHeight int) int {

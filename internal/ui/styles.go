@@ -207,8 +207,8 @@ var (
 var (
 	KeyFieldStyle = lipgloss.NewStyle().
 			Foreground(ThemeKey).
-			Width(ColWidthKey).
 			Align(lipgloss.Left)
+		// Width(ColWidthKey).
 
 	SummaryFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFg).
@@ -322,8 +322,7 @@ var (
 
 	DetailLabelStyle = lipgloss.NewStyle().
 				Foreground(ThemeAccent).
-				Bold(true).
-				Width(10)
+				Bold(true)
 
 	DetailValueStyle = lipgloss.NewStyle().
 				Foreground(ThemeFg)

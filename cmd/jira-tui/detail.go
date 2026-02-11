@@ -153,16 +153,7 @@ func (m model) renderDetailView() string {
 	infoPanel := m.renderInfoPanel()
 
 	panelWidth := ui.GetPanelWidth(m.windowWidth)
-	leftColumnWidth := int(float64(panelWidth) * 0.6)
-	rightColumnWidth := int(float64(panelWidth) * 0.4)
-
-	m.detailViewport.Width = leftColumnWidth
-
-	panelsHeight := 6 + // infoPanel height
-		11 + // detailPanel height
-		1 // statusBar height
-	m.detailViewport.Height = m.windowHeight - panelsHeight
-	leftViewport := m.detailViewport.View()
+	leftColumnWidth := int(float64(panelWidth)*0.6) - 6
 
 	index := ui.StatusBarDescStyle.Render(
 		fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
@@ -193,19 +184,37 @@ func (m model) renderDetailView() string {
 	}
 
 	leftHeaderLine2 := status + "  " + assignee + "  " + logged
-
 	leftHeader := leftHeaderLine1 + "\n" + leftHeaderLine2
 
-	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), 30)
-	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, 30)
-	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), 30)
+	colwidth := 30
+
+	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), colwidth)
+	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, colwidth)
+	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), colwidth)
 	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
-	col4 := ui.RenderFieldStyled("Created", timeAgo(m.issueDetail.Created), 30)
-	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), 30)
+	col4 := ui.RenderFieldStyled("Created", timeAgo(m.issueDetail.Created), colwidth)
+	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), colwidth)
 	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
 
 	metadataRow := metadataRow1 + "\n" + metadataRow2
+
+	var main strings.Builder
+	main.WriteString(leftHeader + "\n\n")
+	main.WriteString(metadataRow + "\n\n")
+
+	detailPanel := ui.PanelStyleActive.
+		Width(leftColumnWidth).
+		Render(main.String())
+
+	infoPanelHeight := lipgloss.Height(infoPanel)
+	detailPanelHeight := lipgloss.Height(detailPanel)
+	statusBarHeight := 1
+
+	panelsHeight := infoPanelHeight + detailPanelHeight + statusBarHeight + 6 // newlines between sections
+
+	m.detailViewport.Width = leftColumnWidth
+	m.detailViewport.Height = m.windowHeight - panelsHeight
 
 	var scrollContent strings.Builder
 
@@ -241,42 +250,25 @@ func (m model) renderDetailView() string {
 		}
 	}
 
-	styledScrollContent := ui.PanelSecondaryStyle.
+	var commentsSectionStyle lipgloss.Style
+	if m.focusedSection == commentsSection {
+		commentsSectionStyle = ui.PanelActiveStyle
+	} else {
+		commentsSectionStyle = ui.PanelInactiveStyle
+	}
+
+	m.detailViewport.SetContent(scrollContent.String())
+	leftViewport := m.detailViewport.View()
+
+	styledLeftViewport := commentsSectionStyle.
 		Width(leftColumnWidth).
-		Render(scrollContent.String())
-
-	m.detailViewport.SetContent(styledScrollContent)
-
-	var worklogs strings.Builder
-
-	for i, w := range m.selectedIssueWorklogs {
-		logHours := w.Time / 60 / 60
-		timeAgo := timeAgo(w.UpdatedAt)
-
-		worklogs.WriteString(ui.CommentTimestampStyle.Render(strconv.Itoa(logHours)+"h"+" • "+timeAgo) + "\n")
-		worklogs.WriteString(w.Author.AccountID + "\n") // TODO: map to proper user name
-		worklogs.WriteString("\"" + w.Description + "\"" + "\n")
-		if i != len(m.selectedIssueWorklogs)-1 {
-			worklogs.WriteString(strings.Repeat("-", 10) + "\n")
-		}
-	}
-
-	var epicChildren strings.Builder
-
-	if m.epicChildren != nil {
-		for _, ec := range m.epicChildren {
-			epicChildren.WriteString(ui.RenderIssueType(ec.Type, false) + " ")
-			epicChildren.WriteString(ui.DetailHeaderStyle.Render(ec.Key) + " ")
-			epicChildren.WriteString(ui.StatusBarDescStyle.Render("@"+strings.ToLower(strings.Split(ec.Assignee, " ")[0])) + "\n")
-			epicChildren.WriteString(truncateLongString(ec.Summary, summaryMaxWidth) + "\n")
-
-		}
-	}
+		Render(leftViewport)
 
 	var statusBar strings.Builder
-
 	if m.statusMessage != "" {
 		statusBar.WriteString(m.statusMessage)
+	} else if m.loadingDetail || m.loadingTransitions {
+		statusBar.WriteString(m.spinner.View() + "Loading...")
 	} else {
 		statusBar.WriteString(strings.Join([]string{
 			ui.RenderKeyBind("j/k", "scroll"),
@@ -291,33 +283,7 @@ func (m model) renderDetailView() string {
 		}, "  "))
 	}
 
-	var main strings.Builder
-	main.WriteString(leftHeader + "\n\n")
-	main.WriteString(metadataRow + "\n\n")
+	leftColumn := lipgloss.JoinVertical(lipgloss.Left, detailPanel, styledLeftViewport)
 
-	if m.loadingDetail || m.loadingTransitions {
-		statusBar.Reset()
-		statusBar.WriteString(m.spinner.View() + "Loading...")
-	}
-
-	detailPanel := ui.PanelStyleActive.
-		Width(leftColumnWidth).
-		Render(main.String())
-
-	worklogsPanel := ui.PanelStyleActive.Width(rightColumnWidth).Render(worklogs.String())
-	epicChildrenPanel := ui.PanelStyleActive.Width(rightColumnWidth).Render(epicChildren.String())
-
-	leftColumn := lipgloss.JoinVertical(lipgloss.Left, detailPanel, leftViewport)
-
-	var rightColumn string
-	switch m.rightColumnView {
-	case worklogsView:
-		rightColumn = worklogsPanel
-	case epicChildrenView:
-		rightColumn = epicChildrenPanel
-	}
-
-	both := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
-
-	return infoPanel + "\n" + both + "\n\n" + ui.StatusBarStyle.Render(statusBar.String())
+	return infoPanel + "\n" + leftColumn + "\n\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

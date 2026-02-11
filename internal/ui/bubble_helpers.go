@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
 	"github.com/muesli/ansi"
-	"github.com/muesli/reflow/truncate"
 	"github.com/muesli/termenv"
 )
 
@@ -69,7 +68,7 @@ func placeOverlay(
 
 		pos := 0
 		if x > 0 {
-			left := truncate.String(bgLine, uint(x))
+			left := truncate(bgLine, x)
 			pos = ansi.PrintableRuneWidth(left)
 			b.WriteString(left)
 			if pos < x {
