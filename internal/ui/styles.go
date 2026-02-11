@@ -137,7 +137,14 @@ var (
 				Bold(true).
 				Padding(0, 1)
 
-	PanelSecondaryStyle = lipgloss.NewStyle().
+	PanelActiveStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("86")).
+				Padding(1, 2)
+
+	PanelInactiveStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("240")).
 				Padding(1, 2)
 
 	ErrorStyle = lipgloss.NewStyle().

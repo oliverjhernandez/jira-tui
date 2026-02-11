@@ -48,6 +48,17 @@ const (
 	standardIssueSearch issueSelectionMode = iota
 	linkIssue
 )
+
+type focusedSection int
+
+const (
+	noFocus focusedSection = iota
+	descriptionSection
+	commentsSection
+	worklogsSection
+	epicChildrenSection
+)
+
 type Section struct {
 	Name        string
 	CategoryKey string
@@ -78,10 +89,12 @@ type model struct {
 	epicChildren  []jira.Issue
 
 	// Issue Metadata
-	sections         []Section
-	filteredSections []Section
-	statuses         []jira.Status
-	priorityOptions  []jira.Priority
+	sections            []Section
+	focusedSection      focusedSection
+	focusedSectionIndex int
+	filteredSections    []Section
+	statuses            []jira.Status
+	priorityOptions     []jira.Priority
 
 	// Worklogs
 	selectedIssueWorklogs []jira.WorkLog

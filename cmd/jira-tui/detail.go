@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -22,6 +21,13 @@ const (
 
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+
+	var detailViewSections = []focusedSection{
+		descriptionSection,
+		commentsSection,
+		worklogsSection,
+		epicChildrenSection,
+	}
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
 		m.statusMessage = ""
@@ -42,10 +48,21 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editingPriority = true
 			return m, m.priorityData.Form.Init()
 		case "tab":
-			if m.issueDetail.Type == "Epic" && len(m.epicChildren) > 0 {
-				m.toggleRightColumnView()
-			}
+			// if m.issueDetail.Type == "Epic" && len(m.epicChildren) > 0 {
+			// 	m.toggleRightColumnView()
+			// } FIX: do something to show epic children
+
+			m.focusedSectionIndex = (m.focusedSectionIndex + 1) % len(detailViewSections)
+			m.focusedSection = detailViewSections[m.focusedSectionIndex]
 			return m, nil
+
+		case "shift+tab":
+			m.focusedSectionIndex--
+			if m.focusedSectionIndex < 0 {
+				m.focusedSectionIndex = len(detailViewSections) - 1
+			}
+			m.focusedSection = detailViewSections[m.focusedSectionIndex]
+
 		case "t":
 			if m.issueDetail != nil {
 				if m.issueDetail.Description == "" {
