@@ -181,3 +181,12 @@ func sortSectionsByPriority(sections []Section) {
 		})
 	}
 }
+
+func findIndex(section focusedSection, order []focusedSection) int {
+	for i, s := range order {
+		if s == section {
+			return i
+		}
+	}
+	return 0
+}

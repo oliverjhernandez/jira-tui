@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -214,60 +213,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) renderInfoPanel() string {
-	panelWidth := ui.GetPanelWidth(m.windowWidth)
-
-	userName := "loading..."
-	if m.myself != nil {
-		userName = "@" + m.myself.Name
-	}
-
-	var inProgress, toDo, done int
-	for _, s := range m.sections {
-		switch s.CategoryKey {
-		case "indeterminate":
-			inProgress = len(s.Issues)
-		case "new":
-			toDo = len(s.Issues)
-		case "done":
-			done = len(s.Issues)
-		}
-	}
-	total := inProgress + toDo + done
-
-	projectsStr := strings.Join(Projects, " · ")
-
-	userStyled := ui.InfoPanelUserStyle.Render(userName)
-	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
-	line1InnerWidth := panelWidth - 6
-	line1Gap := line1InnerWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
-	if line1Gap < 0 {
-		line1Gap = 1
-	}
-	line1 := userStyled + strings.Repeat(" ", line1Gap) + projectsStyled
-
-	statusCounts := fmt.Sprintf("%s In Progress: %d    %s To Do: %d    %s Done: %d",
-		ui.IconInfoInProgress, inProgress,
-		ui.IconInfoToDo, toDo,
-		ui.IconInfoDone, done)
-	totalStr := ui.InfoPanelTotalStyle.Render(fmt.Sprintf("%d issues", total))
-	line2Gap := line1InnerWidth - lipgloss.Width(statusCounts) - lipgloss.Width(totalStr)
-	if line2Gap < 0 {
-		line2Gap = 1
-	}
-	line2 := statusCounts + strings.Repeat(" ", line2Gap) + totalStr
-
-	var totalLoggedSeconds int
-	for _, seconds := range m.worklogTotals {
-		totalLoggedSeconds += seconds
-	}
-	totalLoggedStr := ui.InfoPanelCountLabelStyle.Render(ui.IconTime + " Total Logged: " + ui.FormatTimeSpent(totalLoggedSeconds))
-	line3 := totalLoggedStr
-
-	content := line1 + "\n" + line2 + "\n" + line3
-	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
-}
-
 func (m model) renderListView() string {
 	var listContent strings.Builder
 
@@ -319,7 +264,7 @@ func (m model) renderListView() string {
 		4 + // horizontal borders
 		1 // statusBar height
 	m.listViewport.Height = m.windowHeight - panelsHeight
-	m.listViewport.Width = ui.GetPanelWidth(m.windowWidth) - 4
+	m.listViewport.Width = ui.GetAvailableWidth(m.windowWidth) - 4
 	m.listViewport.SetContent(listContent.String())
 	m.listViewport.YPosition = 0
 
@@ -343,6 +288,7 @@ func (m model) renderListView() string {
 		}, "  "))
 	}
 
-	infoPanel := m.renderInfoPanel()
+	panelWidth := ui.GetAvailableWidth(m.windowWidth)
+	infoPanel := m.renderInfoPanel(panelWidth)
 	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

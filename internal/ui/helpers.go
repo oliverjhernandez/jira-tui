@@ -178,7 +178,7 @@ func RenderCenteredModal(content string, background string, windowWidth, windowH
 	return placeOverlay(x, y, styledModal, background, false)
 }
 
-func GetPanelWidth(windowWidth int) int {
+func GetAvailableWidth(windowWidth int) int {
 	return max(120, windowWidth-2)
 }
 

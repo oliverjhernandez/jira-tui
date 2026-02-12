@@ -52,12 +52,26 @@ const (
 type focusedSection int
 
 const (
-	noFocus focusedSection = iota
-	descriptionSection
+	descSection focusedSection = iota
 	commentsSection
 	worklogsSection
 	epicChildrenSection
 )
+
+func (f focusedSection) String() string {
+	switch f {
+	case descSection:
+		return "descSection"
+	case commentsSection:
+		return "commentsSection"
+	case worklogsSection:
+		return "worklogsSection"
+	case epicChildrenSection:
+		return "epicChildrenSection"
+	default:
+		return "unknown"
+	}
+}
 
 type Section struct {
 	Name        string
@@ -73,11 +87,13 @@ type model struct {
 	err    error
 
 	// Window & Layout
-	windowWidth    int
-	windowHeight   int
-	columnWidths   ui.ColumnWidths
-	listViewport   *viewport.Model
-	detailViewport *viewport.Model
+	windowWidth      int
+	windowHeight     int
+	detailLayout     detailLayout
+	columnWidths     ui.ColumnWidths
+	listViewport     *viewport.Model
+	descViewport     *viewport.Model
+	commentsViewport *viewport.Model
 
 	// User Data
 	myself *jira.User
@@ -89,12 +105,11 @@ type model struct {
 	epicChildren  []jira.Issue
 
 	// Issue Metadata
-	sections            []Section
-	focusedSection      focusedSection
-	focusedSectionIndex int
-	filteredSections    []Section
-	statuses            []jira.Status
-	priorityOptions     []jira.Priority
+	sections         []Section
+	focusedSection   focusedSection
+	filteredSections []Section
+	statuses         []jira.Status
+	priorityOptions  []jira.Priority
 
 	// Worklogs
 	selectedIssueWorklogs []jira.WorkLog
@@ -199,23 +214,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case issueDetailLoadedMsg:
-		if m.detailViewport == nil {
-			headerHeight := 15
-			footerHeight := 1
-			// NOTE: determine window
-			width := m.windowWidth - 10
-			height := m.windowHeight - headerHeight - footerHeight
-			vp := viewport.New(width, height)
-			m.detailViewport = &vp
-		}
-
 		if m.searchData != nil {
 			m.searchData = NewSearchFormData()
 		}
 
 		m.issueDetail = msg.detail
+		m.detailLayout = m.calculateDetailLayout()
 		m.loadingDetail = false
 		m.mode = detailView
+
+		if m.issueDetail != nil {
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
+			m.descViewport.Width = m.detailLayout.leftColumnWidth
+			m.descViewport.Height = m.detailLayout.descHeight
+			m.descViewport.SetContent(descContent)
+
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+			m.commentsViewport.Width = m.detailLayout.leftColumnWidth
+			m.commentsViewport.Height = m.detailLayout.commentsHeight
+			m.commentsViewport.SetContent(commentsContent)
+		}
+
 		return m, nil
 
 	case workLogsLoadedMsg:
@@ -301,8 +320,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowHeight = msg.Height
 		m.windowWidth = msg.Width
+
+		if m.issueDetail != nil {
+			m.detailLayout = m.calculateDetailLayout()
+
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
+			m.descViewport.Width = m.detailLayout.leftColumnWidth
+			m.descViewport.Height = m.detailLayout.descHeight
+			m.descViewport.SetContent(descContent)
+
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+			m.commentsViewport.Width = m.detailLayout.leftColumnWidth
+			m.commentsViewport.Height = m.detailLayout.commentsHeight
+			m.commentsViewport.SetContent(commentsContent)
+		}
+
 		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
 
+		// INFO: this should be calculated
 		infoPanelHeight := 6
 		if m.listViewport == nil {
 			vp := viewport.New(m.windowWidth-4, m.windowHeight-3-infoPanelHeight)
@@ -312,12 +347,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listViewport.Height = m.windowHeight - 3 - infoPanelHeight
 		}
 
-		if m.detailViewport != nil {
-			headerHeight := 15
-			footerHeight := 1
-			m.detailViewport.Width = msg.Width - 10
-			m.detailViewport.Height = msg.Height - headerHeight - footerHeight
+		if m.descViewport == nil {
+			vp := viewport.New(2, 2)
+			m.descViewport = &vp
 		}
+
+		if m.commentsViewport == nil {
+			vp := viewport.New(2, 2)
+			m.commentsViewport = &vp
+		}
+
 		return m, nil
 
 	case keyTimeoutMsg:
@@ -334,8 +373,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searchData = NewSearchFormData()
 			m.searchData.Err = msg.err
 		}
-
-		log.Printf("ERROR: %w", msg.err)
 
 		return m, nil
 	}
@@ -460,5 +497,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-// log.Printf("INIT CURSOR: cursor %d // sectionCursor %d // issues %d", m.cursor, m.sectionCursor, len(sectionIssues))
