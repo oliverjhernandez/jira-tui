@@ -508,6 +508,8 @@ func (m model) calculateDetailLayout() detailLayout {
 }
 
 func (m model) renderInfoPanel(width int) string {
+	panelWidth := ui.GetAvailableWidth(m.windowWidth)
+
 	userName := "loading..."
 	if m.myself != nil {
 		userName = "@" + m.myself.Name
@@ -556,8 +558,7 @@ func (m model) renderInfoPanel(width int) string {
 	line3 := totalLoggedStr
 
 	content := line1 + "\n" + line2 + "\n" + line3
-	// return ui.InfoPanelStyle.Width(panelWidth).Render(content)
-	return ui.InfoPanelStyle.Render(content)
+	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
 }
 
 func (m model) renderMetadataPanel(width int) string {
