@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -63,7 +62,6 @@ func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.worklogData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		log.Printf("User ID: %s", m.myself.ID)
 		timeSeconds, _ := parseTimeToSeconds(m.worklogData.Time)
 		cmds = append(cmds, m.postWorkLog(m.issueDetail.ID, m.worklogData.Date, m.myself.ID, timeSeconds))
 	}

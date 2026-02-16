@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -65,8 +64,6 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditPriorityView() string {
-	log.Printf("=== renderEditPriorityView called ===")
-
 	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder

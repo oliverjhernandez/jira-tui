@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -494,8 +493,6 @@ func (m model) calculateDetailLayout() detailLayout {
 	worklogsHeight := 0
 	subtasksHeight := 0
 
-	log.Printf("commentsHeight calculated: %d", commentsHeight)
-
 	return detailLayout{
 		leftColumnWidth,
 		rightColumnWidth,
@@ -696,11 +693,7 @@ func (m model) buildCommentsContent(width int) string {
 }
 
 func (m model) renderCommentsPanel(width, height int) string {
-	log.Printf("renderCommentsPanel called with width=%d, height=%d", width, height)
-	log.Printf("commentsViewport actual: Width=%d, Height=%d", m.commentsViewport.Width, m.commentsViewport.Height)
-
 	viewport := m.commentsViewport.View()
-	log.Printf("viewport.View() returned height: %d", lipgloss.Height(viewport))
 
 	var style lipgloss.Style
 	if m.focusedSection == commentsSection {

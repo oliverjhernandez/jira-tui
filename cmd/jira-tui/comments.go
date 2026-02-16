@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,7 +49,6 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchUsers(m.issueDetail.Key)
 
 		case "alt+enter", "ctrl+s":
-			log.Printf("Issue: %s", m.issueDetail.Summary)
 			if m.textArea.Value() != "" {
 				comment := m.textArea.Value()
 				m.textArea.Reset()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -109,8 +108,6 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderTransitionView() string {
-	log.Printf("=== renderTransitionView called ===")
-
 	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
@@ -163,8 +160,6 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostCancelReasonView() string {
-	log.Printf("=== renderPostCancelReasonView called ===")
-
 	bg := m.renderDetailView()
 
 	var modalContent strings.Builder
