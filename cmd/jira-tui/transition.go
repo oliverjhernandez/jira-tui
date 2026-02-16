@@ -111,7 +111,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderTransitionView() string {
 	log.Printf("=== renderTransitionView called ===")
 
-	bg := m.renderDetailView()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

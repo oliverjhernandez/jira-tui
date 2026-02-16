@@ -58,7 +58,7 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditDescriptionView() string {
-	bg := m.renderDetailView()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

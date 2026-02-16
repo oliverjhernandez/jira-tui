@@ -714,3 +714,13 @@ func (m model) renderCommentsPanel(width, height int) string {
 
 // func (m model) renderWorklogsPanel(width, height int) string // future
 // func (m model) renderSubtasksPanel(width, height int) string // future
+
+func (m model) renderSimpleBackground() string {
+	bg := lipgloss.NewStyle().
+		Width(m.windowWidth).
+		Height(m.windowHeight).
+		Background(lipgloss.Color("0")).
+		Render("")
+
+	return bg
+}

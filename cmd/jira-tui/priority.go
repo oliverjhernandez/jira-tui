@@ -67,7 +67,7 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderEditPriorityView() string {
 	log.Printf("=== renderEditPriorityView called ===")
 
-	bg := m.renderDetailView()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

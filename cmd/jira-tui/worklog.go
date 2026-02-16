@@ -71,9 +71,7 @@ func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostWorklogView() string {
-	log.Printf("=== renderPostWorklogView called ===")
-
-	bg := m.renderDetailView()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

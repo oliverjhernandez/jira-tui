@@ -63,7 +63,7 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchUserView() string {
-	bg := m.renderDetailView()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

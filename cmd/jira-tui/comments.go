@@ -74,7 +74,8 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostCommentView() string {
-	bg := m.renderDetailView()
+	m.detailLayout = m.calculateDetailLayout()
+	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
 

@@ -77,9 +77,9 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderSearchIssueView() string {
 	var bg string
 	if m.issueSelectionMode == linkIssue {
-		bg = m.renderDetailView()
+		bg = m.renderSimpleBackground()
 	} else {
-		bg = m.renderListView()
+		bg = m.renderSimpleBackground()
 	}
 
 	if m.searchData.Form.State == huh.StateCompleted {
