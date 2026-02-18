@@ -72,7 +72,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = detailView
 			m.transitions = nil
-			return m, m.transitionData.Form.Init()
+			return m, nil
 		}
 	}
 

@@ -307,7 +307,6 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 	}
 	defer resp.Body.Close()
 
-	// Check status
 	if len(expectedStatus) == 0 {
 		expectedStatus = []int{http.StatusOK, http.StatusCreated}
 	}
@@ -389,7 +388,7 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	return c.SearchIssuesJql(ctx, jql)
 }
 
-func (c *Client) GetEpicChildren(ctx context.Context, epicKey string) ([]Issue, error) {
+func (c *Client) GetChildren(ctx context.Context, epicKey string) ([]Issue, error) {
 	jql := fmt.Sprintf("parent = %s ORDER BY status DESC", epicKey)
 	return c.SearchIssuesJql(ctx, jql)
 }
@@ -400,7 +399,15 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
 
 	var issue jiraIssue
-	err := c.doJiraRequest(ctx, "GET", apiURL, params, nil, &issue)
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		params,
+		nil,
+		&issue,
+		http.StatusOK,
+	)
 
 	detail := &IssueDetail{
 		ID:          issue.ID,
@@ -484,7 +491,15 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 		} `json:"transitions"`
 	}
 
-	err := c.doJiraRequest(ctx, "GET", apiURL, nil, nil, &result)
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&result,
+		http.StatusOK,
+	)
 
 	transitions := make([]Transition, 0, len(result.Transitions))
 	for _, t := range result.Transitions {
@@ -529,7 +544,15 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 		"accountId": assigneeID,
 	}
 
-	err := c.doJiraRequest(ctx, "PUT", apiURL, nil, body, nil)
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		body,
+		nil,
+		http.StatusNoContent,
+	)
 
 	return err
 }
@@ -581,7 +604,15 @@ func (c *Client) PostTransitionWithComment(ctx context.Context, issueKey, transi
 		}
 	}
 
-	err := c.doJiraRequest(ctx, "POST", apiURL, nil, body, nil)
+	err := c.doJiraRequest(
+		ctx,
+		"POST",
+		apiURL,
+		nil,
+		body,
+		nil,
+		http.StatusNoContent,
+	)
 
 	return err
 }
@@ -616,6 +647,7 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 		nil,
 		body,
 		nil,
+		http.StatusNoContent,
 	)
 
 	return err
@@ -639,6 +671,7 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 		nil,
 		body,
 		nil,
+		http.StatusNoContent,
 	)
 
 	return err
@@ -662,6 +695,7 @@ func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, es
 		nil,
 		body,
 		nil,
+		http.StatusNoContent,
 	)
 
 	return err

@@ -81,6 +81,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.priorityData = NewPriorityFormData(m.priorityOptions, m.issueDetail.Priority.Name)
 			m.mode = priorityView
 			m.editingPriority = true
+			m.loadingDetail = true
 			return m, m.priorityData.Form.Init()
 
 		case "tab":
@@ -112,6 +113,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = transitionView
 				m.loadingTransitions = true
 				m.transitionCursor = 0
+				m.loadingDetail = true
 				return m, m.fetchTransitions(m.issueDetail.Key)
 			}
 
@@ -119,6 +121,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = issueSearchView
 			m.searchData = NewSearchFormData()
 			m.issueSelectionMode = linkIssue
+			m.loadingDetail = true
 			return m, m.searchData.Form.Init()
 
 		case "L":
