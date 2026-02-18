@@ -181,10 +181,6 @@ func (m model) renderDetailView() string {
 		return ui.PanelStyleActive.Render("Loading issue...")
 	}
 
-	panelWidth := ui.GetAvailableWidth(m.windowWidth)
-
-	infoPanel := m.renderInfoPanel(panelWidth)
-
 	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth)
 	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth)
 	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)
@@ -199,5 +195,5 @@ func (m model) renderDetailView() string {
 
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 
-	return infoPanel + "\n" + columns + "\n" + statusBar
+	return columns + "\n" + statusBar
 }

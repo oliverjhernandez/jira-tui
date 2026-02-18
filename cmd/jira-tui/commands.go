@@ -476,17 +476,14 @@ func (m model) calculateDetailLayout() detailLayout {
 	leftColumnWidth := int(float64(panelWidth) * 0.6)
 	rightColumnWidth := int(float64(panelWidth)*0.4) - 1
 
-	infoPanel := m.renderInfoPanel(panelWidth)
-	infoPanelHeight := lipgloss.Height(infoPanel)
-
 	metadataPanel := m.renderMetadataPanel(leftColumnWidth)
 	metadataPanelHeight := lipgloss.Height(metadataPanel)
 
 	statusBar := m.renderDetailStatusBar()
 	statusBarHeight := lipgloss.Height(statusBar)
 
-	leftFixedHeight := infoPanelHeight + metadataPanelHeight + statusBarHeight + 8 // gaps
-	rightFixedHeight := infoPanelHeight + 12
+	leftFixedHeight := metadataPanelHeight + statusBarHeight + 8 // gaps
+	rightFixedHeight := statusBarHeight + 8
 	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
 	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
 
@@ -603,11 +600,11 @@ func (m model) renderMetadataPanel(width int) string {
 	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), colwidth)
 	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
 
-	metadataRow := metadataRow1 + "\n" + metadataRow2
+	metadataRows := metadataRow1 + "\n" + metadataRow2
 
 	var detailsContent strings.Builder
-	detailsContent.WriteString(leftHeader + "\n\n")
-	detailsContent.WriteString(metadataRow + "\n\n")
+	detailsContent.WriteString(leftHeader + "\n")
+	detailsContent.WriteString(metadataRows)
 
 	metadataPanel := ui.PanelStyleActive.
 		Width(width).
