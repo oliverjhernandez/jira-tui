@@ -55,7 +55,7 @@ const (
 	descSection focusedSection = iota
 	commentsSection
 	worklogsSection
-	epicChildrenSection
+	childrenSection
 )
 
 func (f focusedSection) String() string {
@@ -66,8 +66,8 @@ func (f focusedSection) String() string {
 		return "commentsSection"
 	case worklogsSection:
 		return "worklogsSection"
-	case epicChildrenSection:
-		return "epicChildrenSection"
+	case childrenSection:
+		return "childrenSection"
 	default:
 		return "unknown"
 	}
@@ -94,6 +94,8 @@ type model struct {
 	listViewport     *viewport.Model
 	descViewport     *viewport.Model
 	commentsViewport *viewport.Model
+	worklogsViewport *viewport.Model
+	childrenViewport *viewport.Model
 
 	// User Data
 	myself *jira.User
@@ -102,7 +104,7 @@ type model struct {
 	issues        []jira.Issue
 	selectedIssue *jira.Issue
 	issueDetail   *jira.IssueDetail
-	epicChildren  []jira.Issue
+	children      []jira.Issue
 
 	// Issue Metadata
 	sections         []Section
@@ -196,9 +198,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(m.fetchAllWorklogTotals(msg.issues))
 
-	case epicChildrenLoadedMsg:
-		m.epicChildren = nil
-		m.epicChildren = msg.children
+	case childrenLoadedMsg:
+		m.children = nil
+		m.children = msg.children
 		return m, nil
 
 	case worklogTotalsLoadedMsg:
@@ -233,6 +235,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.Width = m.detailLayout.leftColumnWidth
 			m.commentsViewport.Height = m.detailLayout.commentsHeight
 			m.commentsViewport.SetContent(commentsContent)
+		}
+
+		if m.selectedIssueWorklogs != nil {
+			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+			m.worklogsViewport.Width = m.detailLayout.rightColumnWidth
+			m.worklogsViewport.Height = m.detailLayout.worklogsHeight
+			m.worklogsViewport.SetContent(worklogsContent)
+		}
+
+		if m.children == nil {
+			childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+			m.childrenViewport.Width = m.detailLayout.rightColumnWidth
+			m.childrenViewport.Height = m.detailLayout.childrenHeight
+			m.childrenViewport.SetContent(childrenContent)
 		}
 
 		return m, nil
@@ -355,6 +371,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.commentsViewport == nil {
 			vp := viewport.New(2, 2)
 			m.commentsViewport = &vp
+		}
+
+		if m.worklogsViewport == nil {
+			vp := viewport.New(2, 2)
+			m.worklogsViewport = &vp
+		}
+
+		if m.childrenViewport == nil {
+			vp := viewport.New(2, 2)
+			m.childrenViewport = &vp
 		}
 
 		return m, nil

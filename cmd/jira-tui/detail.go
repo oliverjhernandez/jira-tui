@@ -21,7 +21,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		descSection,
 		commentsSection,
 		worklogsSection,
-		epicChildrenSection,
+		childrenSection,
 	}
 
 	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
@@ -46,6 +46,27 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.commentsViewport.ScrollUp(1)
 				return m, nil
 			}
+
+		case worklogsSection:
+			switch keyPressMsg.String() {
+			case "j":
+				m.worklogsViewport.ScrollDown(1)
+				return m, nil
+			case "k":
+				m.worklogsViewport.ScrollUp(1)
+				return m, nil
+			}
+
+		case childrenSection:
+			switch keyPressMsg.String() {
+			case "j":
+				m.childrenViewport.ScrollDown(1)
+				return m, nil
+			case "k":
+				m.childrenViewport.ScrollUp(1)
+				return m, nil
+			}
+
 		}
 
 		switch keyPressMsg.String() {
@@ -53,6 +74,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.descriptionData = NewDescriptionFormData(m.issueDetail.Description)
 			m.mode = descriptionView
 			m.editingDescription = true
+			m.loadingDetail = true
 			return m, m.descriptionData.Form.Init()
 
 		case "p":
@@ -112,7 +134,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textArea = textarea.New()
 			m.textArea.Placeholder = "Add a comment..."
 			m.textArea.Focus()
-			m.textArea.SetWidth(80)
+			m.textArea.SetWidth(100)
 			m.commentData = NewCommentFormData()
 			m.mode = commentView
 			return m, m.commentData.Form.Init()
@@ -159,12 +181,20 @@ func (m model) renderDetailView() string {
 	panelWidth := ui.GetAvailableWidth(m.windowWidth)
 
 	infoPanel := m.renderInfoPanel(panelWidth)
+
 	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth)
-	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth, m.detailLayout.descHeight)
-	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth, m.detailLayout.commentsHeight)
+	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth)
+	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)
+
+	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth)
+	childrenPanel := m.renderChildrenPanel(m.detailLayout.rightColumnWidth)
+
 	statusBar := m.renderDetailStatusBar()
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, metadataPanel, descriptionPanel, commentsPanel)
+	rightColumn := lipgloss.JoinVertical(lipgloss.Right, worklogPanel, childrenPanel)
 
-	return infoPanel + "\n" + leftColumn + "\n" + statusBar
+	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
+
+	return infoPanel + "\n" + columns + "\n" + statusBar
 }

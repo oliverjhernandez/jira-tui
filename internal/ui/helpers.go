@@ -151,9 +151,9 @@ func RenderIssueType(issueType string, showText bool) string {
 	case strings.Contains(t, "investigación"):
 		style = TypeInvestStyle
 		icon = IconInvestigacion
-	case strings.Contains(t, "subtask"), strings.Contains(t, "sub-task"):
-		style = TypeSubTaskStyle
-		icon = IconSubtask
+	case strings.Contains(t, "children"), strings.Contains(t, "sub-task"):
+		style = TypeChildrenStyle
+		icon = IconChildren
 	default:
 		style = TypeBaseStyle
 		icon = IconDefault

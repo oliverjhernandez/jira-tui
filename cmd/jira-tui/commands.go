@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,7 +17,7 @@ type issuesLoadedMsg struct {
 	issues []jira.Issue
 }
 
-type epicChildrenLoadedMsg struct {
+type childrenLoadedMsg struct {
 	children []jira.Issue
 }
 
@@ -231,12 +232,12 @@ func (m model) fetchEpicChildren(epicKey string) tea.Cmd {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		children, err := m.client.GetEpicChildren(context.Background(), epicKey)
+		children, err := m.client.GetChildren(context.Background(), epicKey)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return epicChildrenLoadedMsg{children}
+		return childrenLoadedMsg{children}
 	}
 }
 
@@ -467,13 +468,13 @@ type detailLayout struct {
 	descHeight       int
 	commentsHeight   int
 	worklogsHeight   int
-	subtasksHeight   int
+	childrenHeight   int
 }
 
 func (m model) calculateDetailLayout() detailLayout {
 	panelWidth := ui.GetAvailableWidth(m.windowWidth)
-	leftColumnWidth := int(float64(panelWidth)*0.6) - 6
-	rightColumnWidth := int(float64(panelWidth)*0.4) - 6
+	leftColumnWidth := int(float64(panelWidth) * 0.6)
+	rightColumnWidth := int(float64(panelWidth)*0.4) - 1
 
 	infoPanel := m.renderInfoPanel(panelWidth)
 	infoPanelHeight := lipgloss.Height(infoPanel)
@@ -484,14 +485,16 @@ func (m model) calculateDetailLayout() detailLayout {
 	statusBar := m.renderDetailStatusBar()
 	statusBarHeight := lipgloss.Height(statusBar)
 
-	fixedHeight := infoPanelHeight + metadataPanelHeight + statusBarHeight + 8 // gaps
-	freeSpace := m.windowHeight - fixedHeight
+	leftFixedHeight := infoPanelHeight + metadataPanelHeight + statusBarHeight + 8 // gaps
+	rightFixedHeight := infoPanelHeight + 12
+	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
+	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
 
-	descHeight := freeSpace / 2
-	commentsHeight := freeSpace / 2
+	descHeight := leftColumnFreeHeight / 2
+	commentsHeight := leftColumnFreeHeight / 2
 
-	worklogsHeight := 0
-	subtasksHeight := 0
+	worklogsHeight := rightColumnFreeHeight/2 - 1
+	childrenHeight := rightColumnFreeHeight / 2
 
 	return detailLayout{
 		leftColumnWidth,
@@ -499,7 +502,7 @@ func (m model) calculateDetailLayout() detailLayout {
 		descHeight,
 		commentsHeight,
 		worklogsHeight,
-		subtasksHeight,
+		childrenHeight,
 	}
 
 }
@@ -653,7 +656,7 @@ func (m model) buildDescriptionContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderDescriptionPanel(width, height int) string {
+func (m model) renderDescriptionPanel(width int) string {
 	viewport := m.descViewport.View()
 
 	var style lipgloss.Style
@@ -692,7 +695,7 @@ func (m model) buildCommentsContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderCommentsPanel(width, height int) string {
+func (m model) renderCommentsPanel(width int) string {
 	viewport := m.commentsViewport.View()
 
 	var style lipgloss.Style
@@ -705,8 +708,92 @@ func (m model) renderCommentsPanel(width, height int) string {
 	return style.Width(width).Render(viewport)
 }
 
-// func (m model) renderWorklogsPanel(width, height int) string // future
-// func (m model) renderSubtasksPanel(width, height int) string // future
+func (m model) buildWorklogsContent(width int) string {
+	var content strings.Builder
+	worklogsCount := len(m.issueDetail.Comments)
+
+	if worklogsCount > 0 {
+		for i, c := range m.selectedIssueWorklogs {
+			user := m.getUserName(c.Author.AccountID)
+			time := ui.WorklogsAuthorStyle.Render(strconv.Itoa(c.Time))
+			author := ui.WorklogsAuthorStyle.Render(user)
+			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.UpdatedAt))
+			content.WriteString(time + author + timestamp + "\n")
+			description := ui.CommentBodyStyle.Width(width - 4).Render(c.Description)
+			content.WriteString(description + "\n")
+
+			if i < worklogsCount-1 {
+				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+			} else {
+				content.WriteString("\n")
+			}
+		}
+	}
+
+	return content.String()
+}
+
+func (m model) renderWorklogsPanel(width int) string {
+	viewport := m.worklogsViewport.View()
+
+	var style lipgloss.Style
+	if m.focusedSection == worklogsSection {
+		style = ui.PanelActiveStyle
+	} else {
+		style = ui.PanelInactiveStyle
+	}
+
+	return style.Width(width).Render(viewport)
+}
+
+func (m model) getUserName(accountID string) string {
+	for _, u := range m.usersCache {
+		if u.ID == accountID {
+			return u.Name
+		}
+	}
+
+	return accountID
+}
+
+func (m model) buildChildrenContent(width int) string {
+	var content strings.Builder
+	childrenCount := len(m.children)
+
+	if childrenCount > 0 {
+		for i, c := range m.children {
+			issue := ui.RenderIssueType(c.Type, false)
+			key := c.Key
+			priority := ui.RenderPriority(c.Priority, false)
+			status := ui.RenderStatusBadge(c.Status)
+
+			content.WriteString(issue + key + priority + status + "\n")
+			summary := ui.CommentBodyStyle.Width(width - 4).Render(c.Summary)
+			content.WriteString(summary + "\n")
+
+			if i < childrenCount-1 {
+				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+			} else {
+				content.WriteString("\n")
+			}
+		}
+	}
+
+	return content.String()
+}
+
+func (m model) renderChildrenPanel(width int) string {
+	viewport := m.childrenViewport.View()
+
+	var style lipgloss.Style
+	if m.focusedSection == childrenSection {
+		style = ui.PanelActiveStyle
+	} else {
+		style = ui.PanelInactiveStyle
+	}
+
+	return style.Width(width).Render(viewport)
+}
 
 func (m model) renderSimpleBackground() string {
 	bg := lipgloss.NewStyle().
