@@ -80,7 +80,7 @@ var (
 	IconStory         = `󰂺`
 	IconEpic          = `󱐋`
 	IconInvestigacion = `󰍉`
-	IconSubtask       = `󰘑`
+	IconChildren      = `󰘑`
 	IconImprovement   = ""
 	IconDefault       = `󰧞`
 
@@ -302,13 +302,13 @@ var (
 // ============================================================================
 
 var (
-	TypeBaseStyle    = lipgloss.NewStyle()
-	TypeBugStyle     = TypeBaseStyle.Foreground(ThemeError)
-	TypeTaskStyle    = TypeBaseStyle.Foreground(ThemeInfo)
-	TypeStoryStyle   = TypeBaseStyle.Foreground(ThemeSuccess)
-	TypeEpicStyle    = TypeBaseStyle.Foreground(ThemeAccentAlt)
-	TypeInvestStyle  = TypeBaseStyle.Foreground(ThemeAccentAlt)
-	TypeSubTaskStyle = TypeBaseStyle.Foreground(ThemeFgMuted)
+	TypeBaseStyle     = lipgloss.NewStyle()
+	TypeBugStyle      = TypeBaseStyle.Foreground(ThemeError)
+	TypeTaskStyle     = TypeBaseStyle.Foreground(ThemeInfo)
+	TypeStoryStyle    = TypeBaseStyle.Foreground(ThemeSuccess)
+	TypeEpicStyle     = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeInvestStyle   = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeChildrenStyle = TypeBaseStyle.Foreground(ThemeFgMuted)
 )
 
 // ============================================================================
@@ -356,6 +356,23 @@ var (
 			Foreground(ThemeMention).
 			Background(ThemeBgLight).
 			Padding(0, 1)
+)
+
+// ============================================================================
+// WORKLOGS STYLES
+// ============================================================================
+
+var (
+	WorklogsAuthorStyle = lipgloss.NewStyle().
+				Foreground(ThemeAccentAlt).
+				Bold(true)
+
+	WorklogsTimestampStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgDim).
+				Italic(true)
+
+	WorkLogsDescriptionStyle = lipgloss.NewStyle().
+					Foreground(ThemeFgDim)
 )
 
 // ============================================================================
@@ -416,4 +433,26 @@ var (
 	IconInfoInProgress = lipgloss.NewStyle().Foreground(ThemeStatusInProgress).Render("●")
 	IconInfoToDo       = lipgloss.NewStyle().Foreground(ThemeStatusToDo).Render("○")
 	IconInfoDone       = lipgloss.NewStyle().Foreground(ThemeStatusDone).Render("✓")
+)
+
+// ============================================================================
+// MARKDOWN STYLES
+// ============================================================================
+
+var (
+	BoldStyle       = lipgloss.NewStyle().Bold(true)
+	ItalicStyle     = lipgloss.NewStyle().Italic(true)
+	InlineCodeStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("205")).
+			Background(lipgloss.Color("236"))
+
+	HeadingStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("39"))
+
+	CodeBlockStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("236")).
+			Padding(0, 1).
+			MarginTop(1).
+			MarginBottom(1)
 )

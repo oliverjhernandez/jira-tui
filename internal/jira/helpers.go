@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -21,18 +22,195 @@ func extractText(doc *descriptionDoc) string {
 }
 
 func extractBlockText(block contentBlock) string {
-	if block.Text != "" {
-		return block.Text
+	switch block.Type {
+	case "heading":
+		return formatHeading(block)
+	case "paragraph":
+		return formatParagraph(block)
+	case "codeBlock":
+		return formatCodeBlock(block)
+	case "bulletList":
+		return formatBulletList(block)
+	case "orderedList":
+		return formatOrderedList(block)
+	case "table":
+		return formatTable(block)
+	case "rule":
+		return "─────────────────────"
+	default:
+		var text strings.Builder
+		for _, node := range block.Content {
+			text.WriteString(extractInlineText(node))
+		}
+		return text.String()
+	}
+}
+
+func extractInlineText(node contentNode) string {
+	text := node.Text
+
+	for _, mark := range node.Marks {
+		switch mark.Type {
+		case "strong":
+			text = ui.BoldStyle.Render(text)
+		case "em":
+			text = ui.ItalicStyle.Render(text)
+		case "code":
+			text = ui.InlineCodeStyle.Render(text)
+		}
 	}
 
+	for _, child := range node.Content {
+		text += extractInlineText(child)
+	}
+
+	return text
+}
+
+func formatParagraph(block contentBlock) string {
 	var text strings.Builder
 	for _, node := range block.Content {
-		if node.Type == "mention" && node.Attrs.Text != "" {
-			text.WriteString(ui.MentionStyle.Render(node.Attrs.Text))
-		}
+		text.WriteString(extractInlineText(node))
+	}
+	return text.String()
+}
 
-		if node.Text != "" {
-			text.WriteString(node.Text)
+func formatHeading(block contentBlock) string {
+	var text strings.Builder
+	for _, node := range block.Content {
+		text.WriteString(extractInlineText(node))
+	}
+	return ui.HeadingStyle.Render("# " + text.String())
+}
+
+func formatCodeBlock(block contentBlock) string {
+	var text strings.Builder
+	for _, node := range block.Content {
+		text.WriteString(extractInlineText(node))
+	}
+	return ui.CodeBlockStyle.Render(text.String())
+}
+
+func formatOrderedList(block contentBlock) string {
+	var items strings.Builder
+	for i, item := range block.Content {
+		if item.Type == "listItem" {
+			itemText := extractListItemText(item)
+			fmt.Fprintf(&items, "  %d. %s\n", i+1, itemText)
+		}
+	}
+	return items.String()
+}
+
+func formatBulletList(block contentBlock) string {
+	var items strings.Builder
+	for _, item := range block.Content {
+		if item.Type == "listItem" {
+			itemText := formatListItem(item)
+			items.WriteString("  • " + itemText + "\n")
+		}
+	}
+	return items.String()
+}
+
+func formatListItem(node contentNode) string {
+	var text strings.Builder
+	for _, child := range node.Content {
+		if child.Type == "paragraph" {
+			text.WriteString(formatParagraph(contentBlock{Content: child.Content}))
+		}
+	}
+	return text.String()
+}
+
+func extractListItemText(item contentNode) string {
+	var text strings.Builder
+	for _, child := range item.Content {
+		if child.Type == "paragraph" {
+			for _, node := range child.Content {
+				text.WriteString(extractInlineText(node))
+			}
+		}
+	}
+	return text.String()
+}
+
+func formatTable(block contentBlock) string {
+	var rows []table.Row
+	var columns []table.Column
+
+	for _, row := range block.Content {
+		if row.Type == "tableRow" {
+			cells := extractRowCells(row)
+
+			if isEmptyRow(cells) {
+				continue
+			}
+
+			if len(columns) == 0 {
+				for _, cell := range cells {
+					columns = append(columns, table.Column{
+						Title: cell,
+						Width: 20,
+					})
+				}
+			} else {
+				rows = append(rows, cells)
+			}
+		}
+	}
+
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithHeight(len(rows)+1),
+	)
+
+	return t.View()
+}
+
+func isEmptyRow(cells []string) bool {
+	for _, cell := range cells {
+		if strings.TrimSpace(cell) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func extractRowCells(row contentNode) []string {
+	var cells []string
+
+	for _, cell := range row.Content {
+		if cell.Type == "tableHeader" || cell.Type == "tableCell" {
+			cellText := extractTableCellText(cell)
+			cells = append(cells, cellText)
+		}
+	}
+
+	return cells
+}
+
+func formatTableRow(row contentNode) string {
+	var cells []string
+
+	for _, cell := range row.Content {
+		if cell.Type == "tableHeader" || cell.Type == "tableCell" {
+			cellText := extractTableCellText(cell)
+			cells = append(cells, cellText)
+		}
+	}
+
+	return "| " + strings.Join(cells, " | ") + " |"
+}
+
+func extractTableCellText(cell contentNode) string {
+	var text strings.Builder
+	for _, child := range cell.Content {
+		if child.Type == "paragraph" {
+			for _, node := range child.Content {
+				text.WriteString(extractInlineText(node))
+			}
 		}
 	}
 	return text.String()

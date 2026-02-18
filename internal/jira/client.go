@@ -155,12 +155,18 @@ type contentBlock struct {
 }
 
 type contentNode struct {
-	Type  string `json:"type"`
-	Text  string `json:"text,omitempty"`
-	Attrs attrs  `json:"attrs"`
+	Type    string        `json:"type"`
+	Text    string        `json:"text,omitempty"`
+	Content []contentNode `json:"content,omitempty"`
+	Attrs   contentAttrs  `json:"attrs"`
+	Marks   []mark        `json:"marks,omitempty"`
 }
 
-type attrs struct {
+type mark struct {
+	Type string `json:"type"`
+}
+
+type contentAttrs struct {
 	Text string `json:"text,omitempty"`
 	ID   string `json:"id,omitempty"`
 }
