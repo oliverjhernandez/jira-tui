@@ -473,8 +473,8 @@ type detailLayout struct {
 
 func (m model) calculateDetailLayout() detailLayout {
 	panelWidth := ui.GetAvailableWidth(m.windowWidth)
-	leftColumnWidth := int(float64(panelWidth) * 0.6)
-	rightColumnWidth := int(float64(panelWidth)*0.4) - 1
+	leftColumnWidth := int(float64(panelWidth) * 0.8)
+	rightColumnWidth := int(float64(panelWidth)*0.2) - 1
 
 	metadataPanel := m.renderMetadataPanel(leftColumnWidth)
 	metadataPanelHeight := lipgloss.Height(metadataPanel)
