@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 var priorityOrder = map[string]int{
@@ -170,6 +172,25 @@ func (m model) getAbsoluteCursorLine() int {
 
 	lines += 2
 	lines += m.cursor + 1
+
+	return lines
+}
+
+func (m model) getCommentCursorLine() int {
+	lines := 0
+	width := m.detailLayout.leftColumnWidth
+
+	for i := 0; i < m.commentsCursor; i++ {
+		c := m.issueDetail.Comments[i]
+
+		lines += 1
+
+		bodyText := jira.ExtractText(c.Body, width-4)
+		wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
+		lines += lipgloss.Height(wrappedBody)
+
+		lines += 2
+	}
 
 	return lines
 }

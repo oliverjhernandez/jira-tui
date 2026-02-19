@@ -654,17 +654,28 @@ func (m model) renderDescriptionPanel(width int) string {
 
 func (m model) buildCommentsContent(width int) string {
 	var content strings.Builder
-	commentCount := len(m.issueDetail.Comments)
+	comments := m.issueDetail.Comments
+	commentCount := len(comments)
 
 	if commentCount > 0 {
-		for i, c := range m.issueDetail.Comments {
+		for i, c := range comments {
+			var comment strings.Builder
+
 			author := ui.CommentAuthorStyle.Render(c.Author)
 			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
-			content.WriteString(author + timestamp + "\n")
+
+			if m.commentsCursor == i {
+				cursor := ui.IconCursor
+				comment.WriteString(cursor + ui.SelectedRowStyle.Render(author+timestamp) + "\n")
+			} else {
+				comment.WriteString(author + timestamp + "\n")
+			}
 
 			bodyText := jira.ExtractText(c.Body, width-4)
 			wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
-			content.WriteString(wrappedBody + "\n")
+			comment.WriteString(wrappedBody + "\n")
+
+			content.WriteString(comment.String())
 
 			if i < commentCount-1 {
 				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")

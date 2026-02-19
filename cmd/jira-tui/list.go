@@ -26,8 +26,9 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				m.filtering = false
 				m.textInput.Blur()
-				m.sectionCursor = 0
 				m.cursor = 0
+				m.sectionCursor = 0
+				m.commentsCursor = 0
 				for i, s := range m.filteredSections {
 					if len(s.Issues) > 0 {
 						m.sectionCursor = i

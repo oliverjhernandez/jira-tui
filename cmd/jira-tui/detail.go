@@ -33,12 +33,33 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case commentsSection:
 			switch keyPressMsg.String() {
+
 			case "j":
-				m.commentsViewport.ScrollDown(1)
+				if m.commentsCursor < len(m.issueDetail.Comments)-1 {
+					m.commentsCursor++
+				}
+
+				cursorLine := m.getCommentCursorLine()
+				m.commentsViewport.SetYOffset(cursorLine)
+
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+				m.commentsViewport.SetContent(commentsContent)
+
 				return m, nil
+
 			case "k":
-				m.commentsViewport.ScrollUp(1)
+				if m.commentsCursor > 0 {
+					m.commentsCursor--
+				}
+
+				cursorLine := m.getCommentCursorLine()
+				m.commentsViewport.SetYOffset(cursorLine)
+
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+				m.commentsViewport.SetContent(commentsContent)
+
 				return m, nil
+
 			}
 
 		case worklogsSection:
@@ -161,6 +182,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.issueDetail = nil
 			m.textArea.SetValue("")
 			m.loading = true
+			m.commentsCursor = 0
 			return m, m.fetchMyIssues()
 		case "q", "ctrl+c":
 			return m, tea.Quit
