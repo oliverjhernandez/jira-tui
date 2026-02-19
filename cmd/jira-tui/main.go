@@ -143,6 +143,7 @@ type model struct {
 	// Editing State
 	editingDescription bool
 	editingPriority    bool
+	editingComment     bool
 
 	// Form Data
 	worklogData      *WorklogFormData
@@ -417,7 +418,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionView:
 		tmpModel, viewCmd = m.updateTransitionView(msg)
 	case commentView:
-		tmpModel, viewCmd = m.updatePostCommentView(msg)
+		tmpModel, viewCmd = m.updateCommentView(msg)
 	case userSearchView:
 		tmpModel, viewCmd = m.updateSearchUserView(msg)
 	case worklogView:
@@ -457,7 +458,7 @@ func (m model) View() string {
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:
-		content = m.renderPostCommentView()
+		content = m.renderCommentModalView()
 	case userSearchView:
 		content = m.renderSearchUserView()
 	case worklogView:

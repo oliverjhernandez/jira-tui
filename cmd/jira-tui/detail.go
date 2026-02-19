@@ -60,6 +60,25 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				return m, nil
 
+			case "c":
+				m.textArea = textarea.New()
+				m.textArea.Placeholder = "Add a comment..."
+				m.textArea.Focus()
+				m.textArea.SetWidth(100)
+				m.mode = commentView
+				return m, nil
+
+			case "e":
+				m.textArea = textarea.New()
+				textAreaWidth := 100
+				m.textArea.SetWidth(textAreaWidth)
+				comment := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, textAreaWidth)
+				m.textArea.SetValue(comment)
+				m.textArea.Focus()
+				m.editingComment = true
+				m.mode = commentView
+
+				return m, nil
 			}
 
 		case worklogsSection:
@@ -100,10 +119,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.priorityData.Form.Init()
 
 		case "tab":
-			// if m.issueDetail.Type == "Epic" && len(m.epicChildren) > 0 {
-			// 	m.toggleRightColumnView()
-			// } FIX: do something to show epic children
-
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx+1)%len(detailViewSections)]
 			return m, nil
@@ -148,14 +163,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case "c":
-			m.textArea = textarea.New()
-			m.textArea.Placeholder = "Add a comment..."
-			m.textArea.Focus()
-			m.textArea.SetWidth(100)
-			m.commentData = NewCommentFormData()
-			m.mode = commentView
-			return m, m.commentData.Form.Init()
 		case "w":
 			m.worklogData = NewWorklogFormData()
 			m.mode = worklogView

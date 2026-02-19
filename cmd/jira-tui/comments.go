@@ -13,23 +13,7 @@ type CommentFormData struct {
 	Form    *huh.Form
 }
 
-func NewCommentFormData() *CommentFormData {
-	c := &CommentFormData{
-		Comment: "",
-	}
-	c.Form = huh.NewForm(
-		huh.NewGroup(
-			huh.NewText().
-				Title("Comment").
-				Value(&c.Comment).
-				Lines(10),
-		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
-
-	return c
-}
-
-func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 
@@ -37,7 +21,7 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
-			return m, m.commentData.Form.Init()
+			return m, nil
 
 		case "@":
 			m.mode = userSearchView
@@ -49,20 +33,18 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchUsers(m.issueDetail.Key)
 
 		case "alt+enter", "ctrl+s":
-			if m.textArea.Value() != "" {
-				comment := m.textArea.Value()
+			var cmd tea.Cmd
+			comment := m.textArea.Value()
+			if m.editingComment {
+				cmd = m.updateComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID, comment)
+				return m, cmd
+			} else if m.textArea.Value() != "" {
 				m.textArea.Reset()
 				m.mode = detailView
-				return m, m.postComment(m.issueDetail.Key, comment)
+				cmd = m.postComment(m.issueDetail.Key, comment)
+				return m, cmd
 			}
-			return m, nil
 		}
-	}
-
-	if m.commentData.Form.State == huh.StateCompleted {
-		m.mode = detailView
-		comment := m.commentData.Comment
-		cmds = append(cmds, m.postComment(m.issueDetail.Key, comment))
 	}
 
 	m.textArea, cmd = m.textArea.Update(msg)
@@ -71,7 +53,7 @@ func (m model) updatePostCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) renderPostCommentView() string {
+func (m model) renderCommentModalView() string {
 	m.detailLayout = m.calculateDetailLayout()
 	bg := m.renderSimpleBackground()
 
@@ -79,7 +61,7 @@ func (m model) renderPostCommentView() string {
 
 	if m.issueDetail != nil {
 		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
-		modalContent.WriteString(header + "\n\n")
+		modalContent.WriteString(header + "\n")
 	}
 
 	modalContent.WriteString(m.textArea.View())

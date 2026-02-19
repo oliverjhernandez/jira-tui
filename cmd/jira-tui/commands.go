@@ -284,6 +284,27 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 	}
 }
 
+func (m model) updateComment(issueKey, commentID, comment string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PutComment(
+			context.Background(),
+			issueKey,
+			commentID,
+			comment,
+			m.usersCache,
+		)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return postedCommentMsg{success: true}
+	}
+}
+
 func (m model) fetchUsers(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -659,33 +680,41 @@ func (m model) buildCommentsContent(width int) string {
 
 	if commentCount > 0 {
 		for i, c := range comments {
-			var comment strings.Builder
+			isSelected := m.commentsCursor == i
+			isLast := i == commentCount-1
 
-			author := ui.CommentAuthorStyle.Render(c.Author)
-			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
-
-			if m.commentsCursor == i {
-				cursor := ui.IconCursor
-				comment.WriteString(cursor + ui.SelectedRowStyle.Render(author+timestamp) + "\n")
-			} else {
-				comment.WriteString(author + timestamp + "\n")
-			}
-
-			bodyText := jira.ExtractText(c.Body, width-4)
-			wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
-			comment.WriteString(wrappedBody + "\n")
-
-			content.WriteString(comment.String())
-
-			if i < commentCount-1 {
-				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
-			} else {
-				content.WriteString("\n")
-			}
+			commentStr := m.renderComment(c, width, isSelected, isLast)
+			content.WriteString(commentStr)
 		}
 	}
 
 	return content.String()
+}
+
+func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast bool) string {
+	var comment strings.Builder
+
+	author := ui.CommentAuthorStyle.Render(c.Author)
+	timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
+
+	if isSelected {
+		cursor := ui.IconCursor
+		comment.WriteString(cursor + ui.SelectedRowStyle.Render(author+timestamp) + "\n")
+	} else {
+		comment.WriteString(author + timestamp + "\n")
+	}
+
+	bodyText := jira.ExtractText(c.Body, width-4)
+	wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
+	comment.WriteString(wrappedBody + "\n")
+
+	if !isLast {
+		comment.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+	} else {
+		comment.WriteString("\n")
+	}
+
+	return comment.String()
 }
 
 func (m model) renderCommentsPanel(width int) string {

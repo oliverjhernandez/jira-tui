@@ -52,6 +52,7 @@ type IssueDetail struct {
 }
 
 type Comment struct {
+	ID           string
 	Author       string
 	EmailAddress string
 	Body         *contentDoc
@@ -199,6 +200,7 @@ type commentList struct {
 }
 
 type jiraComment struct {
+	ID      string      `json:"id"`
 	Author  userField   `json:"author"`
 	Body    *contentDoc `json:"body"`
 	Created string      `json:"created"`
@@ -454,6 +456,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	if issue.Fields.Comment != nil {
 		for _, comment := range issue.Fields.Comment.Comments {
 			detail.Comments = append(detail.Comments, Comment{
+				ID:      comment.ID,
 				Author:  comment.Author.DisplayName,
 				Body:    comment.Body,
 				Created: comment.Created,
@@ -802,6 +805,39 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 	err = c.doJiraRequest(
 		ctx,
 		"POST",
+		apiURL,
+		nil,
+		body,
+		nil,
+	)
+
+	return err
+}
+
+func (c *Client) PutComment(ctx context.Context, issueKey, commentID, comment string, usersCache []User) error {
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/comment/%s", issueKey, commentID)
+
+	content, err := parseCommentContent(comment, usersCache)
+	if err != nil {
+		return fmt.Errorf("failed to parse comment.: %w", err)
+	}
+
+	body := map[string]any{
+		"body": map[string]any{
+			"type":    "doc",
+			"version": 1,
+			"content": []map[string]any{
+				{
+					"content": content,
+					"type":    "paragraph",
+				},
+			},
+		},
+	}
+
+	err = c.doJiraRequest(
+		ctx,
+		"PUT",
 		apiURL,
 		nil,
 		body,
