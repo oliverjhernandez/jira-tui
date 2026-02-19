@@ -258,7 +258,11 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if len(expectedStatus) == 0 {
 		expectedStatus = []int{http.StatusOK, http.StatusCreated}
@@ -312,7 +316,11 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if len(expectedStatus) == 0 {
 		expectedStatus = []int{http.StatusOK, http.StatusCreated}

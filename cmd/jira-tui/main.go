@@ -132,7 +132,6 @@ type model struct {
 	sectionCursor    int
 	transitionCursor int
 	userCursor       int
-	rightColumnView  rightColumnView
 
 	// Input Components
 	textInput textinput.Model

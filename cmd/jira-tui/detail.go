@@ -8,13 +8,6 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-type rightColumnView int
-
-const (
-	worklogsView rightColumnView = iota
-	epicChildrenView
-)
-
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -76,7 +69,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.descriptionData = NewDescriptionFormData(descText)
 			m.mode = descriptionView
 			m.editingDescription = true
-			m.loadingDetail = true
 			return m, m.descriptionData.Form.Init()
 
 		case "p":

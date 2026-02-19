@@ -81,9 +81,7 @@ type postedEstimateMsg struct {
 	success bool
 }
 
-type keyTimeoutMsg struct {
-	err error
-}
+type keyTimeoutMsg struct{}
 
 type errMsg struct {
 	err error
@@ -424,14 +422,6 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 	return sections
 }
 
-func (m *model) toggleRightColumnView() {
-	if m.rightColumnView == worklogsView {
-		m.rightColumnView = epicChildrenView
-	} else {
-		m.rightColumnView = worklogsView
-	}
-}
-
 func (m model) linkIssue(fromKey, toKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -638,19 +628,14 @@ func (m model) renderDetailStatusBar() string {
 
 func (m model) buildDescriptionContent(width int) string {
 	var content strings.Builder
-	// content.WriteString(ui.SeparatorStyle.Render(strings.Repeat("─", 4)+" ") +
-	// 	ui.SectionTitleStyle.Render("󰠮 Description ") +
-	// 	ui.SeparatorStyle.Render(strings.Repeat("─", 20)) + "\n\n")
 
 	if m.issueDetail.Description != nil {
 		descText := jira.ExtractText(m.issueDetail.Description, width-4)
 		wrappedDesc := ui.DetailValueStyle.Width(width - 4).Render(descText)
 		content.WriteString(wrappedDesc + "\n\n")
 	} else {
-		// NOTE: use proper style here :point_down
 		content.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")
 	}
-
 	return content.String()
 }
 
@@ -670,9 +655,6 @@ func (m model) renderDescriptionPanel(width int) string {
 func (m model) buildCommentsContent(width int) string {
 	var content strings.Builder
 	commentCount := len(m.issueDetail.Comments)
-	// content.WriteString(ui.SeparatorStyle.Render(strings.Repeat("─", 4)+" ") +
-	// 	ui.SectionTitleStyle.Render(fmt.Sprintf("󱅰 Comments (%d) ", commentCount)) +
-	// 	ui.SeparatorStyle.Render(strings.Repeat("─", 60)) + "\n\n")
 
 	if commentCount > 0 {
 		for i, c := range m.issueDetail.Comments {
