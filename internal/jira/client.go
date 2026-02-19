@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"slices"
@@ -39,7 +40,7 @@ type IssueDetail struct {
 	Type              string
 	Assignee          string
 	Priority          Priority
-	Description       string
+	Description       *contentDoc
 	Reporter          string
 	Comments          []Comment
 	Parent            *Parent
@@ -53,7 +54,7 @@ type IssueDetail struct {
 type Comment struct {
 	Author       string
 	EmailAddress string
-	Body         string
+	Body         *contentDoc
 	Created      string
 }
 
@@ -129,22 +130,22 @@ type Link struct {
 }
 
 type issueFields struct {
-	Summary          string          `json:"summary"`
-	Description      *descriptionDoc `json:"description"`
-	Status           statusField     `json:"status"`
-	Type             typeField       `json:"issuetype"`
-	Assignee         *userField      `json:"assignee"`
-	Reporter         *userField      `json:"reporter"`
-	Comment          *commentList    `json:"comment"`
-	Priority         *priorityField  `json:"priority"`
-	Parent           *parentField    `json:"parent"`
-	IssueLinks       []IssueLink     `json:"issueLinks"`
-	OriginalEstimate *int            `json:"timeoriginalestimate"`
-	Created          string          `json:"created"`
-	Updated          string          `json:"updated"`
+	Summary          string         `json:"summary"`
+	Description      *contentDoc    `json:"description"`
+	Status           statusField    `json:"status"`
+	Type             typeField      `json:"issuetype"`
+	Assignee         *userField     `json:"assignee"`
+	Reporter         *userField     `json:"reporter"`
+	Comment          *commentList   `json:"comment"`
+	Priority         *priorityField `json:"priority"`
+	Parent           *parentField   `json:"parent"`
+	IssueLinks       []IssueLink    `json:"issueLinks"`
+	OriginalEstimate *int           `json:"timeoriginalestimate"`
+	Created          string         `json:"created"`
+	Updated          string         `json:"updated"`
 }
 
-type descriptionDoc struct {
+type contentDoc struct {
 	Content []contentBlock `json:"content"`
 }
 
@@ -198,9 +199,9 @@ type commentList struct {
 }
 
 type jiraComment struct {
-	Author  userField       `json:"author"`
-	Body    *descriptionDoc `json:"body"`
-	Created string          `json:"created"`
+	Author  userField   `json:"author"`
+	Body    *contentDoc `json:"body"`
+	Created string      `json:"created"`
 }
 
 type WorkLog struct {
@@ -421,7 +422,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		Type:        issue.Fields.Type.Name,
 		Summary:     issue.Fields.Summary,
 		Status:      issue.Fields.Status.Name,
-		Description: extractText(issue.Fields.Description),
+		Description: issue.Fields.Description,
 	}
 
 	if issue.Fields.Parent != nil {
@@ -446,7 +447,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		for _, comment := range issue.Fields.Comment.Comments {
 			detail.Comments = append(detail.Comments, Comment{
 				Author:  comment.Author.DisplayName,
-				Body:    extractText(comment.Body),
+				Body:    comment.Body,
 				Created: comment.Created,
 			})
 		}

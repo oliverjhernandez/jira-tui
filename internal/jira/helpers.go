@@ -5,23 +5,24 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/ansi"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func extractText(doc *descriptionDoc) string {
+func ExtractText(doc *contentDoc, panelWidth int) string {
 	if doc == nil {
 		return ""
 	}
 
 	var text strings.Builder
 	for _, block := range doc.Content {
-		text.WriteString(extractBlockText(block) + "\n")
+		text.WriteString(extractBlockText(block, panelWidth) + "\n")
 	}
 	return text.String()
 }
 
-func extractBlockText(block contentBlock) string {
+func extractBlockText(block contentBlock, panelWidth int) string {
 	switch block.Type {
 	case "heading":
 		return formatHeading(block)
@@ -34,7 +35,7 @@ func extractBlockText(block contentBlock) string {
 	case "orderedList":
 		return formatOrderedList(block)
 	case "table":
-		return formatTable(block)
+		return formatTable(block, panelWidth)
 	case "rule":
 		return "─────────────────────"
 	default:
@@ -135,38 +136,77 @@ func extractListItemText(item contentNode) string {
 	return text.String()
 }
 
-func formatTable(block contentBlock) string {
-	var rows []table.Row
-	var columns []table.Column
+func formatTable(block contentBlock, panelWidth int) string {
+	var allRows [][]string
 
 	for _, row := range block.Content {
 		if row.Type == "tableRow" {
 			cells := extractRowCells(row)
-
-			if isEmptyRow(cells) {
-				continue
-			}
-
-			if len(columns) == 0 {
-				for _, cell := range cells {
-					columns = append(columns, table.Column{
-						Title: cell,
-						Width: 20,
-					})
-				}
-			} else {
-				rows = append(rows, cells)
+			if !isEmptyRow(cells) {
+				allRows = append(allRows, cells)
 			}
 		}
 	}
 
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithHeight(len(rows)+1),
-	)
+	if len(allRows) == 0 {
+		return ""
+	}
 
-	return t.View()
+	colWidths := calculateColumnWidths(allRows, panelWidth)
+
+	var output strings.Builder
+	for _, row := range allRows {
+		for i, cell := range row {
+			cellStyle := lipgloss.NewStyle().Width(colWidths[i])
+			padded := cellStyle.Render(cell)
+			output.WriteString(padded)
+		}
+		output.WriteString("\n")
+	}
+
+	return output.String()
+}
+
+func calculateColumnWidths(rows [][]string, maxWidth int) []int {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	numCols := len(rows[0])
+	widths := make([]int, numCols)
+
+	for _, row := range rows {
+		for i, cell := range row {
+			if i < numCols {
+				cellWidth := ansi.PrintableRuneWidth(cell)
+				if cellWidth > widths[i] {
+					widths[i] = cellWidth
+				}
+			}
+		}
+	}
+
+	for i := range widths {
+		widths[i] += 4
+		if widths[i] < 25 {
+			widths[i] = 25
+		}
+	}
+
+	totalWidth := 0
+	for _, w := range widths {
+		totalWidth += w
+	}
+
+	if totalWidth > maxWidth {
+		scale := float64(maxWidth) / float64(totalWidth)
+		for i := range widths {
+			widths[i] = max(int(float64(widths[i])*scale),
+				10)
+		}
+	}
+
+	return widths
 }
 
 func isEmptyRow(cells []string) bool {
@@ -189,19 +229,6 @@ func extractRowCells(row contentNode) []string {
 	}
 
 	return cells
-}
-
-func formatTableRow(row contentNode) string {
-	var cells []string
-
-	for _, cell := range row.Content {
-		if cell.Type == "tableHeader" || cell.Type == "tableCell" {
-			cellText := extractTableCellText(cell)
-			cells = append(cells, cellText)
-		}
-	}
-
-	return "| " + strings.Join(cells, " | ") + " |"
 }
 
 func extractTableCellText(cell contentNode) string {

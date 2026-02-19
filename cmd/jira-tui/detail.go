@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -71,7 +72,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch keyPressMsg.String() {
 		case "d":
-			m.descriptionData = NewDescriptionFormData(m.issueDetail.Description)
+			descText := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
+			m.descriptionData = NewDescriptionFormData(descText)
 			m.mode = descriptionView
 			m.editingDescription = true
 			m.loadingDetail = true
@@ -100,7 +102,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "t":
 			if m.issueDetail != nil {
-				if m.issueDetail.Description == "" {
+				if m.issueDetail.Description == nil {
 					m.statusMessage = "Cannot transition, missing description."
 					return m, nil
 				}

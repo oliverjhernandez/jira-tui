@@ -642,8 +642,9 @@ func (m model) buildDescriptionContent(width int) string {
 	// 	ui.SectionTitleStyle.Render("󰠮 Description ") +
 	// 	ui.SeparatorStyle.Render(strings.Repeat("─", 20)) + "\n\n")
 
-	if m.issueDetail.Description != "" {
-		wrappedDesc := ui.DetailValueStyle.Width(width - 4).Render(m.issueDetail.Description)
+	if m.issueDetail.Description != nil {
+		descText := jira.ExtractText(m.issueDetail.Description, width-4)
+		wrappedDesc := ui.DetailValueStyle.Width(width - 4).Render(descText)
 		content.WriteString(wrappedDesc + "\n\n")
 	} else {
 		// NOTE: use proper style here :point_down
@@ -678,7 +679,9 @@ func (m model) buildCommentsContent(width int) string {
 			author := ui.CommentAuthorStyle.Render(c.Author)
 			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
 			content.WriteString(author + timestamp + "\n")
-			wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(c.Body)
+
+			bodyText := jira.ExtractText(c.Body, width-4)
+			wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
 			content.WriteString(wrappedBody + "\n")
 
 			if i < commentCount-1 {
