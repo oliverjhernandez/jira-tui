@@ -303,6 +303,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case postedCommentMsg:
+		m.statusMessage = "Comment posted successfully"
+		m.mode = detailView
+		m.loadingDetail = true
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+
+	case updatedCommentMsg:
+		m.statusMessage = "Comment edited successfully"
+		m.mode = detailView
+		m.loadingDetail = true
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+
+	case deletedCommentMsg:
+		m.statusMessage = "Comment deleted successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))

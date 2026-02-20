@@ -73,6 +73,14 @@ type postedCommentMsg struct {
 	success bool
 }
 
+type updatedCommentMsg struct {
+	success bool
+}
+
+type deletedCommentMsg struct {
+	success bool
+}
+
 type postedWorkLog struct {
 	success bool
 }
@@ -301,7 +309,26 @@ func (m model) updateComment(issueKey, commentID, comment string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return postedCommentMsg{success: true}
+		return updatedCommentMsg{success: true}
+	}
+}
+
+func (m model) deleteComment(issueKey, commentID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.DeleteComment(
+			context.Background(),
+			issueKey,
+			commentID,
+		)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return deletedCommentMsg{success: true}
 	}
 }
 
@@ -696,6 +723,10 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 
 	author := ui.CommentAuthorStyle.Render(c.Author)
 	timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
+
+	if c.Updated != c.Created {
+		timestamp += ui.StatusBarDescStyle.Render(" (edited)")
+	}
 
 	if isSelected {
 		cursor := ui.IconCursor

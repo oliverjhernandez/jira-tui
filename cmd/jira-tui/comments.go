@@ -37,6 +37,7 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			comment := m.textArea.Value()
 			if m.editingComment {
 				cmd = m.updateComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID, comment)
+				m.editingComment = false
 				return m, cmd
 			} else if m.textArea.Value() != "" {
 				m.textArea.Reset()

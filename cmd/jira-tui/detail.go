@@ -57,7 +57,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
 				m.commentsViewport.SetContent(commentsContent)
-
 				return m, nil
 
 			case "c":
@@ -77,8 +76,11 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textArea.Focus()
 				m.editingComment = true
 				m.mode = commentView
-
 				return m, nil
+
+			case "d":
+				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
+				return m, cmd
 			}
 
 		case worklogsSection:

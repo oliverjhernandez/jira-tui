@@ -57,6 +57,7 @@ type Comment struct {
 	EmailAddress string
 	Body         *contentDoc
 	Created      string
+	Updated      string
 }
 
 type Transition struct {
@@ -204,6 +205,7 @@ type jiraComment struct {
 	Author  userField   `json:"author"`
 	Body    *contentDoc `json:"body"`
 	Created string      `json:"created"`
+	Updated string      `json:"updated"`
 }
 
 type WorkLog struct {
@@ -460,6 +462,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 				Author:  comment.Author.DisplayName,
 				Body:    comment.Body,
 				Created: comment.Created,
+				Updated: comment.Updated,
 			})
 		}
 	}
@@ -842,6 +845,22 @@ func (c *Client) PutComment(ctx context.Context, issueKey, commentID, comment st
 		nil,
 		body,
 		nil,
+	)
+
+	return err
+}
+
+func (c *Client) DeleteComment(ctx context.Context, issueKey, commentID string) error {
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/comment/%s", issueKey, commentID)
+
+	err := c.doJiraRequest(
+		ctx,
+		"DELETE",
+		apiURL,
+		nil,
+		nil,
+		nil,
+		http.StatusNoContent,
 	)
 
 	return err
