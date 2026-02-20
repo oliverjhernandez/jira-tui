@@ -283,21 +283,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case transitionCompleteMsg:
+		m.statusMessage = "Issue transitioned successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case linkIssueCompleteMsg:
+		m.statusMessage = "Issue liked successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case editedDescriptionMsg:
+		m.statusMessage = "Description edited successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case editedPriorityMsg:
+		m.statusMessage = "Priority posted successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
@@ -321,12 +325,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case postedWorkLog:
+		m.statusMessage = "Worklog posted successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.issueDetail.ID))
 
 	case postedEstimateMsg:
+		m.statusMessage = "Estimate posted successfully"
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			if isCancelTransition(*transition) {
@@ -342,6 +348,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case assignUsersLoadedMsg:
+		m.statusMessage = "User assigned successfully"
 		m.usersCache = msg.users
 		m.loadingAssignUsers = false
 		m.mode = userSearchView
