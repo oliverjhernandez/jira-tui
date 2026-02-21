@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -111,11 +110,6 @@ func (m model) renderTransitionView() string {
 	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
-
-	if m.issueDetail != nil {
-		header := fmt.Sprintf("Change Status for %s", m.issueDetail.Key)
-		modalContent.WriteString(header + "\n\n")
-	}
 
 	if m.loadingTransitions {
 		modalContent.WriteString("Loading available transitions...\n")
