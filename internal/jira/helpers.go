@@ -48,6 +48,14 @@ func extractBlockText(block ContentBlock, panelWidth int) string {
 }
 
 func extractInlineText(node ContentNode) string {
+	if node.Type == "mention" {
+		userName := node.Attrs.Text
+		if userName == "" {
+			userName = node.Attrs.ID
+		}
+		return ui.MentionStyle.Render(userName)
+	}
+
 	text := node.Text
 
 	for _, mark := range node.Marks {

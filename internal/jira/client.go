@@ -200,8 +200,8 @@ type ContentNode struct {
 	Type    string        `json:"type"`
 	Text    string        `json:"text,omitempty"`
 	Content []ContentNode `json:"content,omitempty"`
-	// Attrs   contentAttrs  `json:"attrs,omitempty"`
-	Marks []mark `json:"marks,omitempty"`
+	Attrs   *contentAttrs `json:"attrs,omitempty"`
+	Marks   []mark        `json:"marks,omitempty"`
 }
 
 type mark struct {
