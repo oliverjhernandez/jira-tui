@@ -81,6 +81,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 
+		case "n":
+			m.newIssueData = m.NewIssueForm()
+			m.mode = newIssueView
+			return m, m.newIssueData.Form.Init()
+
 		case "up", "k":
 			sectionsToNavigate := m.sections
 			if m.filteredSections != nil {

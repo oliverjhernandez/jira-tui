@@ -23,6 +23,7 @@ type viewMode int
 
 const (
 	listView viewMode = iota
+	newIssueView
 	detailView
 	transitionView
 	userSearchView
@@ -102,6 +103,8 @@ type model struct {
 
 	// Issue Data
 	issues        []jira.Issue
+	projects      []jira.Project
+	issueTypes    []jira.IssueType
 	selectedIssue *jira.Issue
 	issueDetail   *jira.IssueDetail
 	children      []jira.Issue
@@ -111,7 +114,7 @@ type model struct {
 	focusedSection   focusedSection
 	filteredSections []Section
 	statuses         []jira.Status
-	priorityOptions  []jira.Priority
+	priorities       []jira.Priority
 
 	// Worklogs
 	selectedIssueWorklogs []jira.WorkLog
@@ -147,6 +150,7 @@ type model struct {
 
 	// Form Data
 	worklogData      *WorklogFormData
+	newIssueData     *NewIssueFormData
 	estimateData     *EstimateFormData
 	searchData       *SearchIssueFormData
 	commentData      *CommentFormData
@@ -174,6 +178,8 @@ func (m model) Init() tea.Cmd {
 	cmds = append(cmds, m.fetchMyIssues())
 	cmds = append(cmds, m.fetchStatuses())
 	cmds = append(cmds, m.fetchPriorities())
+	cmds = append(cmds, m.fetchProjects())
+	cmds = append(cmds, m.fetchIssueTypes())
 
 	return tea.Batch(cmds...)
 }
@@ -212,8 +218,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case prioritiesLoadedMsg:
-		m.priorityOptions = msg.priorities
+		m.priorities = msg.priorities
 		m.loading = false
+		return m, nil
+
+	case projectsLoadedMsg:
+		m.projects = msg.projects
 		return m, nil
 
 	case issueDetailLoadedMsg:
@@ -269,6 +279,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case issueTypesLoadedMsg:
+		m.issueTypes = msg.issueTypes
+		return m, nil
+
 	case transitionsLoadedMsg:
 		m.transitions = msg.transitions
 		m.loadingTransitions = false
@@ -284,6 +298,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionCompleteMsg:
 		m.statusMessage = "Issue transitioned successfully"
+		m.mode = detailView
+		m.loadingDetail = true
+		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+
+	case newIssueCompleteMsg:
+		m.statusMessage = "New issue created successfully"
 		m.mode = detailView
 		m.loadingDetail = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
@@ -429,6 +449,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.mode {
 	case listView:
 		tmpModel, viewCmd = m.updateListView(msg)
+	case newIssueView:
+		tmpModel, viewCmd = m.updateNewIssueView(msg)
 	case detailView:
 		tmpModel, viewCmd = m.updateDetailView(msg)
 	case descriptionView:
@@ -469,6 +491,8 @@ func (m model) View() string {
 	switch m.mode {
 	case listView:
 		content = m.renderListView()
+	case newIssueView:
+		content = m.renderNewIssueView()
 	case detailView:
 		content = m.renderDetailView()
 	case transitionView:

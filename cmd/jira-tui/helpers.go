@@ -211,3 +211,23 @@ func findIndex(section focusedSection, order []focusedSection) int {
 	}
 	return 0
 }
+
+func buildSimpleDescriptionContent(text string) *jira.ContentDoc {
+	contentDoc := jira.ContentDoc{
+		Type:    "doc",
+		Version: 1,
+		Content: []jira.ContentBlock{
+			{
+				Type: "paragraph",
+				Content: []jira.ContentNode{
+					{
+						Type: "text",
+						Text: text,
+					},
+				},
+			},
+		},
+	}
+
+	return &contentDoc
+}

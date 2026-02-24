@@ -35,12 +35,13 @@ type Issue struct {
 type IssueDetail struct {
 	ID                string
 	Key               string
+	Project           Project
 	Summary           string
 	Status            string
 	Type              string
 	Assignee          string
 	Priority          Priority
-	Description       *contentDoc
+	Description       *ContentDoc
 	Reporter          string
 	Comments          []Comment
 	Parent            *Parent
@@ -51,18 +52,43 @@ type IssueDetail struct {
 	Updated           string
 }
 
+type IssueType struct {
+	ID          string          `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Scope       *IssueTypeScope `json:"scope,omitempty"`
+}
+
+type IssueTypeScope struct {
+	Project struct {
+		ID string `json:"id"`
+	} `json:"project"`
+	Type string `json:"type"`
+}
+
+type Reporter struct {
+	ID string `json:"id"`
+}
+
+// NOTE: improve
+type Project struct {
+	ID   string
+	Name string
+	Key  string
+}
+
 type Comment struct {
 	ID           string
 	Author       string
 	EmailAddress string
-	Body         *contentDoc
+	Body         *ContentDoc
 	Created      string
 	Updated      string
 }
 
 type Transition struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type User struct {
@@ -72,8 +98,8 @@ type User struct {
 }
 
 type Priority struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type Parent struct {
@@ -94,8 +120,12 @@ func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (
 }
 
 // Response structs for the v3 API
-type searchResponse struct {
+type issuesSearchResponse struct {
 	Issues []jiraIssue `json:"issues"`
+}
+
+type projectsSearchResponse struct {
+	Projects []jiraProject `json:"values"`
 }
 
 type worklogsResponse struct {
@@ -106,6 +136,29 @@ type jiraIssue struct {
 	Key    string      `json:"key"`
 	ID     string      `json:"id"`
 	Fields issueFields `json:"fields"`
+}
+
+type jiraProject struct {
+	ID   string `json:"id"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
+type issueFields struct {
+	Summary          string         `json:"summary"`
+	Project          Project        `json:"project"`
+	Description      *ContentDoc    `json:"description"`
+	Status           statusField    `json:"status"`
+	Type             typeField      `json:"issuetype"`
+	Assignee         *UserField     `json:"assignee"`
+	Reporter         *UserField     `json:"reporter"`
+	Comment          *commentList   `json:"comment"`
+	Priority         *priorityField `json:"priority"`
+	Parent           *parentField   `json:"parent"`
+	IssueLinks       []IssueLink    `json:"issueLinks"`
+	OriginalEstimate *int           `json:"timeoriginalestimate"`
+	Created          string         `json:"created"`
+	Updated          string         `json:"updated"`
 }
 
 type IssueLink struct {
@@ -131,38 +184,24 @@ type Link struct {
 	Outward string `json:"outward"`
 }
 
-type issueFields struct {
-	Summary          string         `json:"summary"`
-	Description      *contentDoc    `json:"description"`
-	Status           statusField    `json:"status"`
-	Type             typeField      `json:"issuetype"`
-	Assignee         *userField     `json:"assignee"`
-	Reporter         *userField     `json:"reporter"`
-	Comment          *commentList   `json:"comment"`
-	Priority         *priorityField `json:"priority"`
-	Parent           *parentField   `json:"parent"`
-	IssueLinks       []IssueLink    `json:"issueLinks"`
-	OriginalEstimate *int           `json:"timeoriginalestimate"`
-	Created          string         `json:"created"`
-	Updated          string         `json:"updated"`
+type ContentDoc struct {
+	Type    string         `json:"type"`
+	Version int            `json:"version"`
+	Content []ContentBlock `json:"content"`
 }
 
-type contentDoc struct {
-	Content []contentBlock `json:"content"`
-}
-
-type contentBlock struct {
+type ContentBlock struct {
 	Type    string        `json:"type"`
-	Content []contentNode `json:"content,omitempty"`
+	Content []ContentNode `json:"content,omitempty"`
 	Text    string        `json:"text,omitempty"`
 }
 
-type contentNode struct {
+type ContentNode struct {
 	Type    string        `json:"type"`
 	Text    string        `json:"text,omitempty"`
-	Content []contentNode `json:"content,omitempty"`
-	Attrs   contentAttrs  `json:"attrs"`
-	Marks   []mark        `json:"marks,omitempty"`
+	Content []ContentNode `json:"content,omitempty"`
+	// Attrs   contentAttrs  `json:"attrs,omitempty"`
+	Marks []mark `json:"marks,omitempty"`
 }
 
 type mark struct {
@@ -192,7 +231,8 @@ type parentField struct {
 	Key        string `json:"key"`
 }
 
-type userField struct {
+type UserField struct {
+	ID          string `json:"id"`
 	DisplayName string `json:"displayName"`
 }
 
@@ -202,8 +242,8 @@ type commentList struct {
 
 type jiraComment struct {
 	ID      string      `json:"id"`
-	Author  userField   `json:"author"`
-	Body    *contentDoc `json:"body"`
+	Author  UserField   `json:"author"`
+	Body    *ContentDoc `json:"body"`
 	Created string      `json:"created"`
 	Updated string      `json:"updated"`
 }
@@ -269,7 +309,7 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 	}()
 
 	if len(expectedStatus) == 0 {
-		expectedStatus = []int{http.StatusOK, http.StatusCreated}
+		expectedStatus = []int{http.StatusOK, http.StatusCreated, http.StatusNoContent}
 	}
 
 	statusOK := slices.Contains(expectedStatus, resp.StatusCode)
@@ -280,6 +320,10 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 	}
 
 	if result != nil {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+
+		resp.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
 		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
@@ -366,7 +410,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params.Add("maxResults", "100")
 	params.Add("fields", "id,summary,status,issuetype,assignee,priority")
 
-	var searchResp searchResponse
+	var searchResp issuesSearchResponse
 
 	err := c.doJiraRequest(
 		ctx,
@@ -412,10 +456,44 @@ func (c *Client) GetChildren(ctx context.Context, epicKey string) ([]Issue, erro
 	return c.SearchIssuesJql(ctx, jql)
 }
 
+func (c *Client) GetProjects(ctx context.Context) ([]jiraProject, error) {
+	apiURL := "/rest/api/3/project/search"
+
+	var projects projectsSearchResponse
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&projects,
+		http.StatusOK,
+	)
+
+	return projects.Projects, err
+}
+
+func (c *Client) GetIssueTypes(ctx context.Context) ([]IssueType, error) {
+	apiURL := "/rest/api/3/issuetype"
+
+	var issueTypes []IssueType
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&issueTypes,
+		http.StatusOK,
+	)
+
+	return issueTypes, err
+}
+
 func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 	params := url.Values{}
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
+	params.Add("fields", "id,summary,description,project,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
 
 	var issue jiraIssue
 	err := c.doJiraRequest(
@@ -431,6 +509,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	detail := &IssueDetail{
 		ID:          issue.ID,
 		Key:         issue.Key,
+		Project:     issue.Fields.Project,
 		Type:        issue.Fields.Type.Name,
 		Summary:     issue.Fields.Summary,
 		Status:      issue.Fields.Status.Name,
@@ -701,6 +780,7 @@ func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority s
 func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, estimate string) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 
+	// TODO: validate estimate
 	body := map[string]any{
 		"fields": map[string]any{
 			"timetracking": map[string]any{
@@ -937,6 +1017,65 @@ func (c *Client) DeleteIssueLink(ctx context.Context, linkID string) error {
 		nil,
 		nil,
 		http.StatusNoContent,
+	)
+
+	return err
+}
+
+func (c *Client) PostNewIssue(
+	ctx context.Context,
+	projectID,
+	issueTypeID,
+	originalEstimate,
+	summary,
+	assigneeID,
+	priorityID string,
+	description *ContentDoc,
+	dueDate string,
+
+) error {
+	apiURL := "/rest/api/3/issue"
+
+	body := map[string]any{
+		"fields": map[string]any{
+			"assignee": map[string]any{
+				"id": assigneeID,
+			},
+			"description": description,
+			"duedate":     dueDate,
+			"issuetype": map[string]any{
+				"id": issueTypeID,
+			},
+			"priority": map[string]any{
+				"id": priorityID,
+			},
+			"project": map[string]any{
+				"id": projectID,
+			},
+			"summary": summary,
+		},
+	}
+
+	if originalEstimate != "" {
+		body["timetracking"] = map[string]any{
+			"originalEstimate": originalEstimate,
+		}
+	}
+
+	bodyJSON, err := json.MarshalIndent(body, "", " ")
+	if err != nil {
+		log.Printf("ERROR: %s", err.Error())
+	}
+	log.Printf("BODY: %+v", string(bodyJSON))
+
+	err = c.doJiraRequest(
+		ctx,
+		"POST",
+		apiURL,
+		nil,
+		body,
+		nil,
+		http.StatusCreated,
 	)
 
 	return err

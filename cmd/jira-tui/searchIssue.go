@@ -57,15 +57,7 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.fetchIssueDetail(m.searchData.Query))
 		case linkIssue:
 			m.loadingDetail = true
-			if m.searchData.Query == jira.MonthlyChangeIssue {
-				m.issueDetail.IsLinkedToChange = true
-			}
-
-			if m.issueDetail.IsLinkedToChange {
-				cmds = append(cmds, m.unlinkIssue(m.issueDetail.ChangeIssueLinkID))
-			} else {
-				cmds = append(cmds, m.linkIssue(m.issueDetail.Key, jira.MonthlyChangeIssue))
-			}
+			cmds = append(cmds, m.linkIssue(m.issueDetail.Key, jira.MonthlyChangeIssue))
 		}
 	}
 

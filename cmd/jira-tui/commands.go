@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -33,6 +35,14 @@ type prioritiesLoadedMsg struct {
 	priorities []jira.Priority
 }
 
+type projectsLoadedMsg struct {
+	projects []jira.Project
+}
+
+type issueTypesLoadedMsg struct {
+	issueTypes []jira.IssueType
+}
+
 type issueDetailLoadedMsg struct {
 	detail *jira.IssueDetail
 }
@@ -54,6 +64,10 @@ type worklogTotalsLoadedMsg struct {
 }
 
 type transitionCompleteMsg struct {
+	success bool
+}
+
+type newIssueCompleteMsg struct {
 	success bool
 }
 
@@ -125,6 +139,47 @@ func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
 	}
 }
 
+func (m model) fetchProjects() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		detail, err := m.client.GetProjects(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		var projects []jira.Project
+		for _, jp := range detail {
+			project := jira.Project{
+				ID:   jp.ID,
+				Name: jp.Name,
+				Key:  jp.Key,
+			}
+
+			projects = append(projects, project)
+		}
+
+		return projectsLoadedMsg{projects}
+	}
+}
+
+func (m model) fetchIssueTypes() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		detail, err := m.client.GetIssueTypes(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return issueTypesLoadedMsg{detail}
+	}
+}
+
 func (m model) fetchTransitions(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -137,6 +192,89 @@ func (m model) fetchTransitions(issueKey string) tea.Cmd {
 		}
 
 		return transitionsLoadedMsg{transitions}
+	}
+}
+
+func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		var projectID string
+		for _, p := range m.projects {
+			log.Printf("Project: ID %s - Name %s", p.ID, p.Key)
+			if strings.Contains(p.Key, issue.ProjectName) {
+				projectID = p.ID
+				break
+			} else {
+				projectID = ""
+			}
+		}
+
+		var issueTypeID string
+		for _, it := range m.issueTypes {
+			if it.Name == issue.IssueTypeName {
+				if it.Scope != nil {
+				}
+				if it.Scope != nil && it.Scope.Project.ID == projectID {
+					issueTypeID = it.ID
+					break
+				} else {
+					issueTypeID = ""
+				}
+			}
+		}
+
+		if issueTypeID == "" {
+			for _, it := range m.issueTypes {
+				if it.Name == issue.IssueTypeName && it.Scope == nil {
+					issueTypeID = it.ID
+					break
+				}
+			}
+		}
+
+		// TODO: validate estimate
+		originalEstimate := issue.OriginalEstimate
+		summary := issue.Summary
+
+		var assigneeID string
+		if issue.AssigneeName == m.myself.Name {
+			assigneeID = m.myself.ID
+		}
+
+		var priorityID string
+		for _, p := range m.priorities {
+			if strings.Contains(p.Name, issue.PriorityName) {
+				priorityID = p.ID
+				break
+			}
+		}
+
+		var dueDate time.Time
+		if _, err := time.Parse("2006-01-02", issue.DueDate); err != nil {
+			dueDate = time.Now()
+		}
+
+		description := buildSimpleDescriptionContent(issue.Description)
+
+		err := m.client.PostNewIssue(
+			context.Background(),
+			projectID,
+			issueTypeID,
+			originalEstimate,
+			summary,
+			assigneeID,
+			priorityID,
+			description,
+			dueDate.Format("2006-01-02"),
+		)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return newIssueCompleteMsg{success: true}
 	}
 }
 

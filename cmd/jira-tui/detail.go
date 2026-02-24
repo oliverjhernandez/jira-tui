@@ -117,7 +117,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.descriptionData.Form.Init()
 
 		case "p":
-			m.priorityData = NewPriorityFormData(m.priorityOptions, m.issueDetail.Priority.Name)
+			m.priorityData = NewPriorityFormData(m.priorities, m.issueDetail.Priority.Name)
 			m.mode = priorityView
 			m.editingPriority = true
 			m.loadingDetail = true
@@ -172,6 +172,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.worklogData = NewWorklogFormData()
 			m.mode = worklogView
 			return m, m.worklogData.Form.Init()
+
 		case "a":
 			m.mode = userSearchView
 			m.loadingAssignUsers = true

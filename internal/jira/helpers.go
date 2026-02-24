@@ -10,7 +10,7 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-func ExtractText(doc *contentDoc, panelWidth int) string {
+func ExtractText(doc *ContentDoc, panelWidth int) string {
 	if doc == nil {
 		return ""
 	}
@@ -22,7 +22,7 @@ func ExtractText(doc *contentDoc, panelWidth int) string {
 	return text.String()
 }
 
-func extractBlockText(block contentBlock, panelWidth int) string {
+func extractBlockText(block ContentBlock, panelWidth int) string {
 	switch block.Type {
 	case "heading":
 		return formatHeading(block)
@@ -47,7 +47,7 @@ func extractBlockText(block contentBlock, panelWidth int) string {
 	}
 }
 
-func extractInlineText(node contentNode) string {
+func extractInlineText(node ContentNode) string {
 	text := node.Text
 
 	for _, mark := range node.Marks {
@@ -68,7 +68,7 @@ func extractInlineText(node contentNode) string {
 	return text
 }
 
-func formatParagraph(block contentBlock) string {
+func formatParagraph(block ContentBlock) string {
 	var text strings.Builder
 	for _, node := range block.Content {
 		text.WriteString(extractInlineText(node))
@@ -76,7 +76,7 @@ func formatParagraph(block contentBlock) string {
 	return text.String()
 }
 
-func formatHeading(block contentBlock) string {
+func formatHeading(block ContentBlock) string {
 	var text strings.Builder
 	for _, node := range block.Content {
 		text.WriteString(extractInlineText(node))
@@ -84,7 +84,7 @@ func formatHeading(block contentBlock) string {
 	return ui.HeadingStyle.Render("# " + text.String())
 }
 
-func formatCodeBlock(block contentBlock) string {
+func formatCodeBlock(block ContentBlock) string {
 	var text strings.Builder
 	for _, node := range block.Content {
 		text.WriteString(extractInlineText(node))
@@ -92,7 +92,7 @@ func formatCodeBlock(block contentBlock) string {
 	return ui.CodeBlockStyle.Render(text.String())
 }
 
-func formatOrderedList(block contentBlock) string {
+func formatOrderedList(block ContentBlock) string {
 	var items strings.Builder
 	for i, item := range block.Content {
 		if item.Type == "listItem" {
@@ -103,7 +103,7 @@ func formatOrderedList(block contentBlock) string {
 	return items.String()
 }
 
-func formatBulletList(block contentBlock) string {
+func formatBulletList(block ContentBlock) string {
 	var items strings.Builder
 	for _, item := range block.Content {
 		if item.Type == "listItem" {
@@ -114,17 +114,17 @@ func formatBulletList(block contentBlock) string {
 	return items.String()
 }
 
-func formatListItem(node contentNode) string {
+func formatListItem(node ContentNode) string {
 	var text strings.Builder
 	for _, child := range node.Content {
 		if child.Type == "paragraph" {
-			text.WriteString(formatParagraph(contentBlock{Content: child.Content}))
+			text.WriteString(formatParagraph(ContentBlock{Content: child.Content}))
 		}
 	}
 	return text.String()
 }
 
-func extractListItemText(item contentNode) string {
+func extractListItemText(item ContentNode) string {
 	var text strings.Builder
 	for _, child := range item.Content {
 		if child.Type == "paragraph" {
@@ -136,7 +136,7 @@ func extractListItemText(item contentNode) string {
 	return text.String()
 }
 
-func formatTable(block contentBlock, panelWidth int) string {
+func formatTable(block ContentBlock, panelWidth int) string {
 	var allRows [][]string
 
 	for _, row := range block.Content {
@@ -218,7 +218,7 @@ func isEmptyRow(cells []string) bool {
 	return true
 }
 
-func extractRowCells(row contentNode) []string {
+func extractRowCells(row ContentNode) []string {
 	var cells []string
 
 	for _, cell := range row.Content {
@@ -231,7 +231,7 @@ func extractRowCells(row contentNode) []string {
 	return cells
 }
 
-func extractTableCellText(cell contentNode) string {
+func extractTableCellText(cell ContentNode) string {
 	var text strings.Builder
 	for _, child := range cell.Content {
 		if child.Type == "paragraph" {
