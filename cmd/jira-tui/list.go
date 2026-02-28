@@ -68,13 +68,41 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return keyTimeoutMsg{}
 			})
 			return m, tick
+
 		case keyMsg.String() == "g" && m.lastKey == "g":
 			m.lastKey = ""
 			m.cursor = 0
 			m.sectionCursor = 0
 			m.listViewport.GotoTop()
-		default:
+
+		case keyMsg.String() == "y" && m.lastKey == "":
+			m.lastKey = "y"
+			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+				return keyTimeoutMsg{}
+			})
+			return m, tick
+
+		case keyMsg.String() == "k" && m.lastKey == "y":
 			m.lastKey = ""
+			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
+			yankToClipboard(textToCopy)
+			m.statusMessage = "Key yanked to clipboard"
+			return m, nil
+
+		case keyMsg.String() == "K" && m.lastKey == "y":
+			m.lastKey = ""
+			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
+			yankToClipboard(textToCopy)
+			m.statusMessage = "URL yanked to clipboard"
+			return m, nil
+
+		case keyMsg.String() == "s" && m.lastKey == "y":
+			m.lastKey = ""
+			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
+			yankToClipboard(textToCopy)
+			m.statusMessage = "Summary yanked to clipboard"
+			return m, nil
+
 		}
 
 		switch keyMsg.String() {

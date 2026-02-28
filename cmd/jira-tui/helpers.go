@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -230,4 +231,11 @@ func buildSimpleDescriptionContent(text string) *jira.ContentDoc {
 	}
 
 	return &contentDoc
+}
+
+func yankToClipboard(text string) {
+	err := clipboard.WriteAll(text)
+	if err != nil {
+		log.Printf("ERROR: %s", err.Error())
+	}
 }
