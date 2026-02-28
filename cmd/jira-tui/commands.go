@@ -278,17 +278,21 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 	}
 }
 
-func (m model) postTransition(issueKey, transitionID string) tea.Cmd {
+func (m model) postTransition(issueKey, transitionID, transitionName string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.PostTransition(context.Background(), issueKey, transitionID)
+		var workLogTime string
+		if transitionName == "Done" {
+			workLogTime = extractLoggedTime(m.selectedIssueWorklogs)
+		}
+
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, "", workLogTime)
 		if err != nil {
 			return errMsg{err}
 		}
-
 		return transitionCompleteMsg{success: true}
 	}
 }
@@ -301,7 +305,7 @@ func (m model) postTransitionWithReason(issueKey, transitionID, reason string) t
 
 		comment := "Motivo de cancelación: " + reason
 
-		err := m.client.PostTransitionWithComment(context.Background(), issueKey, transitionID, nil, comment)
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, comment, "")
 		if err != nil {
 			return errMsg{err}
 		}

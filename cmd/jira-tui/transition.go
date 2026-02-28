@@ -98,7 +98,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView
-				cmds = append(cmds, m.postTransition(m.issueDetail.Key, transition.ID))
+				cmds = append(cmds, m.postTransition(m.issueDetail.Key, transition.ID, transition.Name))
 			}
 		}
 	}

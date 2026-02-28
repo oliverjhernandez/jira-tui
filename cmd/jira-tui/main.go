@@ -304,8 +304,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case newIssueCompleteMsg:
 		m.statusMessage = "New issue created successfully"
-		m.mode = detailView
-		m.loadingDetail = true
+		m.mode = listView
+		m.loading = true
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case linkIssueCompleteMsg:
@@ -361,7 +361,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
-			return m, tea.Batch(m.postTransition(m.issueDetail.Key, transition.ID))
+			return m, tea.Batch(m.postTransition(m.issueDetail.Key, transition.ID, transition.Name))
 		}
 		m.mode = detailView
 		m.loadingDetail = true
