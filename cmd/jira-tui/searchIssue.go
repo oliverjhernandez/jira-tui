@@ -26,7 +26,7 @@ func NewSearchFormData() *SearchIssueFormData {
 				Placeholder("DEV-123").
 				Value(&e.Query),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(40)
+	).WithWidth(40)
 
 	return e
 }
