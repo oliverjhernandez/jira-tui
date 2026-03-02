@@ -8,12 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// var (
-// 	modalWidth  = getModalWidth(0.8)
-// 	modalHeight = getModalHeight(0.7)
-// 	x, y        = getCenteredModalPosition(modalWidth, modalHeight)
-// )
-
 // FormatTimeSpent formats seconds into a human readable string like "3h" or "2h 30m"
 func FormatTimeSpent(seconds int) string {
 	if seconds == 0 {
