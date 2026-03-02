@@ -50,6 +50,7 @@ type IssueDetail struct {
 	OriginalEstimate  string
 	Created           string
 	Updated           string
+	Children          []Issue
 }
 
 type IssueType struct {
@@ -1068,13 +1069,7 @@ func (c *Client) PostNewIssue(
 		}
 	}
 
-	bodyJSON, err := json.MarshalIndent(body, "", " ")
-	if err != nil {
-		log.Printf("ERROR: %s", err.Error())
-	}
-	log.Printf("BODY: %+v", string(bodyJSON))
-
-	err = c.doJiraRequest(
+	err := c.doJiraRequest(
 		ctx,
 		"POST",
 		apiURL,
