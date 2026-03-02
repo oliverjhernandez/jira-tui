@@ -110,7 +110,6 @@ type model struct {
 	issueTypes    []jira.IssueType
 	selectedIssue *jira.Issue
 	issueDetail   *jira.IssueDetail
-	children      []jira.Issue
 
 	// Issue Metadata
 	sections         []Section
@@ -209,8 +208,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchAllWorklogTotals(msg.issues))
 
 	case childrenLoadedMsg:
-		m.children = nil
-		m.children = msg.children
+		m.searchData = NewSearchFormData()
+		m.issueDetail.Children = msg.children
+		if len(m.issueDetail.Children) > 0 {
+			childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+			m.childrenViewport.Width = m.detailLayout.rightColumnWidth
+			m.childrenViewport.Height = m.detailLayout.childrenHeight
+			m.childrenViewport.SetContent(childrenContent)
+		}
 		return m, nil
 
 	case worklogTotalsLoadedMsg:
@@ -231,7 +236,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issueDetailLoadedMsg:
 		if m.searchData != nil {
-			m.searchData = NewSearchFormData()
 		}
 
 		m.issueDetail = msg.detail
@@ -251,21 +255,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
-		if m.selectedIssueWorklogs != nil {
-			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
-			m.worklogsViewport.Width = m.detailLayout.rightColumnWidth
-			m.worklogsViewport.Height = m.detailLayout.worklogsHeight
-			m.worklogsViewport.SetContent(worklogsContent)
+		var cmds []tea.Cmd
+		if m.issueDetail.Type == "Epic" {
+			epicChildrenCmd := m.fetchEpicChildren(m.issueDetail.Key)
+			cmds = append(cmds, epicChildrenCmd)
 		}
 
-		if m.children == nil {
-			childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
-			m.childrenViewport.Width = m.detailLayout.rightColumnWidth
-			m.childrenViewport.Height = m.detailLayout.childrenHeight
-			m.childrenViewport.SetContent(childrenContent)
-		}
-
-		return m, nil
+		return m, tea.Batch(cmds...)
 
 	case workLogsLoadedMsg:
 		m.selectedIssueWorklogs = msg.workLogs
@@ -279,7 +275,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.worklogTotals = make(map[string]int)
 			}
 			m.worklogTotals[m.issueDetail.ID] = total
+
+			if len(m.issueDetail.Comments) > 0 {
+				worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+				m.worklogsViewport.Width = m.detailLayout.rightColumnWidth
+				m.worklogsViewport.Height = m.detailLayout.worklogsHeight
+				m.worklogsViewport.SetContent(worklogsContent)
+			}
 		}
+
 		return m, nil
 
 	case issueTypesLoadedMsg:
