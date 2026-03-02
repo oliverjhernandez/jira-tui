@@ -53,7 +53,7 @@ const (
 type focusedSection int
 
 const (
-	descSection focusedSection = iota
+	descriptionSection focusedSection = iota
 	commentsSection
 	worklogsSection
 	childrenSection
@@ -61,7 +61,7 @@ const (
 
 func (f focusedSection) String() string {
 	switch f {
-	case descSection:
+	case descriptionSection:
 		return "descSection"
 	case commentsSection:
 		return "commentsSection"

@@ -833,7 +833,7 @@ func (m model) renderDescriptionPanel(width int) string {
 	viewport := m.descViewport.View()
 
 	var style lipgloss.Style
-	if m.focusedSection == descSection {
+	if m.focusedSection == descriptionSection {
 		style = ui.PanelActiveStyle
 	} else {
 		style = ui.PanelInactiveStyle

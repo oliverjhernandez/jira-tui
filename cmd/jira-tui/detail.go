@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,29 +14,89 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	var detailViewSections = []focusedSection{
-		descSection,
+		descriptionSection,
 		commentsSection,
 		worklogsSection,
 		childrenSection,
 	}
 
-	if keyPressMsg, ok := msg.(tea.KeyMsg); ok {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		m.statusMessage = ""
 
+		switch {
+		case keyMsg.String() == "y" && m.lastKey == "":
+			m.lastKey = "y"
+			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+				return keyTimeoutMsg{}
+			})
+			return m, tick
+
+		case keyMsg.String() == "k" && m.lastKey == "y":
+			m.lastKey = ""
+			textToCopy := m.issueDetail.ID
+			yankToClipboard(textToCopy)
+			m.statusMessage = "Key yanked to clipboard"
+			return m, nil
+
+		case keyMsg.String() == "K" && m.lastKey == "y":
+			m.lastKey = ""
+			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
+			yankToClipboard(textToCopy)
+			m.statusMessage = "URL yanked to clipboard"
+			return m, nil
+
+		case keyMsg.String() == "s" && m.lastKey == "y":
+			m.lastKey = ""
+			textToCopy := m.issueDetail.Summary
+			yankToClipboard(textToCopy)
+			m.statusMessage = "Summary yanked to clipboard"
+			return m, nil
+
+		}
+
 		switch m.focusedSection {
-		case descSection:
-			switch keyPressMsg.String() {
-			case "j":
+		case descriptionSection:
+			switch {
+			case keyMsg.String() == "j":
 				m.descViewport.ScrollDown(1)
 				return m, nil
-			case "k":
+			case keyMsg.String() == "k":
 				m.descViewport.ScrollUp(1)
+				return m, nil
+
+			case keyMsg.String() == "y" && m.lastKey == "":
+				m.lastKey = "y"
+				tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+					return keyTimeoutMsg{}
+				})
+				return m, tick
+
+			case keyMsg.String() == "y" && m.lastKey == "y":
+				m.lastKey = ""
+				textToCopy := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
+				yankToClipboard(textToCopy)
+				m.statusMessage = "Description yanked to clipboard"
+
 				return m, nil
 			}
 		case commentsSection:
-			switch keyPressMsg.String() {
+			switch {
 
-			case "j":
+			case keyMsg.String() == "y" && m.lastKey == "":
+				m.lastKey = "y"
+				tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+					return keyTimeoutMsg{}
+				})
+				return m, tick
+
+			case keyMsg.String() == "y" && m.lastKey == "y":
+				m.lastKey = ""
+				textToCopy := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
+				yankToClipboard(textToCopy)
+				m.statusMessage = "Comment yanked to clipboard"
+				return m, nil
+
+			case keyMsg.String() == "j":
 				if m.commentsCursor < len(m.issueDetail.Comments)-1 {
 					m.commentsCursor++
 				}
@@ -47,7 +109,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				return m, nil
 
-			case "k":
+			case keyMsg.String() == "k":
 				if m.commentsCursor > 0 {
 					m.commentsCursor--
 				}
@@ -59,7 +121,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.commentsViewport.SetContent(commentsContent)
 				return m, nil
 
-			case "c":
+			case keyMsg.String() == "c":
 				m.textArea = textarea.New()
 				m.textArea.Placeholder = "Add a comment..."
 				m.textArea.Focus()
@@ -67,7 +129,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = commentView
 				return m, nil
 
-			case "e":
+			case keyMsg.String() == "e":
 				m.textArea = textarea.New()
 				textAreaWidth := 100
 				m.textArea.SetWidth(textAreaWidth)
@@ -81,13 +143,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = commentView
 				return m, nil
 
-			case "d":
+			case keyMsg.String() == "d":
 				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
 				return m, cmd
 			}
 
 		case worklogsSection:
-			switch keyPressMsg.String() {
+			switch keyMsg.String() {
 			case "j":
 				m.worklogsViewport.ScrollDown(1)
 				return m, nil
@@ -97,7 +159,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case childrenSection:
-			switch keyPressMsg.String() {
+			switch keyMsg.String() {
 			case "j":
 				m.childrenViewport.ScrollDown(1)
 				return m, nil
@@ -108,7 +170,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 
-		switch keyPressMsg.String() {
+		switch keyMsg.String() {
 		case "d":
 			descText := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
 			m.descriptionData = NewDescriptionFormData(descText)
