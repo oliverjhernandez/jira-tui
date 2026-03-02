@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,6 +22,14 @@ var priorityOrder = map[string]int{
 	"Medium":  4,
 	"Low":     5,
 	"Lowest":  6,
+}
+
+var statusOrder = map[string]int{
+	"In Progress": 1,
+	"To Do":       2,
+	"Backlog":     3,
+	"Done":        4,
+	"Cancelada":   5,
 }
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
@@ -202,6 +211,12 @@ func sortSectionsByPriority(sections []Section) {
 			return priorityOrder[sections[si].Issues[i].Priority] < priorityOrder[sections[si].Issues[j].Priority]
 		})
 	}
+}
+
+func sortIssuesByStatus(issues []jira.Issue) {
+	slices.SortFunc(issues, func(a, b jira.Issue) int {
+		return statusOrder[a.Status] - statusOrder[b.Status]
+	})
 }
 
 func findIndex(section focusedSection, order []focusedSection) int {
