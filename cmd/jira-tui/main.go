@@ -17,6 +17,8 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+const jiraURL = "https://layer7.atlassian.net/browse/"
+
 var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
 
 type viewMode int
@@ -53,7 +55,8 @@ const (
 type focusedSection int
 
 const (
-	descriptionSection focusedSection = iota
+	metadataSection focusedSection = iota
+	descriptionSection
 	commentsSection
 	worklogsSection
 	childrenSection

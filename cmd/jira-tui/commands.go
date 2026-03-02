@@ -786,7 +786,14 @@ func (m model) renderMetadataPanel(width int) string {
 	detailsContent.WriteString(leftHeader + "\n")
 	detailsContent.WriteString(metadataRows)
 
-	metadataPanel := ui.PanelStyleActive.
+	var style lipgloss.Style
+	if m.focusedSection == metadataSection {
+		style = ui.PanelActiveStyle
+	} else {
+		style = ui.PanelActiveSecondaryStyle
+	}
+
+	metadataPanel := style.
 		Width(width).
 		Render(detailsContent.String())
 

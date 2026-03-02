@@ -115,16 +115,10 @@ var (
 
 var (
 	// Focused panel - bright border
-	PanelStyleActive = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(ThemeBorderActive).
-				Padding(1, 2)
-
-	// Unfocused panel - dim border
-	PanelStyleInactive = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(ThemeBorder).
-				Padding(1, 2)
+	PanelActiveSecondaryStyle = lipgloss.NewStyle().
+					Border(lipgloss.RoundedBorder()).
+					BorderForeground(ThemeBorderActive).
+					Padding(1, 2)
 
 	// Panel title
 	PanelTitleStyle = lipgloss.NewStyle().

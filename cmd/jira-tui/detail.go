@@ -14,6 +14,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	var detailViewSections = []focusedSection{
+		metadataSection,
 		descriptionSection,
 		commentsSection,
 		worklogsSection,
@@ -23,38 +24,38 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		m.statusMessage = ""
 
-		switch {
-		case keyMsg.String() == "y" && m.lastKey == "":
-			m.lastKey = "y"
-			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-				return keyTimeoutMsg{}
-			})
-			return m, tick
-
-		case keyMsg.String() == "k" && m.lastKey == "y":
-			m.lastKey = ""
-			textToCopy := m.issueDetail.ID
-			yankToClipboard(textToCopy)
-			m.statusMessage = "Key yanked to clipboard"
-			return m, nil
-
-		case keyMsg.String() == "K" && m.lastKey == "y":
-			m.lastKey = ""
-			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
-			yankToClipboard(textToCopy)
-			m.statusMessage = "URL yanked to clipboard"
-			return m, nil
-
-		case keyMsg.String() == "s" && m.lastKey == "y":
-			m.lastKey = ""
-			textToCopy := m.issueDetail.Summary
-			yankToClipboard(textToCopy)
-			m.statusMessage = "Summary yanked to clipboard"
-			return m, nil
-
-		}
-
 		switch m.focusedSection {
+		case metadataSection:
+			switch {
+			case keyMsg.String() == "y" && m.lastKey == "":
+				m.lastKey = "y"
+				tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+					return keyTimeoutMsg{}
+				})
+				return m, tick
+
+			case keyMsg.String() == "k" && m.lastKey == "y":
+				m.lastKey = ""
+				textToCopy := m.issueDetail.Key
+				yankToClipboard(textToCopy)
+				m.statusMessage = "Key yanked to clipboard"
+				return m, nil
+
+			case keyMsg.String() == "K" && m.lastKey == "y":
+				m.lastKey = ""
+				textToCopy := jiraURL + m.sections[m.sectionCursor].Issues[m.cursor].Key
+				yankToClipboard(textToCopy)
+				m.statusMessage = "URL yanked to clipboard"
+				return m, nil
+
+			case keyMsg.String() == "s" && m.lastKey == "y":
+				m.lastKey = ""
+				textToCopy := m.issueDetail.Summary
+				yankToClipboard(textToCopy)
+				m.statusMessage = "Summary yanked to clipboard"
+				return m, nil
+			}
+
 		case descriptionSection:
 			switch {
 			case keyMsg.String() == "j":
@@ -171,6 +172,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch keyMsg.String() {
+
 		case "d":
 			descText := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
 			m.descriptionData = NewDescriptionFormData(descText)
@@ -242,16 +244,19 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.Focus()
 			m.cursor = 0
 			return m, m.fetchUsers(m.issueDetail.Key)
+
 		case "e":
 			m.mode = estimateView
 			m.estimateData = NewEstimateFormData()
 			return m, m.estimateData.Form.Init()
+
 		case "ctrl+r":
 			if m.loadingDetail {
 				return m, nil
 			}
 			m.loadingDetail = true
 			return m, m.fetchIssueDetail(m.issueDetail.Key)
+
 		case "esc":
 			m.mode = listView
 			m.issueDetail = nil
@@ -259,6 +264,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			m.commentsCursor = 0
 			return m, m.fetchMyIssues()
+
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
@@ -269,7 +275,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderDetailView() string {
 	if m.issueDetail == nil {
-		return ui.PanelStyleActive.Render("Loading issue...")
+		return ui.PanelActiveSecondaryStyle.Render("Loading issue...")
 	}
 
 	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth)
