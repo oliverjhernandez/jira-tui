@@ -19,8 +19,6 @@ import (
 
 const jiraURL = "https://layer7.atlassian.net/browse/"
 
-var Projects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
-
 type viewMode int
 
 const (
@@ -105,11 +103,12 @@ type model struct {
 	myself *jira.User
 
 	// Issue Data
-	issues        []jira.Issue
-	projects      []jira.Project
-	issueTypes    []jira.IssueType
-	selectedIssue *jira.Issue
-	issueDetail   *jira.IssueDetail
+	issues         []jira.Issue
+	projects       []jira.Project
+	activeProjects []jira.Project
+	issueTypes     []jira.IssueType
+	selectedIssue  *jira.Issue
+	issueDetail    *jira.IssueDetail
 
 	// Issue Metadata
 	sections         []Section
@@ -178,7 +177,6 @@ func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	cmds = append(cmds, m.fetchMySelf())
 	cmds = append(cmds, m.fetchMyIssues())
-	cmds = append(cmds, m.fetchStatuses())
 	cmds = append(cmds, m.fetchPriorities())
 	cmds = append(cmds, m.fetchProjects())
 	cmds = append(cmds, m.fetchIssueTypes())
@@ -205,7 +203,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
-		return m, tea.Batch(m.fetchAllWorklogTotals(msg.issues))
+
+		seen := make(map[string]bool, 0)
+		for _, p := range m.issues {
+			seen[p.Project.ID] = true
+		}
+
+		for _, p := range m.projects {
+			if seen[p.ID] {
+				m.activeProjects = append(m.activeProjects, p)
+			}
+		}
+
+		var cmds []tea.Cmd
+		cmds = append(cmds, m.fetchStatuses())
+		cmds = append(cmds, m.fetchAllWorklogTotals(msg.issues))
+
+		return m, tea.Batch(cmds...)
 
 	case childrenLoadedMsg:
 		m.searchData = NewSearchFormData()

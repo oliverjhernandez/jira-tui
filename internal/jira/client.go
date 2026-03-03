@@ -22,6 +22,7 @@ type Client struct {
 	jiraEmail  string
 }
 
+// TODO: map to correct types
 type Issue struct {
 	ID       string
 	Key      string
@@ -30,6 +31,7 @@ type Issue struct {
 	Type     string
 	Assignee string
 	Priority string
+	Project  Project
 }
 
 type IssueDetail struct {
@@ -409,7 +411,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,status,issuetype,assignee,priority")
+	params.Add("fields", "id,summary,status,issuetype,assignee,priority,project")
 
 	var searchResp issuesSearchResponse
 
@@ -441,6 +443,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			Type:     issue.Fields.Type.Name,
 			Assignee: assignee,
 			Priority: issue.Fields.Priority.Name,
+			Project:  issue.Fields.Project,
 		})
 	}
 

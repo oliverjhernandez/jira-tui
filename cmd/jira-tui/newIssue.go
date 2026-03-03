@@ -36,17 +36,18 @@ func (m model) NewIssueForm() *NewIssueFormData {
 		Description:      "",
 	}
 
-	var commonProjects = []string{"DEV", "DCSDM", "ITELMEX", "EL"}
-
 	var projectNames []huh.Option[string]
-	for _, p := range commonProjects {
-		projectNames = append(projectNames, huh.NewOption(p, p))
+
+	var projects []string
+	if m.activeProjects != nil {
+		for _, p := range m.activeProjects {
+			projects = append(projects, p.Name)
+		}
 	}
 
-	// var issueTypes []huh.Option[string]
-	// for _, t := range m.issueTypes {
-	// 	issueTypes = append(issueTypes, huh.NewOption(t.Name, t.Name))
-	// }
+	for _, p := range projects {
+		projectNames = append(projectNames, huh.NewOption(p, p))
+	}
 
 	var commonTypeNames = []string{"Task", "Story", "Bug", "Epic"}
 
