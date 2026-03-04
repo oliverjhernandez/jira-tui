@@ -222,16 +222,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var cmds []tea.Cmd
 
 				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
-				worklogsCmd := m.fetchWorkLogs(m.selectedIssue.ID)
-
 				cmds = append(cmds, detailCmd)
-				cmds = append(cmds, worklogsCmd)
 				cmds = append(cmds, m.spinner.Tick)
-
-				if m.selectedIssue.Type == "Epic" {
-					epicChildrenCmd := m.fetchEpicChildren(m.selectedIssue.Key)
-					cmds = append(cmds, epicChildrenCmd)
-				}
 
 				return m, tea.Batch(cmds...)
 			}

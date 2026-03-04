@@ -217,7 +217,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.fetchStatuses())
-		cmds = append(cmds, m.fetchAllWorklogTotals(msg.issues))
+		cmds = append(cmds, m.fetchAllWorklogsTotal(msg.issues))
 
 		return m, tea.Batch(cmds...)
 
@@ -270,6 +270,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		var cmds []tea.Cmd
+		worklogsCmd := m.fetchWorkLogs(m.issueDetail.ID)
+		cmds = append(cmds, worklogsCmd)
+
 		if m.issueDetail.Type == "Epic" {
 			epicChildrenCmd := m.fetchEpicChildren(m.issueDetail.Key)
 			cmds = append(cmds, epicChildrenCmd)
@@ -290,7 +293,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.worklogTotals[m.issueDetail.ID] = total
 
-			if len(m.issueDetail.Comments) > 0 {
+			if len(m.selectedIssueWorklogs) > 0 {
 				worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
 				m.worklogsViewport.Width = m.detailLayout.rightColumnWidth
 				m.worklogsViewport.Height = m.detailLayout.worklogsHeight
@@ -370,7 +373,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key), m.fetchWorkLogs(m.issueDetail.ID))
+		var cmds []tea.Cmd
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
+		return m, tea.Batch(cmds...)
 
 	case postedEstimateMsg:
 		m.statusMessage = "Estimate posted successfully"

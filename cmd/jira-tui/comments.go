@@ -30,7 +30,7 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue("")
 			m.textInput.Focus()
 			m.cursor = 0
-			return m, m.fetchUsers(m.issueDetail.Key)
+			return m, m.fetchAssignableUsers(m.issueDetail.Key)
 
 		case "alt+enter", "ctrl+s":
 			var cmd tea.Cmd

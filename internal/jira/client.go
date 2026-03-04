@@ -616,7 +616,7 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 	return transitions, err
 }
 
-func (c *Client) GetUsers(ctx context.Context, issueKey string) ([]User, error) {
+func (c *Client) GetAssignableUsers(ctx context.Context, issueKey string) ([]User, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/user/assignable/search?issueKey=%s", issueKey)
 
 	var result []User

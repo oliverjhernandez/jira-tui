@@ -479,13 +479,13 @@ func (m model) deleteComment(issueKey, commentID string) tea.Cmd {
 	}
 }
 
-func (m model) fetchUsers(issueKey string) tea.Cmd {
+func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		users, err := m.client.GetUsers(context.Background(), issueKey)
+		users, err := m.client.GetAssignableUsers(context.Background(), issueKey)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -509,7 +509,7 @@ func (m model) fetchWorkLogs(issueID string) tea.Cmd {
 	}
 }
 
-func (m model) fetchAllWorklogTotals(issues []jira.Issue) tea.Cmd {
+func (m model) fetchAllWorklogsTotal(issues []jira.Issue) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -925,18 +925,19 @@ func (m model) renderCommentsPanel(width int) string {
 
 func (m model) buildWorklogsContent(width int) string {
 	var content strings.Builder
+	log.Printf("WL: %+v", m.selectedIssueWorklogs)
 
-	if m.issueDetail.Comments != nil && len(m.issueDetail.Comments) > 0 {
+	if len(m.selectedIssueWorklogs) > 0 {
 		for i, c := range m.selectedIssueWorklogs {
 			user := m.getUserName(c.Author.AccountID)
 			time := ui.WorklogsAuthorStyle.Render(strconv.Itoa(c.Time))
 			author := ui.WorklogsAuthorStyle.Render(user)
-			timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.UpdatedAt))
+			timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(c.UpdatedAt))
 			content.WriteString(time + author + timestamp + "\n")
-			description := ui.CommentBodyStyle.Width(width - 4).Render(c.Description)
+			description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(c.Description)
 			content.WriteString(description + "\n")
 
-			if i < len(m.issueDetail.Comments)-1 {
+			if i < len(m.selectedIssueWorklogs)-1 {
 				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
 			} else {
 				content.WriteString("\n")
@@ -963,6 +964,7 @@ func (m model) renderWorklogsPanel(width int) string {
 func (m model) getUserName(accountID string) string {
 	for _, u := range m.usersCache {
 		if u.ID == accountID {
+			log.Printf("Match %s", u.Name)
 			return u.Name
 		}
 	}

@@ -243,7 +243,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue("")
 			m.textInput.Focus()
 			m.cursor = 0
-			return m, m.fetchUsers(m.issueDetail.Key)
+			return m, m.fetchAssignableUsers(m.issueDetail.Key)
 
 		case "e":
 			m.mode = estimateView
