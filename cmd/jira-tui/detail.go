@@ -260,6 +260,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = listView
 			m.issueDetail = nil
+			m.childrenViewport.SetContent("")
 			m.textArea.SetValue("")
 			m.loading = true
 			m.commentsCursor = 0
