@@ -285,7 +285,7 @@ func (m model) postTransition(issueKey, transitionID, transitionName string) tea
 		}
 
 		var workLogTime string
-		if transitionName == "Done" && m.issueDetail.Type == "Task" {
+		if (transitionName == "Done" || transitionName == "Validación") && m.issueDetail.Type == "Task" {
 			workLogTime = extractLoggedTime(m.selectedIssueWorklogs)
 		}
 
