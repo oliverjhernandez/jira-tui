@@ -204,14 +204,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
 
-		seen := make(map[string]bool, 0)
-		for _, p := range m.issues {
-			seen[p.Project.ID] = true
-		}
+		if m.activeProjects == nil {
+			seen := make(map[string]bool, 0)
+			for _, p := range m.issues {
+				seen[p.Project.ID] = true
+			}
 
-		for _, p := range m.projects {
-			if seen[p.ID] {
-				m.activeProjects = append(m.activeProjects, p)
+			for _, p := range m.projects {
+				if seen[p.ID] {
+					m.activeProjects = append(m.activeProjects, p)
+				}
 			}
 		}
 
