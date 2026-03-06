@@ -925,27 +925,46 @@ func (m model) renderCommentsPanel(width int) string {
 
 func (m model) buildWorklogsContent(width int) string {
 	var content strings.Builder
-	log.Printf("WL: %+v", m.selectedIssueWorklogs)
+	wlCount := len(m.selectedIssueWorklogs)
 
-	if len(m.selectedIssueWorklogs) > 0 {
-		for i, c := range m.selectedIssueWorklogs {
-			user := m.getUserName(c.Author.AccountID)
-			time := ui.WorklogsAuthorStyle.Render(strconv.Itoa(c.Time))
-			author := ui.WorklogsAuthorStyle.Render(user)
-			timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(c.UpdatedAt))
-			content.WriteString(time + author + timestamp + "\n")
-			description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(c.Description)
-			content.WriteString(description + "\n")
+	if wlCount > 0 {
+		for i, w := range m.selectedIssueWorklogs {
+			isSelected := m.worklogsCursor == i
+			isLast := i == wlCount-1
 
-			if i < len(m.selectedIssueWorklogs)-1 {
-				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
-			} else {
-				content.WriteString("\n")
-			}
+			wl := m.renderWorklog(w, width, isSelected, isLast)
+			content.WriteString(wl)
 		}
 	}
 
 	return content.String()
+}
+
+func (m model) renderWorklog(w jira.WorkLog, width int, isSelected bool, isLast bool) string {
+	var wl strings.Builder
+
+	user := m.getUserName(w.Author.AccountID)
+	loggedTime := ui.WorklogsAuthorStyle.Render(strconv.Itoa(w.Time))
+	author := ui.WorklogsAuthorStyle.Render(user)
+	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
+	description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(w.Description)
+
+	if isSelected {
+		cursor := ui.IconCursor
+		wl.WriteString(cursor + ui.SelectedRowStyle.Render(loggedTime+author+timestamp) + "\n")
+	} else {
+		wl.WriteString(author + timestamp + "\n")
+	}
+
+	wl.WriteString(description + "\n")
+
+	if !isLast {
+		wl.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+	} else {
+		wl.WriteString("\n")
+	}
+
+	return wl.String()
 }
 
 func (m model) renderWorklogsPanel(width int) string {

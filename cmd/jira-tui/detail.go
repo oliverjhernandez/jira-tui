@@ -150,13 +150,72 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case worklogsSection:
-			switch keyMsg.String() {
-			case "j":
-				m.worklogsViewport.ScrollDown(1)
+			switch {
+
+			// case keyMsg.String() == "y" && m.lastKey == "":
+			// 	m.lastKey = "y"
+			// 	tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+			// 		return keyTimeoutMsg{}
+			// 	})
+			// 	return m, tick
+
+			// case keyMsg.String() == "y" && m.lastKey == "y":
+			// 	m.lastKey = ""
+			// 	textToCopy := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
+			// 	yankToClipboard(textToCopy)
+			// 	m.statusMessage = "Comment yanked to clipboard"
+			// 	return m, nil
+
+			case keyMsg.String() == "j":
+				if m.worklogsCursor < len(m.selectedIssueWorklogs)-1 {
+					m.worklogsCursor++
+				}
+
+				cursorLine := m.worklogsCursor * 4
+				m.worklogsViewport.SetYOffset(cursorLine)
+
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+				m.worklogsViewport.SetContent(wlContent)
+
 				return m, nil
-			case "k":
-				m.worklogsViewport.ScrollUp(1)
+
+			case keyMsg.String() == "k":
+				if m.worklogsCursor > 0 {
+					m.worklogsCursor--
+				}
+
+				cursorLine := m.worklogsCursor * 4
+				m.worklogsViewport.SetYOffset(cursorLine)
+
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+				m.worklogsViewport.SetContent(wlContent)
 				return m, nil
+
+			case keyMsg.String() == "c":
+				m.textArea = textarea.New()
+				m.textArea.Placeholder = "Add a comment..."
+				m.textArea.Focus()
+				m.textArea.SetWidth(100)
+				m.mode = commentView
+				return m, nil
+
+			case keyMsg.String() == "e":
+				m.textArea = textarea.New()
+				textAreaWidth := 100
+				m.textArea.SetWidth(textAreaWidth)
+				var comment string
+				if m.issueDetail.Comments != nil {
+					comment = jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, textAreaWidth)
+				}
+				m.textArea.SetValue(comment)
+				m.textArea.Focus()
+				m.editingComment = true
+				m.mode = commentView
+				return m, nil
+
+			case keyMsg.String() == "d":
+				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
+				return m, cmd
 			}
 
 		case childrenSection:

@@ -137,6 +137,7 @@ type model struct {
 	transitionCursor int
 	userCursor       int
 	commentsCursor   int
+	worklogsCursor   int
 
 	// Input Components
 	textInput textinput.Model
