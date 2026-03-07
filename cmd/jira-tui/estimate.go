@@ -24,7 +24,7 @@ func NewEstimateFormData() *EstimateFormData {
 				Placeholder("1h 30m").
 				Value(&e.Estimate),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(40)
+	).WithWidth(40)
 
 	return e
 }

@@ -30,7 +30,7 @@ func NewTransitionFormData(transitions []jira.Transition) *TransitionFormData {
 				Options(options...).
 				Value(&t.SelectedIndex),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(50)
+	).WithWidth(50)
 
 	return t
 }
@@ -51,7 +51,7 @@ func NewCancelReasonFormData() *CancelReasonFormData {
 				Value(&c.Reason).
 				Lines(10),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
+	).WithWidth(60)
 
 	return c
 }

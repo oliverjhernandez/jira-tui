@@ -37,7 +37,7 @@ func NewWorklogFormData() *WorklogFormData {
 				Placeholder("Optional").
 				Value(&w.Note),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(40)
+	).WithWidth(40)
 
 	return w
 }

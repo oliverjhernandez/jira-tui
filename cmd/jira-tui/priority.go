@@ -30,7 +30,7 @@ func NewPriorityFormData(priorities []jira.Priority, current string) *PriorityFo
 				Options(options...).
 				Value(&p.SelectedPriority),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(30)
+	).WithWidth(30)
 
 	return p
 }

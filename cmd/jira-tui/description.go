@@ -24,7 +24,7 @@ func NewDescriptionFormData(initialValue string) *DescriptionFormData {
 				Value(&d.Description).
 				Lines(15),
 		),
-	).WithTheme(huh.ThemeCatppuccin()).WithWidth(60)
+	).WithWidth(60)
 
 	return d
 }
