@@ -180,6 +180,7 @@ func (m model) Init() tea.Cmd {
 	cmds = append(cmds, m.fetchMyIssues())
 	cmds = append(cmds, m.fetchPriorities())
 	cmds = append(cmds, m.fetchProjects())
+	cmds = append(cmds, m.fetchAllUsers())
 	cmds = append(cmds, m.fetchIssueTypes())
 
 	return tea.Batch(cmds...)
@@ -288,7 +289,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingWorkLogs = false
 		if m.issueDetail != nil {
 			var total int
-			for _, wl := range msg.workLogs {
+			for _, wl := range m.selectedIssueWorklogs {
 				total += wl.Time
 			}
 			if m.worklogTotals == nil {
@@ -399,9 +400,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case assignUsersLoadedMsg:
 		m.statusMessage = "User assigned successfully"
-		m.usersCache = msg.users
 		m.loadingAssignUsers = false
 		m.mode = userSearchView
+		return m, nil
+
+	case usersLoadedMsg:
+		m.usersCache = msg.users
 		return m, nil
 
 	case tea.WindowSizeMsg:

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 )
 
 type Client struct {
@@ -573,7 +574,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	}
 
 	if issue.Fields.OriginalEstimate != nil {
-		detail.OriginalEstimate = formatSecondsToTime(*issue.Fields.OriginalEstimate)
+		detail.OriginalEstimate = strconv.Itoa(*issue.Fields.OriginalEstimate)
 	}
 
 	detail.Created = issue.Fields.Created
@@ -635,6 +636,33 @@ func (c *Client) GetAssignableUsers(ctx context.Context, issueKey string) ([]Use
 		users = append(users, User{
 			ID:   t.ID,
 			Name: t.Name,
+		})
+	}
+
+	return users, err
+}
+
+func (c Client) GetAllUsers(ctx context.Context) ([]User, error) {
+	apiURL := "/rest/api/3/users/search"
+	params := url.Values{}
+	params.Add("maxResults", "200")
+
+	var result []User
+
+	err := c.doJiraRequest(ctx,
+		"GET",
+		apiURL,
+		params,
+		nil,
+		&result,
+	)
+
+	users := make([]User, len(result))
+	for _, u := range result {
+		users = append(users, User{
+			ID:    u.ID,
+			Name:  u.Name,
+			Email: u.Email,
 		})
 	}
 
@@ -838,12 +866,12 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 	return priorities, err
 }
 
-func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, error) {
+func (c *Client) GetStatuses(ctx context.Context, projects []Project) ([]Status, error) {
 	statuses := []Status{}
 	seen := make(map[string]bool)
 
 	for _, p := range projects {
-		apiURL := fmt.Sprintf("/rest/api/3/project/%s/statuses", p)
+		apiURL := fmt.Sprintf("/rest/api/3/project/%s/statuses", p.ID)
 
 		var result []struct {
 			Statuses []Status `json:"statuses"`
@@ -858,7 +886,7 @@ func (c *Client) GetStatuses(ctx context.Context, projects []string) ([]Status, 
 			&result,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get statuses for project %s: %w", p, err)
+			return nil, fmt.Errorf("failed to get statuses for project %s: %w", p.Name, err)
 		}
 
 		for _, r := range result {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -52,6 +51,10 @@ type transitionsLoadedMsg struct {
 }
 
 type assignUsersLoadedMsg struct {
+	users []jira.User
+}
+
+type usersLoadedMsg struct {
 	users []jira.User
 }
 
@@ -491,6 +494,21 @@ func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
 		}
 
 		return assignUsersLoadedMsg{users}
+	}
+}
+
+func (m model) fetchAllUsers() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		users, err := m.client.GetAllUsers(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return usersLoadedMsg{users}
 	}
 }
 
@@ -944,16 +962,16 @@ func (m model) renderWorklog(w jira.WorkLog, width int, isSelected bool, isLast 
 	var wl strings.Builder
 
 	user := m.getUserName(w.Author.AccountID)
-	loggedTime := ui.WorklogsAuthorStyle.Render(strconv.Itoa(w.Time))
+	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToTime(w.Time))
 	author := ui.WorklogsAuthorStyle.Render(user)
 	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
 	description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(w.Description)
 
 	if isSelected {
 		cursor := ui.IconCursor
-		wl.WriteString(cursor + ui.SelectedRowStyle.Render(loggedTime+author+timestamp) + "\n")
+		wl.WriteString(cursor + ui.SelectedRowStyle.Render(loggedTime+" "+author+" "+timestamp) + "\n")
 	} else {
-		wl.WriteString(author + timestamp + "\n")
+		wl.WriteString(loggedTime + " " + author + " " + timestamp + "\n")
 	}
 
 	wl.WriteString(description + "\n")
@@ -983,7 +1001,6 @@ func (m model) renderWorklogsPanel(width int) string {
 func (m model) getUserName(accountID string) string {
 	for _, u := range m.usersCache {
 		if u.ID == accountID {
-			log.Printf("Match %s", u.Name)
 			return u.Name
 		}
 	}

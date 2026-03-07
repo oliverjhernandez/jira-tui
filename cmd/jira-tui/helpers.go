@@ -254,3 +254,16 @@ func yankToClipboard(text string) {
 		log.Printf("ERROR: %s", err.Error())
 	}
 }
+
+func formatSecondsToTime(seconds int) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	if hours > 0 && minutes > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	} else if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return ""
+}
