@@ -177,9 +177,9 @@ func (m model) Init() tea.Cmd {
 
 	var cmds []tea.Cmd
 	cmds = append(cmds, m.fetchMySelf())
+	cmds = append(cmds, m.fetchProjects())
 	cmds = append(cmds, m.fetchMyIssues())
 	cmds = append(cmds, m.fetchPriorities())
-	cmds = append(cmds, m.fetchProjects())
 	cmds = append(cmds, m.fetchAllUsers())
 	cmds = append(cmds, m.fetchIssueTypes())
 
@@ -202,11 +202,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case issuesLoadedMsg:
 		m.issues = msg.issues
 		m.loading = false
-		if len(m.statuses) > 0 {
-			m.sections = m.classifyIssues(m.issues, m.statuses)
-		}
 
-		if m.activeProjects == nil {
+		var cmds []tea.Cmd
+
+		if len(m.projects) > 0 && len(m.issues) > 0 {
 			seen := make(map[string]bool, 0)
 			for _, p := range m.issues {
 				seen[p.Project.ID] = true
@@ -217,10 +216,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.activeProjects = append(m.activeProjects, p)
 				}
 			}
-		}
 
-		var cmds []tea.Cmd
-		cmds = append(cmds, m.fetchStatuses())
+			cmds = append(cmds, m.fetchStatuses(m.activeProjects))
+		}
 		cmds = append(cmds, m.fetchAllWorklogsTotal(msg.issues))
 
 		return m, tea.Batch(cmds...)
@@ -250,7 +248,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case projectsLoadedMsg:
 		m.projects = msg.projects
-		return m, nil
+		var cmds []tea.Cmd
+
+		if len(m.projects) > 0 && len(m.issues) > 0 {
+			seen := make(map[string]bool, 0)
+			for _, p := range m.issues {
+				seen[p.Project.ID] = true
+			}
+
+			for _, p := range m.projects {
+				if seen[p.ID] {
+					m.activeProjects = append(m.activeProjects, p)
+				}
+			}
+
+			cmds = append(cmds, m.fetchStatuses(m.activeProjects))
+		}
+
+		return m, tea.Batch(cmds...)
 
 	case issueDetailLoadedMsg:
 		if m.searchData != nil {
@@ -322,6 +337,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 		}
+
 		return m, nil
 
 	case transitionCompleteMsg:

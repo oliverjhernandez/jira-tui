@@ -132,10 +132,9 @@ func extractLoggedTime(worklogs []jira.WorkLog) string {
 		}
 	}
 
-	loggedHours := logged / 60 / 60
-	loggedStr := strconv.Itoa(loggedHours)
+	loggedStr := formatSecondsToTime(logged)
 
-	return loggedStr + "h"
+	return loggedStr
 }
 
 func parseTimeToSeconds(input string) (int, error) {

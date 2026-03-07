@@ -289,7 +289,7 @@ func (m model) postTransition(issueKey, transitionID, transitionName string) tea
 
 		var workLogTime string
 		if (transitionName == "Done" || transitionName == "Validación") && m.issueDetail.Type == "Task" {
-			workLogTime = extractLoggedTime(m.selectedIssueWorklogs)
+			workLogTime = "1m"
 		}
 
 		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, "", workLogTime)
@@ -407,15 +407,10 @@ func (m model) fetchPriorities() tea.Cmd {
 	}
 }
 
-func (m model) fetchStatuses() tea.Cmd {
+func (m model) fetchStatuses(projects []jira.Project) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
-		}
-
-		var projects []string
-		for _, p := range m.activeProjects {
-			projects = append(projects, p.ID)
 		}
 
 		statuses, err := m.client.GetStatuses(context.Background(), projects)
