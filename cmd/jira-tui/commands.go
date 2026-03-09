@@ -821,6 +821,7 @@ func (m model) renderMetadataPanel(width int) string {
 	summaryMaxWidth := 50
 	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
 	var linkedIssue string
+	// TODO: make all links available
 	if m.issueDetail.IsLinkedToChange {
 		linkedIssue = "🔗 " + jira.MonthlyChangeIssue
 	}

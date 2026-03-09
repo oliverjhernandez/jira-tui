@@ -38,6 +38,7 @@ func (m model) NewIssueForm() *NewIssueFormData {
 
 	var projectNames []huh.Option[string]
 
+	// TODO: pass whole projects?, comparing names later seems flaky
 	var projects []string
 	if m.activeProjects != nil {
 		for _, p := range m.activeProjects {
