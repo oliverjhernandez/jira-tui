@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -152,20 +153,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case worklogsSection:
 			switch {
 
-			// case keyMsg.String() == "y" && m.lastKey == "":
-			// 	m.lastKey = "y"
-			// 	tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-			// 		return keyTimeoutMsg{}
-			// 	})
-			// 	return m, tick
-
-			// case keyMsg.String() == "y" && m.lastKey == "y":
-			// 	m.lastKey = ""
-			// 	textToCopy := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
-			// 	yankToClipboard(textToCopy)
-			// 	m.statusMessage = "Comment yanked to clipboard"
-			// 	return m, nil
-
 			case keyMsg.String() == "j":
 				if m.worklogsCursor < len(m.selectedIssueWorklogs)-1 {
 					m.worklogsCursor++
@@ -191,14 +178,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.worklogsViewport.SetContent(wlContent)
 				return m, nil
 
-			case keyMsg.String() == "c":
-				m.textArea = textarea.New()
-				m.textArea.Placeholder = "Add a comment..."
-				m.textArea.Focus()
-				m.textArea.SetWidth(100)
-				m.mode = commentView
-				return m, nil
-
 			case keyMsg.String() == "e":
 				m.editingWorklog = true
 				m.worklogFormData = m.NewWorklogForm(&m.selectedIssueWorklogs[m.worklogsCursor], 40)
@@ -207,7 +186,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.worklogFormData.Form.Init()
 
 			case keyMsg.String() == "d":
-				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
+				cmd := m.deleteWorkLog(strconv.Itoa(m.selectedIssueWorklogs[m.worklogsCursor].ID))
 				return m, cmd
 			}
 

@@ -376,7 +376,7 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 	}()
 
 	if len(expectedStatus) == 0 {
-		expectedStatus = []int{http.StatusOK, http.StatusCreated}
+		expectedStatus = []int{http.StatusOK, http.StatusCreated, http.StatusNoContent}
 	}
 
 	statusOK := slices.Contains(expectedStatus, resp.StatusCode)
@@ -1037,6 +1037,21 @@ func (c *Client) PutWorkLog(ctx context.Context, worklogID, issueID, startDate, 
 		apiURL,
 		nil,
 		body,
+		nil,
+	)
+
+	return err
+}
+
+func (c *Client) DeleteWorkLog(ctx context.Context, worklogID string) error {
+	apiURL := fmt.Sprintf("/4/worklogs/%s", worklogID)
+
+	err := c.doTempoRequest(
+		ctx,
+		"DELETE",
+		apiURL,
+		nil,
+		nil,
 		nil,
 	)
 

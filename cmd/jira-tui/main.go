@@ -399,6 +399,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
+	case editedWorkLog:
+		m.statusMessage = "Worklog edited successfully"
+		m.mode = detailView
+		m.loadingDetail = true
+		m.loadingWorkLogs = true
+		var cmds []tea.Cmd
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
+		return m, tea.Batch(cmds...)
+
+	case deletedWorkLog:
+		m.statusMessage = "Worklog deleted successfully"
+		m.mode = detailView
+		m.loadingDetail = true
+		m.loadingWorkLogs = true
+		var cmds []tea.Cmd
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
+		return m, tea.Batch(cmds...)
+
 	case postedEstimateMsg:
 		m.statusMessage = "Estimate posted successfully"
 		if m.pendingTransition != nil {

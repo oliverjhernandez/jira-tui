@@ -101,6 +101,14 @@ type postedWorkLog struct {
 	success bool
 }
 
+type editedWorkLog struct {
+	success bool
+}
+
+type deletedWorkLog struct {
+	success bool
+}
+
 type postedEstimateMsg struct {
 	success bool
 }
@@ -599,7 +607,22 @@ func (m model) putWorkLog(worklogID, issueID, startDate, accountID, description 
 			return errMsg{err}
 		}
 
-		return postedWorkLog{success: true}
+		return editedWorkLog{success: true}
+	}
+}
+
+func (m model) deleteWorkLog(worklogID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.DeleteWorkLog(context.Background(), worklogID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return deletedWorkLog{success: true}
 	}
 }
 
