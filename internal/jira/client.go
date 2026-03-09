@@ -133,7 +133,7 @@ type projectsSearchResponse struct {
 }
 
 type worklogsResponse struct {
-	Results []WorkLog `json:"results"`
+	Results []Worklog `json:"results"`
 }
 
 type jiraIssue struct {
@@ -252,9 +252,10 @@ type jiraComment struct {
 	Updated string      `json:"updated"`
 }
 
-type WorkLog struct {
+type Worklog struct {
 	ID          int    `json:"tempoWorklogId"`
 	Time        int    `json:"timeSpentSeconds"`
+	StartDate   string `json:"startDate"`
 	Author      Author `json:"author"`
 	Description string `json:"description"`
 	UpdatedAt   string `json:"updatedAt"`
@@ -984,7 +985,7 @@ func (c *Client) DeleteComment(ctx context.Context, issueKey, commentID string) 
 	return err
 }
 
-func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, error) {
+func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]Worklog, error) {
 	apiURL := fmt.Sprintf("/4/worklogs/issue/%s", issueID)
 	var result worklogsResponse
 	err := c.doTempoRequest(
@@ -999,18 +1000,41 @@ func (c *Client) GetWorkLogs(ctx context.Context, issueID string) ([]WorkLog, er
 	return result.Results, err
 }
 
-func (c *Client) PostWorkLog(ctx context.Context, issueID, date, accountID string, time int) error {
+func (c *Client) PostWorkLog(ctx context.Context, issueID, startDate, accountID, description string, time int) error {
 	body := map[string]any{
-		"issueId":          issueID,
-		"timeSpentSeconds": time,
-		"startDate":        date,
 		"authorAccountId":  accountID,
+		"description":      description,
+		"issueId":          issueID,
+		"startDate":        startDate,
+		"timeSpentSeconds": time,
 	}
 
 	err := c.doTempoRequest(
 		ctx,
 		"POST",
 		"/4/worklogs",
+		nil,
+		body,
+		nil,
+	)
+
+	return err
+}
+
+func (c *Client) PutWorkLog(ctx context.Context, worklogID, issueID, startDate, accountID, description string, time int) error {
+	apiURL := fmt.Sprintf("/4/worklogs/%s", worklogID)
+	body := map[string]any{
+		"authorAccountId":  accountID,
+		"description":      description,
+		"issueId":          issueID,
+		"startDate":        startDate,
+		"timeSpentSeconds": time,
+	}
+
+	err := c.doTempoRequest(
+		ctx,
+		"PUT",
+		apiURL,
 		nil,
 		body,
 		nil,

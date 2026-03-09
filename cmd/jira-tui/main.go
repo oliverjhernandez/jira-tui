@@ -118,7 +118,7 @@ type model struct {
 	priorities       []jira.Priority
 
 	// Worklogs
-	selectedIssueWorklogs []jira.WorkLog
+	selectedIssueWorklogs []jira.Worklog
 	worklogTotals         map[string]int
 
 	// Transitions
@@ -149,9 +149,10 @@ type model struct {
 	editingDescription bool
 	editingPriority    bool
 	editingComment     bool
+	editingWorklog     bool
 
 	// Form Data
-	worklogData      *WorklogFormData
+	worklogFormData  *WorklogFormData
 	newIssueData     *NewIssueFormData
 	estimateData     *EstimateFormData
 	searchData       *SearchIssueFormData
@@ -514,7 +515,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case userSearchView:
 		tmpModel, viewCmd = m.updateSearchUserView(msg)
 	case worklogView:
-		tmpModel, viewCmd = m.updatePostWorklogView(msg)
+		tmpModel, viewCmd = m.updateWorklogView(msg)
 	case estimateView:
 		tmpModel, viewCmd = m.updatePostEstimateView(msg)
 	case cancelReasonView:
@@ -556,7 +557,7 @@ func (m model) View() string {
 	case userSearchView:
 		content = m.renderSearchUserView()
 	case worklogView:
-		content = m.renderPostWorklogView()
+		content = m.renderWorklogView()
 	case estimateView:
 		content = m.renderPostEstimateView()
 	case cancelReasonView:

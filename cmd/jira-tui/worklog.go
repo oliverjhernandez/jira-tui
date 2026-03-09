@@ -1,74 +1,102 @@
 package main
 
 import (
+	"strconv"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type WorklogFormData struct {
-	Time string
-	Date string
-	Note string
-	Form *huh.Form
+	ID          int
+	Time        string
+	StartDate   string
+	Description string
+	Form        *huh.Form
 }
 
-func NewWorklogFormData() *WorklogFormData {
-	w := &WorklogFormData{
-		Time: "",
-		Date: time.Now().Format("2006-01-02"),
-		Note: "",
+func (m model) NewWorklogForm(w *jira.Worklog, width int) *WorklogFormData {
+	wd := &WorklogFormData{
+		ID:          w.ID,
+		Time:        formatSecondsToString(w.Time),
+		StartDate:   w.StartDate,
+		Description: w.Description,
 	}
-	w.Form = huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Time").
-				Placeholder("1h 30m").
-				Value(&w.Time),
-			huh.NewInput().
-				Title("Date").
-				Placeholder("2006-01-02").
-				Value(&w.Date),
-			huh.NewInput().
-				Title("Note").
-				Placeholder("Optional").
-				Value(&w.Note),
-		),
-	).WithWidth(40)
 
-	return w
+	wd.Form =
+		huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Time").
+					Placeholder("1h 30m").
+					Value(&wd.Time),
+				huh.NewInput().
+					Title("Date").
+					Placeholder("2006-01-02").
+					Value(&wd.StartDate),
+				huh.NewInput().
+					Title("Note").
+					Placeholder("Optional").
+					Value(&wd.Description),
+			),
+		).WithWidth(width)
+
+	return wd
 }
 
-func (m model) updatePostWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
 			m.mode = detailView
-			return m, m.worklogData.Form.Init()
+			return m, m.worklogFormData.Form.Init()
 		}
-
 	}
 
-	form, cmd := m.worklogData.Form.Update(msg)
+	form, cmd := m.worklogFormData.Form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
-		m.worklogData.Form = f
+		m.worklogFormData.Form = f
 		cmds = append(cmds, cmd)
 	}
 
-	if m.worklogData.Form.State == huh.StateCompleted {
+	if m.worklogFormData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		timeSeconds, _ := parseTimeToSeconds(m.worklogData.Time)
-		cmds = append(cmds, m.postWorkLog(m.issueDetail.ID, m.worklogData.Date, m.myself.ID, timeSeconds))
+		worklogID := strconv.Itoa(m.worklogFormData.ID)
+		issueID := m.issueDetail.ID
+		startDate := m.worklogFormData.StartDate
+		accountID := m.myself.ID
+		description := m.worklogFormData.Description
+		time, _ := parseStringToSeconds(m.worklogFormData.Time)
+		if m.editingWorklog {
+			cmds = append(cmds, m.putWorkLog(
+				worklogID,
+				issueID,
+				startDate,
+				accountID,
+				description,
+				time,
+			))
+			m.editingWorklog = false
+
+		} else {
+			cmds = append(cmds, m.postWorkLog(
+				issueID,
+				startDate,
+				accountID,
+				description,
+				time,
+			))
+		}
 	}
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) renderPostWorklogView() string {
+func (m model) renderWorklogView() string {
 	bg := m.renderSimpleBackground()
 
 	var modalContent strings.Builder
@@ -84,7 +112,7 @@ func (m model) renderPostWorklogView() string {
 	m.textArea.SetWidth(modalWidth - 6)
 	m.textArea.SetHeight(modalHeight - 8)
 
-	modalContent.WriteString(m.worklogData.Form.View())
+	modalContent.WriteString(m.worklogFormData.Form.View())
 
 	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.Modal3InputFormStyle)
 }

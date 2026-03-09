@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -59,7 +58,7 @@ type usersLoadedMsg struct {
 }
 
 type workLogsLoadedMsg struct {
-	workLogs []jira.WorkLog
+	workLogs []jira.Worklog
 }
 
 type worklogTotalsLoadedMsg struct {
@@ -206,7 +205,6 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 
 		var projectID string
 		for _, p := range m.projects {
-			log.Printf("Project: ID %s - Name %s", p.ID, p.Key)
 			if strings.Contains(p.Key, issue.ProjectName) {
 				projectID = p.ID
 				break
@@ -568,13 +566,35 @@ func (m model) fetchAllWorklogsTotal(issues []jira.Issue) tea.Cmd {
 	}
 }
 
-func (m model) postWorkLog(issueID, date, accountID string, time int) tea.Cmd {
+func (m model) postWorkLog(issueID, startDate, accountID, description string, time int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.PostWorkLog(context.Background(), issueID, date, accountID, time)
+		err := m.client.PostWorkLog(
+			context.Background(),
+			issueID,
+			startDate,
+			accountID,
+			description,
+			time,
+		)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return postedWorkLog{success: true}
+	}
+}
+
+func (m model) putWorkLog(worklogID, issueID, startDate, accountID, description string, time int) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PutWorkLog(context.Background(), worklogID, issueID, startDate, accountID, description, time)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -953,11 +973,11 @@ func (m model) buildWorklogsContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderWorklog(w jira.WorkLog, width int, isSelected bool, isLast bool) string {
+func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast bool) string {
 	var wl strings.Builder
 
 	user := m.getUserName(w.Author.AccountID)
-	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToTime(w.Time))
+	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToString(w.Time))
 	author := ui.WorklogsAuthorStyle.Render(user)
 	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
 	description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(w.Description)

@@ -123,7 +123,7 @@ func timeAgo(date string) string {
 	}
 }
 
-func extractLoggedTime(worklogs []jira.WorkLog) string {
+func extractLoggedTime(worklogs []jira.Worklog) string {
 	logged := 0
 
 	if len(worklogs) > 0 {
@@ -132,12 +132,12 @@ func extractLoggedTime(worklogs []jira.WorkLog) string {
 		}
 	}
 
-	loggedStr := formatSecondsToTime(logged)
+	loggedStr := formatSecondsToString(logged)
 
 	return loggedStr
 }
 
-func parseTimeToSeconds(input string) (int, error) {
+func parseStringToSeconds(input string) (int, error) {
 	input = strings.TrimSpace(strings.ToLower(input))
 
 	totalSeconds := 0
@@ -254,7 +254,7 @@ func yankToClipboard(text string) {
 	}
 }
 
-func formatSecondsToTime(seconds int) string {
+func formatSecondsToString(seconds int) string {
 	hours := seconds / 3600
 	minutes := (seconds % 3600) / 60
 	if hours > 0 && minutes > 0 {

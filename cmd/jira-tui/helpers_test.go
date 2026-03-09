@@ -138,7 +138,7 @@ func TestParseTimeToSeconds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := parseTimeToSeconds(tt.time)
+			result, err := parseStringToSeconds(tt.time)
 
 			if tt.wantError {
 				if err == nil {

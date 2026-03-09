@@ -200,18 +200,11 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyMsg.String() == "e":
-				m.textArea = textarea.New()
-				textAreaWidth := 100
-				m.textArea.SetWidth(textAreaWidth)
-				var comment string
-				if m.issueDetail.Comments != nil {
-					comment = jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, textAreaWidth)
-				}
-				m.textArea.SetValue(comment)
-				m.textArea.Focus()
-				m.editingComment = true
-				m.mode = commentView
-				return m, nil
+				m.editingWorklog = true
+				m.worklogFormData = m.NewWorklogForm(&m.selectedIssueWorklogs[m.worklogsCursor], 40)
+				m.mode = worklogView
+
+				return m, m.worklogFormData.Form.Init()
 
 			case keyMsg.String() == "d":
 				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
@@ -292,9 +285,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "w":
-			m.worklogData = NewWorklogFormData()
+			w := &jira.Worklog{
+				Time:        0,
+				StartDate:   time.Now().Format("2006-01-02"),
+				Description: "",
+			}
+			m.worklogFormData = m.NewWorklogForm(w, 40)
 			m.mode = worklogView
-			return m, m.worklogData.Form.Init()
+			return m, m.worklogFormData.Form.Init()
 
 		case "a":
 			m.mode = userSearchView
