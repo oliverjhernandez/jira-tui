@@ -351,7 +351,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusMessage = "New issue created successfully"
 		m.mode = listView
 		m.loading = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(m.fetchMyIssues())
 
 	case linkIssueCompleteMsg:
 		m.statusMessage = "Issue liked successfully"

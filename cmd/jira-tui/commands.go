@@ -213,7 +213,7 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 
 		var projectID string
 		for _, p := range m.projects {
-			if strings.Contains(p.Key, issue.ProjectName) {
+			if strings.Contains(p.Name, issue.ProjectName) {
 				projectID = p.ID
 				break
 			} else {
