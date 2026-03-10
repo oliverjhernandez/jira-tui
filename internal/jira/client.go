@@ -1105,6 +1105,7 @@ func (c *Client) PostNewIssue(
 	issueTypeID,
 	originalEstimate,
 	summary,
+	parentKey,
 	assigneeID,
 	priorityID string,
 	description *ContentDoc,
@@ -1122,6 +1123,9 @@ func (c *Client) PostNewIssue(
 			"duedate":     dueDate,
 			"issuetype": map[string]any{
 				"id": issueTypeID,
+			},
+			"parent": map[string]any{
+				"key": parentKey,
 			},
 			"priority": map[string]any{
 				"id": priorityID,

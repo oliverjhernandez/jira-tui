@@ -110,7 +110,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "n":
-			m.newIssueData = m.NewIssueForm()
+			i := &NewIssueFormData{}
+			m.newIssueData = m.NewIssueForm(i)
 			m.mode = newIssueView
 			return m, m.newIssueData.Form.Init()
 
@@ -201,10 +202,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, textinput.Blink
 
 		case "ctrl+r":
-			if m.loading {
+			if m.loadingIssues {
 				return m, nil
 			}
-			m.loading = true
+			m.loadingIssues = true
 			return m, m.fetchMyIssues()
 
 		case "enter":

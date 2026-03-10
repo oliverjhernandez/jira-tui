@@ -12,7 +12,7 @@ import (
 type NewIssueFormData struct {
 	ProjectName      string
 	IssueTypeName    string
-	ParentIssueKey   string
+	ParentKey        string
 	ReporterName     string
 	OriginalEstimate string
 	Summary          string
@@ -23,19 +23,7 @@ type NewIssueFormData struct {
 	Form             *huh.Form
 }
 
-func (m model) NewIssueForm() *NewIssueFormData {
-	i := &NewIssueFormData{
-		ProjectName:      "",
-		IssueTypeName:    "",
-		ParentIssueKey:   "",
-		OriginalEstimate: "",
-		Summary:          "",
-		AssigneeName:     "",
-		PriorityName:     "",
-		DueDate:          "",
-		Description:      "",
-	}
-
+func (m model) NewIssueForm(issue *NewIssueFormData) *NewIssueFormData {
 	var projectNames []huh.Option[string]
 
 	// TODO: pass whole projects?, comparing names later seems flaky
@@ -63,31 +51,25 @@ func (m model) NewIssueForm() *NewIssueFormData {
 		huh.NewOption("Unassigned", ""),
 	)
 
-	// var users []huh.Option[string]
-	// for _, u := range m.usersCache {
-	// 	users = append(users, huh.NewOption(u.Name, u.Name))
-	// }
-
 	var priorities []huh.Option[string]
 	for _, p := range m.priorities {
 		priorities = append(priorities, huh.NewOption(p.Name, p.Name))
 	}
 
-	i.Form = huh.NewForm(
-
+	issue.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("Project").
 				Options(projectNames...).
-				Value(&i.ProjectName),
+				Value(&issue.ProjectName),
 			huh.NewSelect[string]().
 				Title("Issue Type").
 				Options(issueTypes...).
-				Value(&i.IssueTypeName),
-			// huh.NewInput().
-			// 	Title("ParentIssueKey").
-			// 	Placeholder("DEV-123").
-			// 	Value(&i.ParentIssueKey),
+				Value(&issue.IssueTypeName),
+			huh.NewInput().
+				Title("ParentIssueKey").
+				Placeholder("DEV-123").
+				Value(&issue.ParentKey),
 			// huh.NewSelect[string]().
 			// 	Title("Reporter").
 			// 	Options(users...).
@@ -95,36 +77,44 @@ func (m model) NewIssueForm() *NewIssueFormData {
 			huh.NewInput().
 				Title("OriginalEstimate").
 				Placeholder("1h").
-				Value(&i.OriginalEstimate),
+				Value(&issue.OriginalEstimate),
 			huh.NewInput().
 				Title("Summary").
 				Placeholder("Summary").
-				Value(&i.Summary),
+				Value(&issue.Summary),
 			huh.NewSelect[string]().
 				Title("Assignee").
 				Options(assigneeOptions...).
-				Value(&i.AssigneeName),
+				Value(&issue.AssigneeName),
 			huh.NewSelect[string]().
 				Title("Priority").
 				Options(priorities...).
-				Value(&i.PriorityName),
+				Value(&issue.PriorityName),
 			huh.NewInput().
 				Title("DueDate").
 				Placeholder(time.Now().Format("2006-01-02")).
-				Value(&i.DueDate),
+				Value(&issue.DueDate),
 
 			huh.NewText().
 				Title("Description").
 				Placeholder("Improve something...").
-				Value(&i.Description),
+				Value(&issue.Description),
 		),
 	).WithWidth(40)
 
-	return i
+	return issue
 }
 
 func (m model) updateNewIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			m.mode = detailView
+			return m, m.newIssueData.Form.Init()
+		}
+	}
 
 	form, cmd := m.newIssueData.Form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {

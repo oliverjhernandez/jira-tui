@@ -164,7 +164,7 @@ type model struct {
 	cancelReasonData *CancelReasonFormData
 
 	// Loading States
-	loading            bool
+	loadingIssues      bool
 	loadingDetail      bool
 	loadingTransitions bool
 	loadingAssignUsers bool
@@ -191,7 +191,7 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var spinnerCmd tea.Cmd
 	if tickMsg, ok := msg.(spinner.TickMsg); ok {
-		if m.loading || m.loadingDetail || m.loadingTransitions || m.loadingWorkLogs {
+		if m.loadingIssues || m.loadingDetail || m.loadingTransitions || m.loadingWorkLogs {
 			m.spinner, spinnerCmd = m.spinner.Update(tickMsg)
 		}
 	}
@@ -203,7 +203,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issuesLoadedMsg:
 		m.issues = msg.issues
-		m.loading = false
+		m.loadingIssues = false
 
 		var cmds []tea.Cmd
 
@@ -246,7 +246,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case prioritiesLoadedMsg:
 		m.priorities = msg.priorities
-		m.loading = false
+		m.loadingIssues = false
 		return m, nil
 
 	case projectsLoadedMsg:
@@ -352,7 +352,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case newIssueCompleteMsg:
 		m.statusMessage = "New issue created successfully"
 		m.mode = listView
-		m.loading = true
+		m.loadingIssues = true
 		return m, tea.Batch(m.fetchMyIssues())
 
 	case linkIssueCompleteMsg:
@@ -505,7 +505,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		log.Printf("ERROR: %s", msg.err)
-		m.loading = false
+		m.loadingIssues = false
 		m.loadingDetail = false
 		m.loadingTransitions = false
 
@@ -553,7 +553,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var content string
 
-	if m.loading {
+	if m.loadingIssues {
 		return "\033[H\033[2J"
 
 	}
@@ -624,7 +624,7 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		loading:       true,
+		loadingIssues: true,
 		mode:          listView,
 		client:        client,
 		textInput:     textInput,

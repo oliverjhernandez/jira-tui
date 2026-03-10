@@ -246,6 +246,7 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 
 		// TODO: validate estimate
 		originalEstimate := issue.OriginalEstimate
+		parentKey := issue.ParentKey
 		summary := issue.Summary
 
 		var assigneeID string
@@ -261,9 +262,11 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 			}
 		}
 
-		var dueDate time.Time
+		var dueDate string
 		if _, err := time.Parse("2006-01-02", issue.DueDate); err != nil {
-			dueDate = time.Now()
+			dueDate = time.Now().Format("2006-01-02")
+		} else {
+			dueDate = issue.DueDate
 		}
 
 		description := buildSimpleDescriptionContent(issue.Description)
@@ -274,10 +277,11 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 			issueTypeID,
 			originalEstimate,
 			summary,
+			parentKey,
 			assigneeID,
 			priorityID,
 			description,
-			dueDate.Format("2006-01-02"),
+			dueDate,
 		)
 		if err != nil {
 			return errMsg{err}

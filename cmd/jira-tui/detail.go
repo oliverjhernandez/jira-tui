@@ -217,6 +217,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
 				m.childrenViewport.SetContent(chContent)
 				return m, nil
+
+			case keyMsg.String() == "c":
+				i := &NewIssueFormData{
+					ParentKey: m.issueDetail.Key,
+				}
+				m.newIssueData = m.NewIssueForm(i)
+				m.mode = newIssueView
+				return m, m.newIssueData.Form.Init()
 			}
 		}
 
@@ -315,10 +323,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = listView
 			m.issueDetail = nil
 			m.childrenViewport.SetContent("")
+			m.worklogsViewport.SetContent("")
 			m.textArea.SetValue("")
-			m.loading = true
+			m.loadingIssues = true
 			m.commentsCursor = 0
-			return m, m.fetchMyIssues()
+			m.worklogsCursor = 0
+			m.childrenCursor = 0
+			return m, nil
 
 		case "q", "ctrl+c":
 			return m, tea.Quit
