@@ -295,7 +295,9 @@ func (m model) renderListView() string {
 	m.listViewport.YPosition = 0
 
 	var statusBar strings.Builder
-	if m.filtering {
+	if m.statusMessage != "" {
+		statusBar.WriteString(m.statusMessage)
+	} else if m.filtering {
 		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.textInput.View() +
 			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
 	} else if m.textInput.Value() != "" {
