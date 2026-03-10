@@ -351,9 +351,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case newIssueCompleteMsg:
 		m.statusMessage = "New issue created successfully"
-		m.mode = listView
-		m.loadingIssues = true
-		return m, tea.Batch(m.fetchMyIssues())
+		var cmds []tea.Cmd
+		if m.issueDetail != nil {
+			m.mode = detailView
+			m.loadingDetail = true
+			cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		} else {
+			m.mode = listView
+			m.loadingIssues = true
+			cmds = append(cmds, m.fetchMyIssues())
+		}
+
+		return m, tea.Batch(cmds...)
 
 	case linkIssueCompleteMsg:
 		m.statusMessage = "Issue liked successfully"
