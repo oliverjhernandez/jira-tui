@@ -320,6 +320,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchIssueDetail(m.issueDetail.Key)
 
 		case "esc":
+			var cmds []tea.Cmd
 			m.mode = listView
 			m.issueDetail = nil
 			m.childrenViewport.SetContent("")
@@ -329,7 +330,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsCursor = 0
 			m.worklogsCursor = 0
 			m.childrenCursor = 0
-			return m, nil
+			cmds = append(cmds, m.fetchMyIssues())
+			return m, tea.Batch(cmds...)
 
 		case "q", "ctrl+c":
 			return m, tea.Quit
