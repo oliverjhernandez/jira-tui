@@ -212,6 +212,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				seen[p.Project.ID] = true
 			}
 
+			m.activeProjects = nil
 			for _, p := range m.projects {
 				if seen[p.ID] {
 					m.activeProjects = append(m.activeProjects, p)

@@ -767,14 +767,11 @@ func (m model) renderInfoPanel(width int) string {
 	total := inProgress + toDo + done
 
 	var projectsStr string
-	if m.activeProjects != nil {
-		var projects []string
-		for _, p := range m.activeProjects {
-			projects = append(projects, p.Name)
-		}
-
-		projectsStr = strings.Join(projects, " · ")
+	var projects []string
+	for _, p := range m.activeProjects {
+		projects = append(projects, p.Name)
 	}
+	projectsStr = strings.Join(projects, " · ")
 
 	userStyled := ui.InfoPanelUserStyle.Render(userName)
 	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
