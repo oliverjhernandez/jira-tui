@@ -138,6 +138,7 @@ type model struct {
 	userCursor       int
 	commentsCursor   int
 	worklogsCursor   int
+	childrenCursor   int
 
 	// Input Components
 	textInput textinput.Model

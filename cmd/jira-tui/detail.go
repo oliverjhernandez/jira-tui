@@ -191,15 +191,33 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case childrenSection:
-			switch keyMsg.String() {
-			case "j":
-				m.childrenViewport.ScrollDown(1)
+			switch {
+
+			case keyMsg.String() == "j":
+				if m.childrenCursor < len(m.issueDetail.Children)-1 {
+					m.childrenCursor++
+				}
+
+				cursorLine := m.childrenCursor * 6
+				m.childrenViewport.SetYOffset(cursorLine)
+
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+				m.childrenViewport.SetContent(chContent)
+
 				return m, nil
-			case "k":
-				m.childrenViewport.ScrollUp(1)
+
+			case keyMsg.String() == "k":
+				if m.childrenCursor > 0 {
+					m.childrenCursor--
+				}
+
+				cursorLine := m.childrenCursor * 4
+				m.childrenViewport.SetYOffset(cursorLine)
+
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+				m.childrenViewport.SetContent(chContent)
 				return m, nil
 			}
-
 		}
 
 		switch keyMsg.String() {

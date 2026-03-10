@@ -1051,23 +1051,40 @@ func (m model) buildChildrenContent(width int) string {
 
 	if childrenCount > 0 {
 		for i, c := range m.issueDetail.Children {
-			issue := ui.RenderIssueType(c.Type, false)
-			key := c.Key
-			priority := ui.RenderPriority(c.Priority, false)
-			status := ui.RenderStatusBadge(c.Status)
-			assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(c.Assignee, " ")[0]))
+			isSelected := m.childrenCursor == i
+			isLast := i == childrenCount-1
 
-			content.WriteString(issue + " " + key + " " + priority + " " + status + "\n")
-			content.WriteString(assignee + "\n")
-			summary := ui.CommentBodyStyle.Width(width - 4).Render(c.Summary)
-			content.WriteString(summary + "\n")
-
-			if i < childrenCount-1 {
-				content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
-			} else {
-				content.WriteString("\n")
-			}
+			ch := m.renderChildren(c, width, isSelected, isLast)
+			content.WriteString(ch)
 		}
+	}
+
+	return content.String()
+}
+
+func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast bool) string {
+	var content strings.Builder
+
+	issue := ui.RenderIssueType(i.Type, false)
+	key := i.Key
+	priority := ui.RenderPriority(i.Priority, false)
+	status := ui.RenderStatusBadge(i.Status)
+	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(i.Assignee, " ")[0]))
+
+	if isSelected {
+		cursor := ui.IconCursor
+		content.WriteString(cursor + issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
+	} else {
+		content.WriteString(issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
+	}
+
+	summary := ui.CommentBodyStyle.Width(width - 4).Render(i.Summary)
+	content.WriteString(summary + "\n")
+
+	if !isLast {
+		content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+	} else {
+		content.WriteString("\n")
 	}
 
 	return content.String()
@@ -1095,225 +1112,3 @@ func (m model) renderSimpleBackground() string {
 
 	return bg
 }
-
-// {
-//   "issues": [
-//     {
-//       "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
-//       "id": "54792",
-//       "self": "https://layer7.atlassian.net/rest/api/3/issue/54792",
-//       "key": "DEV-1469",
-//       "fields": {
-//         "summary": "CCC4, UPDATE al Script de Grabaciones, no se están copiando completamente desde TOTP a S3",
-//         "issuetype": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/issuetype/10012",
-//           "id": "10012",
-//           "description": "A small, distinct piece of work.",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
-//           "name": "Task",
-//           "subtask": false,
-//           "avatarId": 10318,
-//           "hierarchyLevel": 0
-//         },
-//         "assignee": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/user?accountId=712020%3Ad1924ca8-be15-49b1-9484-defcf52776b2",
-//           "accountId": "712020:d1924ca8-be15-49b1-9484-defcf52776b2",
-//           "emailAddress": "oliver@layer7.mx",
-//           "avatarUrls": {
-//             "48x48": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "24x24": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "16x16": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "32x32": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png"
-//           },
-//           "displayName": "Oliver Hernández",
-//           "active": true,
-//           "timeZone": "America/Caracas",
-//           "accountType": "atlassian"
-//         },
-//         "priority": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/priority/1",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/priority/avatar/10781?size=medium",
-//           "name": "Highest",
-//           "id": "1"
-//         },
-//         "status": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/status/10013",
-//           "description": "",
-//           "iconUrl": "https://layer7.atlassian.net/",
-//           "name": "Done",
-//           "id": "10013",
-//           "statusCategory": {
-//             "self": "https://layer7.atlassian.net/rest/api/3/statuscategory/3",
-//             "id": 3,
-//             "key": "done",
-//             "colorName": "green",
-//             "name": "Done"
-//           }
-//         }
-//       }
-//     },
-//     {
-//       "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
-//       "id": "54791",
-//       "self": "https://layer7.atlassian.net/rest/api/3/issue/54791",
-//       "key": "DEV-1468",
-//       "fields": {
-//         "summary": "CCC3, UPDATE al Script de Grabaciones, no se están copiando completamente desde TOTP a S3",
-//         "issuetype": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/issuetype/10012",
-//           "id": "10012",
-//           "description": "A small, distinct piece of work.",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
-//           "name": "Task",
-//           "subtask": false,
-//           "avatarId": 10318,
-//           "hierarchyLevel": 0
-//         },
-//         "assignee": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/user?accountId=712020%3Ad1924ca8-be15-49b1-9484-defcf52776b2",
-//           "accountId": "712020:d1924ca8-be15-49b1-9484-defcf52776b2",
-//           "emailAddress": "oliver@layer7.mx",
-//           "avatarUrls": {
-//             "48x48": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "24x24": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "16x16": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "32x32": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png"
-//           },
-//           "displayName": "Oliver Hernández",
-//           "active": true,
-//           "timeZone": "America/Caracas",
-//           "accountType": "atlassian"
-//         },
-//         "priority": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/priority/3",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/priority/avatar/10812?size=medium",
-//           "name": "Medium",
-//           "id": "3"
-//         },
-//         "status": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/status/10013",
-//           "description": "",
-//           "iconUrl": "https://layer7.atlassian.net/",
-//           "name": "Done",
-//           "id": "10013",
-//           "statusCategory": {
-//             "self": "https://layer7.atlassian.net/rest/api/3/statuscategory/3",
-//             "id": 3,
-//             "key": "done",
-//             "colorName": "green",
-//             "name": "Done"
-//           }
-//         }
-//       }
-//     },
-//     {
-//       "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
-//       "id": "54790",
-//       "self": "https://layer7.atlassian.net/rest/api/3/issue/54790",
-//       "key": "DEV-1467",
-//       "fields": {
-//         "summary": "CCC1, UPDATE al Script de Grabaciones, no se están copiando completamente desde TOTP a S3",
-//         "issuetype": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/issuetype/10012",
-//           "id": "10012",
-//           "description": "A small, distinct piece of work.",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
-//           "name": "Task",
-//           "subtask": false,
-//           "avatarId": 10318,
-//           "hierarchyLevel": 0
-//         },
-//         "assignee": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/user?accountId=712020%3Ad1924ca8-be15-49b1-9484-defcf52776b2",
-//           "accountId": "712020:d1924ca8-be15-49b1-9484-defcf52776b2",
-//           "emailAddress": "oliver@layer7.mx",
-//           "avatarUrls": {
-//             "48x48": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "24x24": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "16x16": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "32x32": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png"
-//           },
-//           "displayName": "Oliver Hernández",
-//           "active": true,
-//           "timeZone": "America/Caracas",
-//           "accountType": "atlassian"
-//         },
-//         "priority": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/priority/1",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/priority/avatar/10781?size=medium",
-//           "name": "Highest",
-//           "id": "1"
-//         },
-//         "status": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/status/10013",
-//           "description": "",
-//           "iconUrl": "https://layer7.atlassian.net/",
-//           "name": "Done",
-//           "id": "10013",
-//           "statusCategory": {
-//             "self": "https://layer7.atlassian.net/rest/api/3/statuscategory/3",
-//             "id": 3,
-//             "key": "done",
-//             "colorName": "green",
-//             "name": "Done"
-//           }
-//         }
-//       }
-//     },
-//     {
-//       "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
-//       "id": "53877",
-//       "self": "https://layer7.atlassian.net/rest/api/3/issue/53877",
-//       "key": "DEV-1441",
-//       "fields": {
-//         "summary": "CCC2 - Grabaciones no se están copiando completamente desde TOTP a S3",
-//         "issuetype": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/issuetype/10012",
-//           "id": "10012",
-//           "description": "A small, distinct piece of work.",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
-//           "name": "Task",
-//           "subtask": false,
-//           "avatarId": 10318,
-//           "hierarchyLevel": 0
-//         },
-//         "assignee": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/user?accountId=712020%3Ad1924ca8-be15-49b1-9484-defcf52776b2",
-//           "accountId": "712020:d1924ca8-be15-49b1-9484-defcf52776b2",
-//           "emailAddress": "oliver@layer7.mx",
-//           "avatarUrls": {
-//             "48x48": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "24x24": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "16x16": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png",
-//             "32x32": "https://secure.gravatar.com/avatar/8b4900d6b6d1b0b66b20fc6feb3d2e70?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FOH-5.png"
-//           },
-//           "displayName": "Oliver Hernández",
-//           "active": true,
-//           "timeZone": "America/Caracas",
-//           "accountType": "atlassian"
-//         },
-//         "priority": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/priority/1",
-//           "iconUrl": "https://layer7.atlassian.net/rest/api/2/universal_avatar/view/type/priority/avatar/10781?size=medium",
-//           "name": "Highest",
-//           "id": "1"
-//         },
-//         "status": {
-//           "self": "https://layer7.atlassian.net/rest/api/3/status/10013",
-//           "description": "",
-//           "iconUrl": "https://layer7.atlassian.net/",
-//           "name": "Done",
-//           "id": "10013",
-//           "statusCategory": {
-//             "self": "https://layer7.atlassian.net/rest/api/3/statuscategory/3",
-//             "id": 3,
-//             "key": "done",
-//             "colorName": "green",
-//             "name": "Done"
-//           }
-//         }
-//       }
-//     }
-//   ],
-//   "isLast": true
-// }
