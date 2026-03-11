@@ -25,14 +25,16 @@ type Client struct {
 
 // TODO: map to correct types
 type Issue struct {
-	ID       string
-	Key      string
-	Summary  string
-	Status   string
-	Type     string
-	Assignee string
-	Priority string
-	Project  Project
+	ID               string
+	Key              string
+	Summary          string
+	Status           string
+	Type             string
+	Assignee         string
+	Priority         string
+	Project          Project
+	Description      *ContentDoc
+	OriginalEstimate string
 }
 
 type IssueDetail struct {
@@ -413,7 +415,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,status,issuetype,assignee,priority,project")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,priority,project,timeoriginalestimate")
 
 	var searchResp issuesSearchResponse
 
@@ -437,7 +439,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			assignee = issue.Fields.Assignee.DisplayName
 		}
 
-		result = append(result, Issue{
+		i := Issue{
 			ID:       issue.ID,
 			Key:      issue.Key,
 			Summary:  issue.Fields.Summary,
@@ -446,7 +448,17 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			Assignee: assignee,
 			Priority: issue.Fields.Priority.Name,
 			Project:  issue.Fields.Project,
-		})
+		}
+
+		if issue.Fields.Description != nil {
+			i.Description = issue.Fields.Description
+		}
+
+		if issue.Fields.OriginalEstimate != nil {
+			i.OriginalEstimate = strconv.Itoa(*issue.Fields.OriginalEstimate)
+		}
+
+		result = append(result, i)
 	}
 
 	return result, err

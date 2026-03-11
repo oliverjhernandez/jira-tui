@@ -111,6 +111,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "n":
 			i := &NewIssueFormData{}
+			m.issueDetail = nil
 			m.newIssueData = m.NewIssueForm(i)
 			m.mode = newIssueView
 			return m, m.newIssueData.Form.Init()

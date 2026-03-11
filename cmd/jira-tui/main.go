@@ -122,8 +122,9 @@ type model struct {
 	worklogTotals         map[string]int
 
 	// Transitions
-	transitions       []jira.Transition
-	pendingTransition *jira.Transition
+	transitions        []jira.Transition
+	pendingTransition  *jira.Transition
+	transitioningIssue *jira.Issue
 
 	//  Selection
 	usersCache         []jira.User
@@ -346,8 +347,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionCompleteMsg:
 		m.statusMessage = "Issue transitioned successfully"
 		m.mode = detailView
-		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		var cmds []tea.Cmd
+		switch m.focusedSection {
+		case metadataSection:
+			m.loadingDetail = true
+			cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		case childrenSection:
+			cmds = append(cmds, m.fetchEpicChildren(m.issueDetail.Key))
+		}
+
+		return m, tea.Batch(cmds...)
 
 	case newIssueCompleteMsg:
 		var cmds []tea.Cmd

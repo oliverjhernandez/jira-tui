@@ -55,6 +55,33 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Summary yanked to clipboard"
 				return m, nil
+
+			case keyMsg.String() == "t":
+				m.transitioningIssue = &jira.Issue{
+					Key:              m.issueDetail.Key,
+					Description:      m.issueDetail.Description,
+					OriginalEstimate: m.issueDetail.OriginalEstimate,
+					Type:             m.issueDetail.Type,
+				}
+
+				if m.issueDetail != nil {
+					if m.issueDetail.Description == nil {
+						m.statusMessage = "Cannot transition, missing description."
+						return m, nil
+					}
+
+					if m.issueDetail.OriginalEstimate == "" {
+						m.statusMessage = "Cannot transition, missing original estimate"
+						return m, nil
+					}
+
+					m.mode = transitionView
+					m.loadingTransitions = true
+					m.transitionCursor = 0
+					m.loadingDetail = true
+					return m, m.fetchTransitions(m.issueDetail.Key)
+				}
+
 			}
 
 		case descriptionSection:
@@ -225,6 +252,25 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.newIssueData = m.NewIssueForm(i)
 				m.mode = newIssueView
 				return m, m.newIssueData.Form.Init()
+
+			case keyMsg.String() == "t":
+				m.transitioningIssue = &m.issueDetail.Children[m.childrenCursor]
+
+				if m.issueDetail.Children[m.childrenCursor].Description == nil {
+					m.statusMessage = "Cannot transition, missing description."
+					return m, nil
+				}
+
+				if m.issueDetail.Children[m.childrenCursor].OriginalEstimate == "" {
+					m.statusMessage = "Cannot transition, missing original estimate"
+					return m, nil
+				}
+
+				m.mode = transitionView
+				m.loadingTransitions = true
+				m.transitionCursor = 0
+				m.loadingDetail = true
+				return m, m.fetchTransitions(m.issueDetail.Children[m.childrenCursor].Key)
 			}
 		}
 
@@ -253,25 +299,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx-1+len(detailViewSections))%len(detailViewSections)]
 			return m, nil
-
-		case "t":
-			if m.issueDetail != nil {
-				if m.issueDetail.Description == nil {
-					m.statusMessage = "Cannot transition, missing description."
-					return m, nil
-				}
-
-				if m.issueDetail.OriginalEstimate == "" {
-					m.statusMessage = "Cannot transition, missing original estimate"
-					return m, nil
-				}
-
-				m.mode = transitionView
-				m.loadingTransitions = true
-				m.transitionCursor = 0
-				m.loadingDetail = true
-				return m, m.fetchTransitions(m.issueDetail.Key)
-			}
 
 		case "l":
 			m.mode = issueSearchView
