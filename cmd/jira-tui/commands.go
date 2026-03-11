@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -205,15 +206,17 @@ func (m model) fetchTransitions(issueKey string) tea.Cmd {
 	}
 }
 
-func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
+func (m model) postNewIssue(data *NewIssueFormData) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
+		log.Printf("Data: %+v", data)
+
 		var projectID string
 		for _, p := range m.projects {
-			if strings.Contains(p.Name, issue.ProjectName) {
+			if strings.Contains(p.Name, data.ProjectName) {
 				projectID = p.ID
 				break
 			} else {
@@ -223,7 +226,7 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 
 		var issueTypeID string
 		for _, it := range m.issueTypes {
-			if it.Name == issue.IssueTypeName {
+			if it.Name == data.IssueTypeName {
 				if it.Scope != nil {
 				}
 				if it.Scope != nil && it.Scope.Project.ID == projectID {
@@ -237,7 +240,7 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 
 		if issueTypeID == "" {
 			for _, it := range m.issueTypes {
-				if it.Name == issue.IssueTypeName && it.Scope == nil {
+				if it.Name == data.IssueTypeName && it.Scope == nil {
 					issueTypeID = it.ID
 					break
 				}
@@ -245,31 +248,31 @@ func (m model) postNewIssue(issue *NewIssueFormData) tea.Cmd {
 		}
 
 		// TODO: validate estimate
-		originalEstimate := issue.OriginalEstimate
-		parentKey := issue.ParentKey
-		summary := issue.Summary
+		originalEstimate := data.OriginalEstimate
+		parentKey := data.ParentKey
+		summary := data.Summary
 
 		var assigneeID string
-		if issue.AssigneeName == m.myself.Name {
+		if data.AssigneeName == m.myself.Name {
 			assigneeID = m.myself.ID
 		}
 
 		var priorityID string
 		for _, p := range m.priorities {
-			if strings.Contains(p.Name, issue.PriorityName) {
+			if strings.Contains(p.Name, data.PriorityName) {
 				priorityID = p.ID
 				break
 			}
 		}
 
 		var dueDate string
-		if _, err := time.Parse("2006-01-02", issue.DueDate); err != nil {
+		if _, err := time.Parse("2006-01-02", data.DueDate); err != nil {
 			dueDate = time.Now().Format("2006-01-02")
 		} else {
-			dueDate = issue.DueDate
+			dueDate = data.DueDate
 		}
 
-		description := buildSimpleDescriptionContent(issue.Description)
+		description := buildSimpleDescriptionContent(data.Description)
 
 		err := m.client.PostNewIssue(
 			context.Background(),

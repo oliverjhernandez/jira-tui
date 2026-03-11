@@ -350,17 +350,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case newIssueCompleteMsg:
-		m.statusMessage = "New issue created successfully"
 		var cmds []tea.Cmd
 		if m.issueDetail != nil {
 			m.mode = detailView
-			m.loadingDetail = true
 			cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
 		} else {
 			m.mode = listView
-			m.loadingIssues = true
 			cmds = append(cmds, m.fetchMyIssues())
 		}
+		m.statusMessage = "New issue created successfully"
 
 		return m, tea.Batch(cmds...)
 

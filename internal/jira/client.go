@@ -1114,27 +1114,32 @@ func (c *Client) PostNewIssue(
 ) error {
 	apiURL := "/rest/api/3/issue"
 
-	body := map[string]any{
-		"fields": map[string]any{
-			"assignee": map[string]any{
-				"id": assigneeID,
-			},
-			"description": description,
-			"duedate":     dueDate,
-			"issuetype": map[string]any{
-				"id": issueTypeID,
-			},
-			"parent": map[string]any{
-				"key": parentKey,
-			},
-			"priority": map[string]any{
-				"id": priorityID,
-			},
-			"project": map[string]any{
-				"id": projectID,
-			},
-			"summary": summary,
+	fields := map[string]any{
+		"assignee": map[string]any{
+			"id": assigneeID,
 		},
+		"description": description,
+		"duedate":     dueDate,
+		"issuetype": map[string]any{
+			"id": issueTypeID,
+		},
+		"priority": map[string]any{
+			"id": priorityID,
+		},
+		"project": map[string]any{
+			"id": projectID,
+		},
+		"summary": summary,
+	}
+
+	if parentKey != "" {
+		fields["parent"] = map[string]any{
+			"key": parentKey,
+		}
+	}
+
+	body := map[string]any{
+		"fields": fields,
 	}
 
 	if originalEstimate != "" {
@@ -1142,6 +1147,8 @@ func (c *Client) PostNewIssue(
 			"originalEstimate": originalEstimate,
 		}
 	}
+
+	log.Printf("Body: %+v", body)
 
 	err := c.doJiraRequest(
 		ctx,
