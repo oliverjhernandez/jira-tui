@@ -57,7 +57,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyMsg.String() == "t":
-				m.transitioningIssue = &jira.Issue{
+				m.activeIssue = &jira.Issue{
 					Key:              m.issueDetail.Key,
 					Description:      m.issueDetail.Description,
 					OriginalEstimate: m.issueDetail.OriginalEstimate,
@@ -81,6 +81,17 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.loadingDetail = true
 					return m, m.fetchTransitions(m.issueDetail.Key)
 				}
+
+			case keyMsg.String() == "a":
+				m.activeIssue = &jira.Issue{
+					Key: m.issueDetail.Key,
+				}
+				m.mode = userSearchView
+				m.loadingAssignUsers = true
+				m.textInput.SetValue("")
+				m.textInput.Focus()
+				m.cursor = 0
+				return m, m.fetchAssignableUsers(m.issueDetail.Key)
 
 			}
 
@@ -254,7 +265,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.newIssueData.Form.Init()
 
 			case keyMsg.String() == "t":
-				m.transitioningIssue = &m.issueDetail.Children[m.childrenCursor]
+				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
 
 				if m.issueDetail.Children[m.childrenCursor].Description == nil {
 					m.statusMessage = "Cannot transition, missing description."
@@ -271,6 +282,15 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.transitionCursor = 0
 				m.loadingDetail = true
 				return m, m.fetchTransitions(m.issueDetail.Children[m.childrenCursor].Key)
+
+			case keyMsg.String() == "a":
+				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
+				m.mode = userSearchView
+				m.loadingAssignUsers = true
+				m.textInput.SetValue("")
+				m.textInput.Focus()
+				m.cursor = 0
+				return m, m.fetchAssignableUsers(m.issueDetail.Children[m.childrenCursor].Key)
 			}
 		}
 
@@ -325,14 +345,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.worklogFormData = m.NewWorklogForm(w, 40)
 			m.mode = worklogView
 			return m, m.worklogFormData.Form.Init()
-
-		case "a":
-			m.mode = userSearchView
-			m.loadingAssignUsers = true
-			m.textInput.SetValue("")
-			m.textInput.Focus()
-			m.cursor = 0
-			return m, m.fetchAssignableUsers(m.issueDetail.Key)
 
 		case "e":
 			m.mode = estimateView

@@ -85,7 +85,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.transitionData.Form.State == huh.StateCompleted {
 			if len(m.transitions) > 0 {
 				transition := m.transitions[m.transitionData.SelectedIndex]
-				if m.transitioningIssue != nil && m.transitioningIssue.OriginalEstimate == "" {
+				if m.activeIssue != nil && m.activeIssue.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()
 					m.mode = estimateView
@@ -98,7 +98,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView
-				cmds = append(cmds, m.postTransition(m.transitioningIssue.Key, transition.ID, transition.Name))
+				cmds = append(cmds, m.postTransition(m.activeIssue.Key, transition.ID, transition.Name))
 			}
 		}
 	}

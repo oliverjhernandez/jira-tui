@@ -25,14 +25,19 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if len(m.filteredUsers) > 0 {
 				user := m.filteredUsers[m.userCursor]
+				var cmds []tea.Cmd
 
 				switch m.userSelectionMode {
 				case assignUser:
-					assigneeCmd := m.postAssignee(m.issueDetail.Key, user.ID)
-					detailCmd := m.fetchIssueDetail(m.issueDetail.Key)
-					listCmd := m.fetchMyIssues()
+					cmds = append(cmds, m.postAssignee(m.activeIssue.Key, user.ID))
+					if m.focusedSection == metadataSection {
+						cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+					} else if m.focusedSection == childrenSection {
+						cmds = append(cmds, m.fetchEpicChildren(m.issueDetail.Key))
+					}
+					cmds = append(cmds, m.fetchMyIssues())
 					m.filteredUsers = nil
-					return m, tea.Batch(assigneeCmd, detailCmd, listCmd)
+					return m, tea.Batch(cmds...)
 				case insertMention:
 					mention := "@[" + user.Name + "]"
 					value := m.textArea.Value() + mention

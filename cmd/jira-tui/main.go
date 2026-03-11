@@ -122,9 +122,9 @@ type model struct {
 	worklogTotals         map[string]int
 
 	// Transitions
-	transitions        []jira.Transition
-	pendingTransition  *jira.Transition
-	transitioningIssue *jira.Issue
+	transitions       []jira.Transition
+	pendingTransition *jira.Transition
+	activeIssue       *jira.Issue
 
 	//  Selection
 	usersCache         []jira.User
@@ -454,7 +454,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
 
 	case assignUsersLoadedMsg:
-		m.statusMessage = "User assigned successfully"
 		m.loadingAssignUsers = false
 		m.mode = userSearchView
 		return m, nil
