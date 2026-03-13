@@ -191,15 +191,9 @@ type Link struct {
 }
 
 type ContentDoc struct {
-	Type    string         `json:"type"`
-	Version int            `json:"version"`
-	Content []ContentBlock `json:"content"`
-}
-
-type ContentBlock struct {
 	Type    string        `json:"type"`
-	Content []ContentNode `json:"content,omitempty"`
-	Text    string        `json:"text,omitempty"`
+	Version int           `json:"version"`
+	Content []ContentNode `json:"content"`
 }
 
 type ContentNode struct {
@@ -314,6 +308,12 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 			log.Printf("failed to close response body: %v", closeErr)
 		}
 	}()
+
+	// if strings.Contains(endpoint, "issue") {
+	// 	bodyBytes, _ := io.ReadAll(resp.Body)
+	// 	log.Printf("Response body: %s", string(bodyBytes))
+	// 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	// }
 
 	if len(expectedStatus) == 0 {
 		expectedStatus = []int{http.StatusOK, http.StatusCreated, http.StatusNoContent}

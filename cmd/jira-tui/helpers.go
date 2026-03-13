@@ -231,7 +231,7 @@ func buildSimpleDescriptionContent(text string) *jira.ContentDoc {
 	contentDoc := jira.ContentDoc{
 		Type:    "doc",
 		Version: 1,
-		Content: []jira.ContentBlock{
+		Content: []jira.ContentNode{
 			{
 				Type: "paragraph",
 				Content: []jira.ContentNode{
