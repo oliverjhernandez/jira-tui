@@ -16,32 +16,34 @@ func ExtractText(doc *ContentDoc, panelWidth int) string {
 	}
 
 	var text strings.Builder
-	for _, block := range doc.Content {
-		text.WriteString(extractBlockText(block, panelWidth) + "\n")
+	for _, node := range doc.Content {
+		text.WriteString(extractBlockText(node, panelWidth) + "\n")
 	}
 	return text.String()
 }
 
-func extractBlockText(block ContentNode, panelWidth int) string {
-	switch block.Type {
+func extractBlockText(node ContentNode, panelWidth int) string {
+	switch node.Type {
 	case "heading":
-		return formatHeading(block)
+		return formatHeading(node)
 	case "paragraph":
-		return formatParagraph(block)
+		return formatParagraph(node)
 	case "codeBlock":
-		return formatCodeBlock(block)
+		return formatCodeBlock(node)
 	case "bulletList":
-		return formatBulletList(block, 0)
+		return formatBulletList(node, 0)
 	case "orderedList":
-		return formatOrderedList(block)
+		return formatOrderedList(node)
 	case "table":
-		return formatTable(block, panelWidth)
+		return formatTable(node, panelWidth)
+	case "mediaSingle":
+		return formatMediaSingle(node)
 	case "rule":
 		return "─────────────────────"
 	default:
 		var text strings.Builder
-		text.WriteString(fmt.Sprintf("Unknown block type: %s", block.Type))
-		for _, node := range block.Content {
+		text.WriteString(fmt.Sprintf("Unknown node type: %s", node.Type))
+		for _, node := range node.Content {
 			text.WriteString(extractInlineText(node))
 		}
 		return text.String()
@@ -77,33 +79,33 @@ func extractInlineText(node ContentNode) string {
 	return text
 }
 
-func formatParagraph(block ContentNode) string {
+func formatParagraph(node ContentNode) string {
 	var text strings.Builder
-	for _, node := range block.Content {
+	for _, node := range node.Content {
 		text.WriteString(extractInlineText(node))
 	}
 	return text.String()
 }
 
-func formatHeading(block ContentNode) string {
+func formatHeading(node ContentNode) string {
 	var text strings.Builder
-	for _, node := range block.Content {
+	for _, node := range node.Content {
 		text.WriteString(extractInlineText(node))
 	}
 	return ui.HeadingStyle.Render("# " + text.String())
 }
 
-func formatCodeBlock(block ContentNode) string {
+func formatCodeBlock(node ContentNode) string {
 	var text strings.Builder
-	for _, node := range block.Content {
+	for _, node := range node.Content {
 		text.WriteString(extractInlineText(node))
 	}
 	return ui.CodeBlockStyle.Render(text.String())
 }
 
-func formatOrderedList(block ContentNode) string {
+func formatOrderedList(node ContentNode) string {
 	var items strings.Builder
-	for i, item := range block.Content {
+	for i, item := range node.Content {
 		if item.Type == "listItem" {
 			itemText := extractListItemText(item)
 			fmt.Fprintf(&items, "  %d. %s\n", i+1, itemText)
@@ -112,15 +114,26 @@ func formatOrderedList(block ContentNode) string {
 	return items.String()
 }
 
-func formatBulletList(block ContentNode, indent int) string {
+func formatBulletList(node ContentNode, indent int) string {
 	var items strings.Builder
-	for _, item := range block.Content {
+	for _, item := range node.Content {
 		if item.Type == "listItem" {
 			itemText := formatListItem(item, indent)
 			items.WriteString(strings.Repeat("  ", indent) + "• " + itemText + "\n")
 		}
 	}
 	return items.String()
+}
+
+func formatMediaSingle(node ContentNode) string {
+	var content strings.Builder
+	for _, item := range node.Content {
+		if item.Type == "media" {
+			content.WriteString("[📎 " + item.Attrs.Alt + "]")
+		}
+	}
+
+	return content.String()
 }
 
 func formatListItem(node ContentNode, indent int) string {
@@ -148,10 +161,10 @@ func extractListItemText(item ContentNode) string {
 	return text.String()
 }
 
-func formatTable(block ContentNode, panelWidth int) string {
+func formatTable(node ContentNode, panelWidth int) string {
 	var allRows [][]string
 
-	for _, row := range block.Content {
+	for _, row := range node.Content {
 		if row.Type == "tableRow" {
 			cells := extractRowCells(row)
 			if !isEmptyRow(cells) {

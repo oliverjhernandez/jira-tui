@@ -211,6 +211,7 @@ type mark struct {
 type contentAttrs struct {
 	Text string `json:"text,omitempty"`
 	ID   string `json:"id,omitempty"`
+	Alt  string `json:"alt"`
 }
 
 type statusField struct {
