@@ -1,7 +1,7 @@
 // Package ui
 package ui
 
-import "github.com/charmbracelet/lipgloss"
+import "charm.land/lipgloss/v2"
 
 var (
 	TokyoBg      = lipgloss.Color("#1a1b26")

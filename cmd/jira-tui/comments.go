@@ -3,8 +3,9 @@ package main
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -17,8 +18,8 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyPressMsg.String() {
 		case "esc":
 			m.mode = detailView
 			return m, nil
@@ -56,7 +57,7 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderCommentModalView() string {
 	m.detailLayout = m.calculateDetailLayout()
-	bg := m.renderSimpleBackground()
+	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
 
@@ -73,5 +74,17 @@ func (m model) renderCommentModalView() string {
 	}, "  ")
 	modalContent.WriteString("\n" + footer)
 
-	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalBlockInputStyle)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }

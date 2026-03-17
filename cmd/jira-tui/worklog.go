@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -97,7 +98,7 @@ func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderWorklogView() string {
-	bg := m.renderSimpleBackground()
+	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
 
@@ -114,5 +115,14 @@ func (m model) renderWorklogView() string {
 
 	modalContent.WriteString(m.worklogFormData.Form.View())
 
-	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.Modal3InputFormStyle)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }

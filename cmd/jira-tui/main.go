@@ -7,11 +7,13 @@ import (
 	"maps"
 	"os"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
+
 	"github.com/oliverjhernandez/jira-tui/internal/config"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -93,11 +95,11 @@ type model struct {
 	windowHeight     int
 	detailLayout     detailLayout
 	columnWidths     ui.ColumnWidths
-	listViewport     *viewport.Model
-	descViewport     *viewport.Model
-	commentsViewport *viewport.Model
-	worklogsViewport *viewport.Model
-	childrenViewport *viewport.Model
+	listViewport     viewport.Model
+	descViewport     viewport.Model
+	commentsViewport viewport.Model
+	worklogsViewport viewport.Model
+	childrenViewport viewport.Model
 
 	// User Data
 	myself *jira.User
@@ -230,12 +232,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case childrenLoadedMsg:
 		m.searchData = NewSearchFormData()
 		m.issueDetail.Children = msg.children
-		if len(m.issueDetail.Children) > 0 {
-			childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
-			m.childrenViewport.Width = m.detailLayout.rightColumnWidth
-			m.childrenViewport.Height = m.detailLayout.childrenHeight
-			m.childrenViewport.SetContent(childrenContent)
-		}
+
+		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+		m.childrenViewport.SetWidth(m.detailLayout.rightColumnWidth)
+		m.childrenViewport.SetHeight(m.detailLayout.childrenHeight)
+		m.childrenViewport.SetContent(childrenContent)
+
 		return m, nil
 
 	case worklogTotalsLoadedMsg:
@@ -281,14 +283,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 
 		if m.issueDetail != nil {
+			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
-			m.descViewport.Width = m.detailLayout.leftColumnWidth
-			m.descViewport.Height = m.detailLayout.descHeight
+			m.descViewport.SetHeight(m.detailLayout.descHeight)
 			m.descViewport.SetContent(descContent)
 
 			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
-			m.commentsViewport.Width = m.detailLayout.leftColumnWidth
-			m.commentsViewport.Height = m.detailLayout.commentsHeight
+			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
@@ -296,10 +297,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		worklogsCmd := m.fetchWorkLogs(m.issueDetail.ID)
 		cmds = append(cmds, worklogsCmd)
 
-		if m.issueDetail.Type == "Epic" {
-			epicChildrenCmd := m.fetchEpicChildren(m.issueDetail.Key)
-			cmds = append(cmds, epicChildrenCmd)
-		}
+		epicChildrenCmd := m.fetchEpicChildren(m.issueDetail.Key)
+		cmds = append(cmds, epicChildrenCmd)
 
 		return m, tea.Batch(cmds...)
 
@@ -316,12 +315,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.worklogTotals[m.issueDetail.ID] = total
 
-			if len(m.selectedIssueWorklogs) > 0 {
-				worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
-				m.worklogsViewport.Width = m.detailLayout.rightColumnWidth
-				m.worklogsViewport.Height = m.detailLayout.worklogsHeight
-				m.worklogsViewport.SetContent(worklogsContent)
-			}
+			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+			m.worklogsViewport.SetWidth(m.detailLayout.rightColumnWidth)
+			m.worklogsViewport.SetHeight(m.detailLayout.worklogsHeight)
+			m.worklogsViewport.SetContent(worklogsContent)
 		}
 
 		return m, nil
@@ -470,13 +467,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailLayout = m.calculateDetailLayout()
 
 			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
-			m.descViewport.Width = m.detailLayout.leftColumnWidth
-			m.descViewport.Height = m.detailLayout.descHeight
+			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
+			m.descViewport.SetHeight(m.detailLayout.descHeight)
 			m.descViewport.SetContent(descContent)
 
 			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
-			m.commentsViewport.Width = m.detailLayout.leftColumnWidth
-			m.commentsViewport.Height = m.detailLayout.commentsHeight
+			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
+			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
@@ -484,33 +481,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// INFO: this should be calculated
 		infoPanelHeight := 6
-		if m.listViewport == nil {
-			vp := viewport.New(m.windowWidth-4, m.windowHeight-3-infoPanelHeight)
-			m.listViewport = &vp
-		} else {
-			m.listViewport.Width = m.windowWidth - 4
-			m.listViewport.Height = m.windowHeight - 3 - infoPanelHeight
-		}
-
-		if m.descViewport == nil {
-			vp := viewport.New(2, 2)
-			m.descViewport = &vp
-		}
-
-		if m.commentsViewport == nil {
-			vp := viewport.New(2, 2)
-			m.commentsViewport = &vp
-		}
-
-		if m.worklogsViewport == nil {
-			vp := viewport.New(2, 2)
-			m.worklogsViewport = &vp
-		}
-
-		if m.childrenViewport == nil {
-			vp := viewport.New(2, 2)
-			m.childrenViewport = &vp
-		}
+		m.listViewport.SetWidth(m.windowWidth - 4)
+		m.listViewport.SetHeight(m.windowHeight - 3 - infoPanelHeight)
 
 		return m, nil
 
@@ -565,15 +537,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(spinnerCmd, viewCmd)
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	var content string
 
-	if m.loadingIssues {
-		return "\033[H\033[2J"
+	// if m.loadingIssues {
+	// 	return tea.NewView("\033[H\033[2J")
+	// }
 
-	}
 	if m.err != nil {
-		return "\033[H\033[2J" + fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err)
+		return tea.NewView(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
 	}
 
 	switch m.mode {
@@ -605,7 +577,7 @@ func (m model) View() string {
 		content = "Unknown view\n"
 	}
 
-	return "\033[H" + content
+	return tea.NewView(content)
 }
 
 func main() {
@@ -639,16 +611,21 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		loadingIssues: true,
-		mode:          listView,
-		client:        client,
-		textInput:     textInput,
-		textArea:      textAreaBox,
-		windowWidth:   80,
-		windowHeight:  24,
-		spinner:       spinner,
-		worklogTotals: make(map[string]int),
-		columnWidths:  ui.CalculateColumnWidths(80),
+		loadingIssues:    true,
+		mode:             listView,
+		client:           client,
+		textInput:        textInput,
+		textArea:         textAreaBox,
+		windowWidth:      80,
+		windowHeight:     24,
+		spinner:          spinner,
+		worklogTotals:    make(map[string]int),
+		columnWidths:     ui.CalculateColumnWidths(80),
+		listViewport:     viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
+		descViewport:     viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
+		commentsViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
+		worklogsViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
+		childrenViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
 	})
 
 	if _, err := p.Run(); err != nil {

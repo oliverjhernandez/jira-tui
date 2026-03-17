@@ -3,8 +3,9 @@ package main
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -64,8 +65,8 @@ func isCancelTransition(t jira.Transition) bool {
 func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyPressMsg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "esc":
@@ -107,7 +108,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderTransitionView() string {
-	bg := m.renderSimpleBackground()
+	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
 
@@ -119,14 +120,26 @@ func (m model) renderTransitionView() string {
 		modalContent.WriteString(m.transitionData.Form.View())
 	}
 
-	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowHeight, m.windowHeight, ui.ModalMultiSelectFormStyle)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }
 
 func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyPressMsg.String() {
 		case "esc":
 			m.mode = detailView
 			m.pendingTransition = nil
@@ -154,7 +167,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostCancelReasonView() string {
-	bg := m.renderDetailView()
+	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
 
@@ -166,5 +179,17 @@ func (m model) renderPostCancelReasonView() string {
 	modalContent.WriteString(ui.StatusBarDescStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
-	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalBlockInputStyle)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }

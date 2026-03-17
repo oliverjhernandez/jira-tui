@@ -3,8 +3,9 @@ package main
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -34,8 +35,8 @@ func NewSearchFormData() *SearchIssueFormData {
 func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyPressMsg.String() {
 		case "esc":
 			m.mode = listView
 			m.searchData = nil
@@ -67,12 +68,14 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchIssueView() string {
-	var bg string
+	var bgContent string
 	if m.issueSelectionMode == linkIssue {
-		bg = m.renderSimpleBackground()
+		bgContent = m.renderDetailView()
 	} else {
-		bg = m.renderSimpleBackground()
+		bgContent = m.renderListView()
 	}
+
+	bg := lipgloss.NewLayer(bgContent)
 
 	if m.searchData.Form.State == huh.StateCompleted {
 		return m.renderDetailView()
@@ -87,5 +90,17 @@ func (m model) renderSearchIssueView() string {
 		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchData.Err.Error()))
 	}
 
-	return ui.RenderCenteredModal(modalContent.String(), bg, m.windowWidth, m.windowHeight, ui.ModalTextInputStyle)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // FormatTimeSpent formats seconds into a human readable string like "3h" or "2h 30m"
@@ -55,12 +55,12 @@ func RenderFieldStyled(label, value string, width int) string {
 		Render(content)
 }
 
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen]
-}
+// func truncate(s string, maxLen int) string {
+// 	if len(s) <= maxLen {
+// 		return s
+// 	}
+// 	return s[:maxLen]
+// }
 
 func RenderStatusBadge(status string) string {
 	if strings.ToLower(status) == "selected for development" {
@@ -158,18 +158,6 @@ func RenderIssueType(issueType string, showText bool) string {
 	} else {
 		return style.Render(icon)
 	}
-}
-
-func RenderCenteredModal(content string, background string, windowWidth, windowHeight int, style lipgloss.Style) string {
-	styledModal := style.Render(content)
-
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
-
-	x := (windowWidth - modalWidth) / 2
-	y := (windowHeight - modalHeight) / 2
-
-	return placeOverlay(x, y, styledModal, background, false)
 }
 
 func GetAvailableWidth(windowWidth int) int {

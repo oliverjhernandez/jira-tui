@@ -5,16 +5,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 
 		if m.filtering {
-			switch keyMsg.String() {
+			switch keyPressMsg.String() {
 			case "esc":
 				m.filtering = false
 				m.textInput.SetValue("")
@@ -62,41 +62,41 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// sequential keybindings
 		switch {
-		case keyMsg.String() == "g" && m.lastKey == "":
+		case keyPressMsg.String() == "g" && m.lastKey == "":
 			m.lastKey = "g"
 			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
 				return keyTimeoutMsg{}
 			})
 			return m, tick
 
-		case keyMsg.String() == "g" && m.lastKey == "g":
+		case keyPressMsg.String() == "g" && m.lastKey == "g":
 			m.lastKey = ""
 			m.cursor = 0
 			m.sectionCursor = 0
 			m.listViewport.GotoTop()
 
-		case keyMsg.String() == "y" && m.lastKey == "":
+		case keyPressMsg.String() == "y" && m.lastKey == "":
 			m.lastKey = "y"
 			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
 				return keyTimeoutMsg{}
 			})
 			return m, tick
 
-		case keyMsg.String() == "k" && m.lastKey == "y":
+		case keyPressMsg.String() == "k" && m.lastKey == "y":
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = "Key yanked to clipboard"
 			return m, nil
 
-		case keyMsg.String() == "K" && m.lastKey == "y":
+		case keyPressMsg.String() == "K" && m.lastKey == "y":
 			m.lastKey = ""
 			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = "URL yanked to clipboard"
 			return m, nil
 
-		case keyMsg.String() == "s" && m.lastKey == "y":
+		case keyPressMsg.String() == "s" && m.lastKey == "y":
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
 			yankToClipboard(textToCopy)
@@ -105,7 +105,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 
-		switch keyMsg.String() {
+		switch keyPressMsg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 
@@ -135,8 +135,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			cursorLine := m.getAbsoluteCursorLine()
-			viewportHeight := m.listViewport.Height
-			currentOffset := m.listViewport.YOffset
+			viewportHeight := m.listViewport.Height()
+			currentOffset := m.listViewport.YOffset()
 
 			topThreshold := currentOffset + (viewportHeight / 3)
 
@@ -167,12 +167,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			cursorLine := m.getAbsoluteCursorLine()
-			viewportHeight := m.listViewport.Height
+			viewportHeight := m.listViewport.Height()
+			currentOffset := m.listViewport.YOffset()
 
-			if cursorLine >= m.listViewport.YOffset+viewportHeight {
+			if cursorLine >= currentOffset+viewportHeight {
 				m.listViewport.SetYOffset(cursorLine - viewportHeight + 1)
 			}
-			if cursorLine < m.listViewport.YOffset {
+			if cursorLine < currentOffset {
 				m.listViewport.SetYOffset(cursorLine)
 			}
 			return m, nil
@@ -291,8 +292,8 @@ func (m model) renderListView() string {
 	panelsHeight := 6 + // infoPanel height
 		4 + // horizontal borders
 		1 // statusBar height
-	m.listViewport.Height = m.windowHeight - panelsHeight
-	m.listViewport.Width = ui.GetAvailableWidth(m.windowWidth) - 4
+	m.listViewport.SetHeight(m.windowHeight - panelsHeight)
+	m.listViewport.SetWidth(ui.GetAvailableWidth(m.windowWidth) - 4)
 	m.listViewport.SetContent(listContent.String())
 	m.listViewport.YPosition = 0
 

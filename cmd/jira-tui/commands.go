@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -211,8 +210,6 @@ func (m model) postNewIssue(data *NewIssueFormData) tea.Cmd {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
-
-		log.Printf("Data: %+v", data)
 
 		var projectID string
 		for _, p := range m.projects {
@@ -1038,7 +1035,7 @@ func (m model) renderWorklogsPanel(width int) string {
 		style = ui.PanelInactiveStyle
 	}
 
-	return style.Width(width).Render(viewport)
+	return style.Width(width).Height(m.detailLayout.worklogsHeight).Render(viewport)
 }
 
 func (m model) getUserName(accountID string) string {
@@ -1107,7 +1104,7 @@ func (m model) renderChildrenPanel(width int) string {
 		style = ui.PanelInactiveStyle
 	}
 
-	return style.Width(width).Render(viewport)
+	return style.Width(width).Height(m.detailLayout.childrenHeight).Render(viewport)
 }
 
 func (m model) renderSimpleBackground() string {

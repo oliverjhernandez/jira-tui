@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/ansi"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -203,7 +203,7 @@ func calculateColumnWidths(rows [][]string, maxWidth int) []int {
 	for _, row := range rows {
 		for i, cell := range row {
 			if i < numCols {
-				cellWidth := ansi.PrintableRuneWidth(cell)
+				cellWidth := ansi.StringWidth(cell)
 				if cellWidth > widths[i] {
 					widths[i] = cellWidth
 				}

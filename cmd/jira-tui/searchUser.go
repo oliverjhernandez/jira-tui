@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		switch keyMsg.String() {
+	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
+		switch keyPressMsg.String() {
 		case "esc":
 			m.textInput.SetValue("")
 			m.textInput.Blur()
@@ -68,7 +69,7 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchUserView() string {
-	bg := m.renderSimpleBackground()
+	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
 
@@ -99,11 +100,17 @@ func (m model) renderSearchUserView() string {
 	}, "  ")
 	modalContent.WriteString("\n" + footer)
 
-	return ui.RenderCenteredModal(
-		modalContent.String(),
-		bg,
-		m.windowWidth,
-		m.windowHeight,
-		ui.ModalTextInputStyle,
-	)
+	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+
+	modalWidth := lipgloss.Width(styledModal)
+	modalHeight := lipgloss.Height(styledModal)
+
+	y := (m.windowHeight - modalHeight) / 2
+	x := (m.windowWidth - modalWidth) / 2
+
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	comp := lipgloss.NewCompositor(bg, fg)
+
+	return comp.Render()
 }
