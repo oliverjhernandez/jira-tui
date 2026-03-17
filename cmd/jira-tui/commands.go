@@ -735,7 +735,7 @@ func (m model) calculateDetailLayout() detailLayout {
 	descHeight := leftColumnFreeHeight / 2
 	commentsHeight := leftColumnFreeHeight / 2
 
-	worklogsHeight := rightColumnFreeHeight/2 - 1
+	worklogsHeight := rightColumnFreeHeight / 2
 	childrenHeight := rightColumnFreeHeight / 2
 
 	return detailLayout{
