@@ -230,7 +230,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case childrenLoadedMsg:
 		m.searchData = NewSearchFormData()
-		m.issueDetail.Children = msg.children
+		if m.issueDetail != nil {
+			m.issueDetail.Children = msg.children
+		}
 
 		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
 		m.childrenViewport.SetWidth(m.detailLayout.rightColumnWidth)

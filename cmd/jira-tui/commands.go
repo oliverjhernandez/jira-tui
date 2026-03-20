@@ -1051,16 +1051,18 @@ func (m model) getUserName(accountID string) string {
 
 func (m model) buildChildrenContent(width int) string {
 	var content strings.Builder
-	sortIssuesByStatus(m.issueDetail.Children)
-	childrenCount := len(m.issueDetail.Children)
+	if m.issueDetail != nil {
+		sortIssuesByStatus(m.issueDetail.Children)
+		childrenCount := len(m.issueDetail.Children)
 
-	if childrenCount > 0 {
-		for i, c := range m.issueDetail.Children {
-			isSelected := m.childrenCursor == i
-			isLast := i == childrenCount-1
+		if childrenCount > 0 {
+			for i, c := range m.issueDetail.Children {
+				isSelected := m.childrenCursor == i
+				isLast := i == childrenCount-1
 
-			ch := m.renderChildren(c, width, isSelected, isLast)
-			content.WriteString(ch)
+				ch := m.renderChildren(c, width, isSelected, isLast)
+				content.WriteString(ch)
+			}
 		}
 	}
 
@@ -1105,7 +1107,7 @@ func (m model) renderChildrenPanel(width int) string {
 		style = ui.PanelInactiveStyle
 	}
 
-	return style.Width(width).Height(m.detailLayout.childrenHeight).Render(viewport)
+	return style.Width(width).Render(viewport)
 }
 
 func (m model) renderSimpleBackground() string {
