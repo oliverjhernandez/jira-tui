@@ -120,8 +120,7 @@ type model struct {
 	priorities       []jira.Priority
 
 	// Worklogs
-	selectedIssueWorklogs []jira.Worklog
-	worklogTotals         map[string]int
+	worklogTotals map[string]int
 
 	// Transitions
 	transitions       []jira.Transition
@@ -303,11 +302,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case workLogsLoadedMsg:
-		m.selectedIssueWorklogs = msg.workLogs
 		m.loadingWorkLogs = false
 		if m.issueDetail != nil {
+			m.issueDetail.Worklogs = msg.workLogs
 			var total int
-			for _, wl := range m.selectedIssueWorklogs {
+			for _, wl := range m.issueDetail.Worklogs {
 				total += wl.Time
 			}
 			if m.worklogTotals == nil {
@@ -562,7 +561,7 @@ func (m model) View() tea.View {
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:
-		content = m.renderCommentModalView()
+		content = m.renderCommentView()
 	case userSearchView:
 		content = m.renderSearchUserView()
 	case worklogView:

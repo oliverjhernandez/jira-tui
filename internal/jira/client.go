@@ -56,6 +56,7 @@ type IssueDetail struct {
 	Created           string
 	Updated           string
 	Children          []Issue
+	Worklogs          []Worklog
 }
 
 type IssueType struct {

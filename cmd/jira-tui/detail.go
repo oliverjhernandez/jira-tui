@@ -192,7 +192,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 
 			case keyPressMsg.String() == "j":
-				if m.worklogsCursor < len(m.selectedIssueWorklogs)-1 {
+				if m.worklogsCursor < len(m.issueDetail.Worklogs)-1 {
 					m.worklogsCursor++
 				}
 
@@ -218,13 +218,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "e":
 				m.editingWorklog = true
-				m.worklogFormData = m.NewWorklogForm(&m.selectedIssueWorklogs[m.worklogsCursor], 40)
+				m.worklogFormData = m.NewWorklogForm(&m.issueDetail.Worklogs[m.worklogsCursor], 40)
 				m.mode = worklogView
 
 				return m, m.worklogFormData.Form.Init()
 
 			case keyPressMsg.String() == "d":
-				cmd := m.deleteWorkLog(strconv.Itoa(m.selectedIssueWorklogs[m.worklogsCursor].ID))
+				cmd := m.deleteWorkLog(strconv.Itoa(m.issueDetail.Worklogs[m.worklogsCursor].ID))
 				return m, cmd
 			}
 

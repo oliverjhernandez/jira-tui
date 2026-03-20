@@ -833,8 +833,8 @@ func (m model) renderMetadataPanel(width int) string {
 	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
 
 	logged := ""
-	if m.selectedIssueWorklogs != nil {
-		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.selectedIssueWorklogs))
+	if m.issueDetail.Worklogs != nil {
+		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.issueDetail.Worklogs))
 	}
 
 	detailsHeaderLine2 := status + "  " + assignee + "  " + logged
@@ -983,10 +983,10 @@ func (m model) renderCommentsPanel(width int) string {
 
 func (m model) buildWorklogsContent(width int) string {
 	var content strings.Builder
-	wlCount := len(m.selectedIssueWorklogs)
+	wlCount := len(m.issueDetail.Worklogs)
 
 	if wlCount > 0 {
-		for i, w := range m.selectedIssueWorklogs {
+		for i, w := range m.issueDetail.Worklogs {
 			isSelected := m.worklogsCursor == i
 			isLast := i == wlCount-1
 
@@ -1026,6 +1026,7 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 }
 
 func (m model) renderWorklogsPanel(width int) string {
+
 	viewport := m.worklogsViewport.View()
 
 	var style lipgloss.Style
