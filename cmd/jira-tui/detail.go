@@ -283,6 +283,11 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadingDetail = true
 				return m, m.fetchTransitions(m.issueDetail.Children[m.childrenCursor].Key)
 
+			case keyPressMsg.String() == "e":
+				m.mode = estimateView
+				m.estimateData = NewEstimateFormData()
+				return m, m.estimateData.Form.Init()
+
 			case keyPressMsg.String() == "a":
 				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
 				m.mode = userSearchView

@@ -159,7 +159,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
-			cmds = append(cmds, m.postTransitionWithReason(m.issueDetail.Key, transition.ID, reason))
+			cmds = append(cmds, m.postTransitionWithReason(m.activeIssue.Key, transition.ID, reason))
 		}
 	}
 
