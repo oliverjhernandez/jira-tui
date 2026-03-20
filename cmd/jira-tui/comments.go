@@ -55,8 +55,7 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) renderCommentModalView() string {
-	m.detailLayout = m.calculateDetailLayout()
+func (m model) renderCommentView() string {
 	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
