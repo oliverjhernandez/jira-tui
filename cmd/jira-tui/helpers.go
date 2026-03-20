@@ -111,15 +111,15 @@ func timeAgo(date string) string {
 	if diffHours >= oneYear {
 		return datetime.Local().Format("2006/01/02")
 	} else if diffHours >= oneMonth {
-		return strconv.Itoa(diffHours/oneMonth) + " months ago"
+		return strconv.Itoa(diffHours/oneMonth) + "M ago"
 	} else if diffHours >= oneWeek {
-		return strconv.Itoa(diffHours/oneWeek) + " weeks ago"
+		return strconv.Itoa(diffHours/oneWeek) + "w ago"
 	} else if diffHours >= oneDay {
-		return strconv.Itoa(diffHours/oneDay) + " days ago"
+		return strconv.Itoa(diffHours/oneDay) + "d ago"
 	} else if diffHours >= 1 {
-		return strconv.Itoa(diffHours) + " hours ago"
+		return strconv.Itoa(diffHours) + "h ago"
 	} else {
-		return strconv.Itoa(diffMinutes) + " minutes ago"
+		return strconv.Itoa(diffMinutes) + "m ago"
 	}
 }
 

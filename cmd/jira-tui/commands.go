@@ -1005,13 +1005,15 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToString(w.Time))
 	author := ui.WorklogsAuthorStyle.Render(user)
 	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
-	description := ui.WorkLogsDescriptionStyle.Width(width - 4).Render(w.Description)
+	description := ui.WorkLogsDescriptionStyle.Render(w.Description)
+
+	line1 := loggedTime + " " + author + " " + timestamp
 
 	if isSelected {
 		cursor := ui.IconCursor
-		wl.WriteString(cursor + ui.SelectedRowStyle.Render(loggedTime+" "+author+" "+timestamp) + "\n")
+		wl.WriteString(cursor + ui.SelectedRowStyle.MaxWidth(width-4).Render(line1) + "\n")
 	} else {
-		wl.WriteString(loggedTime + " " + author + " " + timestamp + "\n")
+		wl.WriteString(ui.NormalRowStyle.MaxWidth(width-4).Render(line1) + "\n")
 	}
 
 	wl.WriteString(description + "\n")
@@ -1026,7 +1028,6 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 }
 
 func (m model) renderWorklogsPanel(width int) string {
-
 	viewport := m.worklogsViewport.View()
 
 	var style lipgloss.Style
@@ -1036,7 +1037,8 @@ func (m model) renderWorklogsPanel(width int) string {
 		style = ui.PanelInactiveStyle
 	}
 
-	return style.Width(width).Height(m.detailLayout.worklogsHeight).Render(viewport)
+	render := style.Width(width).Render(viewport)
+	return render
 }
 
 func (m model) getUserName(accountID string) string {

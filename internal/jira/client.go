@@ -311,12 +311,6 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 		}
 	}()
 
-	// if strings.Contains(endpoint, "issue") {
-	// 	bodyBytes, _ := io.ReadAll(resp.Body)
-	// 	log.Printf("Response body: %s", string(bodyBytes))
-	// 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	// }
-
 	if len(expectedStatus) == 0 {
 		expectedStatus = []int{http.StatusOK, http.StatusCreated, http.StatusNoContent}
 	}
@@ -1161,8 +1155,6 @@ func (c *Client) PostNewIssue(
 			"originalEstimate": originalEstimate,
 		}
 	}
-
-	log.Printf("Body: %+v", body)
 
 	err := c.doJiraRequest(
 		ctx,
