@@ -234,7 +234,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.issueDetail.Children = msg.children
 		}
 
-		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
 		m.childrenViewport.SetWidth(m.detailLayout.rightColumnWidth)
 		m.childrenViewport.SetHeight(m.detailLayout.childrenHeight)
 		m.childrenViewport.SetContent(childrenContent)
@@ -285,11 +285,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.issueDetail != nil {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
-			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth - 10)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
 			m.descViewport.SetContent(descContent)
 
-			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 10)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
 			m.commentsViewport.SetContent(commentsContent)
 		}
@@ -316,7 +316,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.worklogTotals[m.issueDetail.ID] = total
 
-			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
 			m.worklogsViewport.SetWidth(m.detailLayout.rightColumnWidth)
 			m.worklogsViewport.SetHeight(m.detailLayout.worklogsHeight)
 			m.worklogsViewport.SetContent(worklogsContent)
@@ -467,12 +467,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.issueDetail != nil {
 			m.detailLayout = m.calculateDetailLayout()
 
-			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth - 10)
 			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
 			m.descViewport.SetContent(descContent)
 
-			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 10)
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
 			m.commentsViewport.SetContent(commentsContent)

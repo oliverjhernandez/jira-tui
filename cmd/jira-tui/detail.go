@@ -199,7 +199,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.worklogsCursor * 4
 				m.worklogsViewport.SetYOffset(cursorLine)
 
-				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
 				m.worklogsViewport.SetContent(wlContent)
 
 				return m, nil
@@ -212,7 +212,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.worklogsCursor * 4
 				m.worklogsViewport.SetYOffset(cursorLine)
 
-				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth)
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
 				m.worklogsViewport.SetContent(wlContent)
 				return m, nil
 
@@ -236,10 +236,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.childrenCursor++
 				}
 
-				cursorLine := m.childrenCursor * 6
+				cursorLine := m.childrenCursor * 4
 				m.childrenViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
 				m.childrenViewport.SetContent(chContent)
 
 				return m, nil
@@ -252,7 +252,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.childrenCursor * 4
 				m.childrenViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth)
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
 				m.childrenViewport.SetContent(chContent)
 				return m, nil
 
