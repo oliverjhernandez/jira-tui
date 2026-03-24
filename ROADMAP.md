@@ -61,7 +61,7 @@ This document tracks planned features and improvements for jira-tui.
 - [ ] **Tab system** - Add tab structure (Active Work | Completed) with `[`
       `]` navigation
 - [ ] **Completed tab** - JQL query for Done issues: `status = Done AND
-  updated >= -7d`, sorted by completion date
+updated >= -7d`, sorted by completion date
 
 ### Detail View Enhancements
 
@@ -153,6 +153,8 @@ This document tracks planned features and improvements for jira-tui.
 - [x] **Terminal resize handling** - Handle terminal resize events gracefully
       without breaking layout
 - [x] Priority is different in m.issues than m.issueDetail
+
+- [ ] **Info panel misaligned** - Panel doesnt span window width
 
 ## Implementation Notes
 
