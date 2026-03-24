@@ -265,7 +265,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.newIssueData.Form.Init()
 
 			case keyPressMsg.String() == "t":
-				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
+				if m.issueDetail != nil {
+					m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
+				}
 
 				if m.issueDetail.Children[m.childrenCursor].Description == nil {
 					m.statusMessage = "Cannot transition, missing description."

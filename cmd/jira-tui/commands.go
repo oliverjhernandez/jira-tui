@@ -899,7 +899,7 @@ func (m model) buildDescriptionContent(width int) string {
 
 	if m.issueDetail.Description != nil {
 		descText := jira.ExtractText(m.issueDetail.Description, width-4)
-		wrappedDesc := ui.DetailValueStyle.Width(width - 4).Render(descText)
+		wrappedDesc := ui.DetailValueStyle.Render(descText)
 		content.WriteString(wrappedDesc + "\n\n")
 	} else {
 		content.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")

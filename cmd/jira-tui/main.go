@@ -275,9 +275,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case issueDetailLoadedMsg:
-		if m.searchData != nil {
-		}
-
 		m.issueDetail = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.loadingDetail = false
@@ -285,12 +282,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.issueDetail != nil {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
-			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth - 10)
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
+			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetContent(descContent)
 
-			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 10)
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
+			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
