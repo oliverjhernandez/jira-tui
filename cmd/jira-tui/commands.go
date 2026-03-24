@@ -857,18 +857,7 @@ func (m model) renderMetadataPanel(width int) string {
 	detailsContent.WriteString(leftHeader + "\n")
 	detailsContent.WriteString(metadataRows)
 
-	var style lipgloss.Style
-	if m.focusedSection == metadataSection {
-		style = ui.PanelActiveStyle
-	} else {
-		style = ui.PanelActiveSecondaryStyle
-	}
-
-	metadataPanel := style.
-		Width(width).
-		Render(detailsContent.String())
-
-	return metadataPanel
+	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection)
 }
 
 func (m model) renderDetailStatusBar() string {
@@ -909,15 +898,7 @@ func (m model) buildDescriptionContent(width int) string {
 
 func (m model) renderDescriptionPanel(width int) string {
 	viewport := m.descViewport.View()
-
-	var style lipgloss.Style
-	if m.focusedSection == descriptionSection {
-		style = ui.PanelActiveStyle
-	} else {
-		style = ui.PanelInactiveStyle
-	}
-
-	return style.Width(width).Render(viewport)
+	return ui.RenderPanelWithLabel("Description", viewport, width, m.focusedSection == descriptionSection)
 }
 
 func (m model) buildCommentsContent(width int) string {
@@ -970,15 +951,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 
 func (m model) renderCommentsPanel(width int) string {
 	viewport := m.commentsViewport.View()
-
-	var style lipgloss.Style
-	if m.focusedSection == commentsSection {
-		style = ui.PanelActiveStyle
-	} else {
-		style = ui.PanelInactiveStyle
-	}
-
-	return style.Width(width).Render(viewport)
+	return ui.RenderPanelWithLabel("Comments", viewport, width, m.focusedSection == commentsSection)
 }
 
 func (m model) buildWorklogsContent(width int) string {
@@ -1029,16 +1002,7 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 
 func (m model) renderWorklogsPanel(width int) string {
 	viewport := m.worklogsViewport.View()
-
-	var style lipgloss.Style
-	if m.focusedSection == worklogsSection {
-		style = ui.PanelActiveStyle
-	} else {
-		style = ui.PanelInactiveStyle
-	}
-
-	render := style.Width(width).Render(viewport)
-	return render
+	return ui.RenderPanelWithLabel("Worklogs", viewport, width, m.focusedSection == worklogsSection)
 }
 
 func (m model) getUserName(accountID string) string {
@@ -1101,15 +1065,7 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 
 func (m model) renderChildrenPanel(width int) string {
 	viewport := m.childrenViewport.View()
-
-	var style lipgloss.Style
-	if m.focusedSection == childrenSection {
-		style = ui.PanelActiveStyle
-	} else {
-		style = ui.PanelInactiveStyle
-	}
-
-	return style.Width(width).Render(viewport)
+	return ui.RenderPanelWithLabel("Children", viewport, width, m.focusedSection == childrenSection)
 }
 
 func (m model) renderSimpleBackground() string {

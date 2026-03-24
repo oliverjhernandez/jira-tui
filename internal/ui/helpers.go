@@ -3,6 +3,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -198,4 +199,36 @@ func GetDetailViewportHeight(windowHeight int) int {
 	headerHeight := 15
 	footerHeight := 1
 	return windowHeight - headerHeight - footerHeight
+}
+
+func RenderPanelWithLabel(label string, content string, width int, active bool) string {
+	var borderColor color.Color
+	if active {
+		borderColor = lipgloss.Color("86")
+	} else {
+		borderColor = lipgloss.Color("240")
+	}
+
+	border := lipgloss.RoundedBorder()
+	topBorderStyler := lipgloss.NewStyle().Foreground(borderColor).Render
+	topLeft := topBorderStyler(border.TopLeft)
+	topRight := topBorderStyler(border.TopRight)
+
+	labelStyle := lipgloss.NewStyle().Foreground(borderColor).Padding(0, 1)
+	renderedLabel := labelStyle.Render(label)
+
+	cellsShort := max(0, width-lipgloss.Width(topLeft+topRight+renderedLabel))
+	gap := strings.Repeat(border.Top, cellsShort)
+	top := topLeft + renderedLabel + topBorderStyler(gap) + topRight
+
+	boxStyle := lipgloss.NewStyle().
+		Border(border).
+		BorderForeground(borderColor).
+		BorderTop(false).
+		Padding(1, 2).
+		Width(width)
+
+	bottom := boxStyle.Render(content)
+
+	return top + "\n" + bottom
 }
