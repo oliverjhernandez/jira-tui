@@ -64,10 +64,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case keyPressMsg.String() == "g" && m.lastKey == "":
 			m.lastKey = "g"
-			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-				return keyTimeoutMsg{}
-			})
-			return m, tick
+			// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+			// 	return keyTimeoutMsg{}
+			// })
+			return m, nil
 
 		case keyPressMsg.String() == "g" && m.lastKey == "g":
 			m.lastKey = ""
@@ -77,10 +77,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case keyPressMsg.String() == "y" && m.lastKey == "":
 			m.lastKey = "y"
-			tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-				return keyTimeoutMsg{}
-			})
-			return m, tick
+			// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
+			// 	return keyTimeoutMsg{}
+			// })
+			return m, nil
 
 		case keyPressMsg.String() == "k" && m.lastKey == "y":
 			m.lastKey = ""
