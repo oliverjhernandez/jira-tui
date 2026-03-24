@@ -284,12 +284,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
-			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
+			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth - 6)
 			m.descViewport.SetContent(descContent)
 
 			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
-			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
+			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth - 6)
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
