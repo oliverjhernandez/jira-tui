@@ -100,6 +100,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case keyPressMsg.String() == "j":
 				m.descViewport.ScrollDown(1)
 				return m, nil
+
 			case keyPressMsg.String() == "k":
 				m.descViewport.ScrollUp(1)
 				return m, nil
@@ -116,7 +117,19 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				textToCopy := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Description yanked to clipboard"
+				return m, nil
 
+			case keyPressMsg.String() == "g" && m.lastKey == "":
+				m.lastKey = "g"
+				return m, nil
+
+			case keyPressMsg.String() == "g" && m.lastKey == "g":
+				m.lastKey = ""
+				m.descViewport.GotoTop()
+				return m, nil
+
+			case keyPressMsg.String() == "G":
+				m.descViewport.GotoBottom()
 				return m, nil
 			}
 		case commentsSection:
