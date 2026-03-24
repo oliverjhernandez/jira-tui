@@ -1087,7 +1087,7 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 		content.WriteString(issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
 	}
 
-	summary := ui.CommentBodyStyle.Width(width - 4).Render(i.Summary)
+	summary := ui.CommentBodyStyle.Render(truncateLongString(i.Summary, width-4))
 	content.WriteString(summary + "\n")
 
 	if !isLast {
