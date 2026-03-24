@@ -955,7 +955,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 		comment.WriteString(author + timestamp + "\n")
 	}
 
-	bodyText := jira.ExtractText(c.Body, width-4)
+	bodyText := jira.ExtractText(c.Body, width)
 	wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
 	comment.WriteString(wrappedBody + "\n")
 

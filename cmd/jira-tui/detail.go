@@ -144,7 +144,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.getCommentCursorLine()
 				m.commentsViewport.SetYOffset(cursorLine)
 
-				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 8)
 				m.commentsViewport.SetContent(commentsContent)
 
 				return m, nil
@@ -157,7 +157,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.getCommentCursorLine()
 				m.commentsViewport.SetYOffset(cursorLine)
 
-				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 8)
 				m.commentsViewport.SetContent(commentsContent)
 				return m, nil
 

@@ -2,6 +2,7 @@ package jira
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -27,11 +28,11 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 	case "heading":
 		return formatHeading(node)
 	case "paragraph":
-		return formatParagraph(node)
+		return formatParagraph(node, panelWidth)
 	case "codeBlock":
 		return formatCodeBlock(node)
 	case "bulletList":
-		return formatBulletList(node, 0)
+		return formatBulletList(node, 0, panelWidth)
 	case "orderedList":
 		return formatOrderedList(node)
 	case "table":
@@ -48,6 +49,16 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 		}
 		return text.String()
 	}
+}
+
+func formatParagraph(node ContentNode, panelWidth int) string {
+	var text strings.Builder
+	for _, node := range node.Content {
+		text.WriteString(extractInlineText(node))
+	}
+	log.Printf("Log String: %s", text.String())
+
+	return lipgloss.NewStyle().Width(panelWidth).Render(text.String())
 }
 
 func extractInlineText(node ContentNode) string {
@@ -79,14 +90,6 @@ func extractInlineText(node ContentNode) string {
 	return text
 }
 
-func formatParagraph(node ContentNode) string {
-	var text strings.Builder
-	for _, node := range node.Content {
-		text.WriteString(extractInlineText(node))
-	}
-	return text.String()
-}
-
 func formatHeading(node ContentNode) string {
 	var text strings.Builder
 	for _, node := range node.Content {
@@ -114,11 +117,11 @@ func formatOrderedList(node ContentNode) string {
 	return items.String()
 }
 
-func formatBulletList(node ContentNode, indent int) string {
+func formatBulletList(node ContentNode, indent int, width int) string {
 	var items strings.Builder
 	for _, item := range node.Content {
 		if item.Type == "listItem" {
-			itemText := formatListItem(item, indent)
+			itemText := formatListItem(item, indent, width)
 			items.WriteString(strings.Repeat("  ", indent) + "• " + itemText + "\n")
 		}
 	}
@@ -136,14 +139,14 @@ func formatMediaSingle(node ContentNode) string {
 	return content.String()
 }
 
-func formatListItem(node ContentNode, indent int) string {
+func formatListItem(node ContentNode, indent int, width int) string {
 	var text strings.Builder
 	for _, child := range node.Content {
 		switch child.Type {
 		case "paragraph":
-			text.WriteString(formatParagraph(child))
+			text.WriteString(formatParagraph(child, width))
 		case "bulletList":
-			text.WriteString(formatBulletList(child, indent+1))
+			text.WriteString(formatBulletList(child, indent+1, width))
 		}
 	}
 	return text.String()
