@@ -450,3 +450,22 @@ var (
 			MarginTop(1).
 			MarginBottom(1)
 )
+
+// ============================================================================
+// TAB STYLES
+// ============================================================================
+
+var (
+	ActiveTabStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("86")).
+			Padding(0, 1)
+
+	InactiveTabStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("240")).
+				Padding(0, 1)
+
+	TabGapStyle = lipgloss.NewStyle().
+			BorderForeground(lipgloss.Color("240"))
+)

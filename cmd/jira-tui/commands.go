@@ -857,7 +857,7 @@ func (m model) renderMetadataPanel(width int) string {
 	detailsContent.WriteString(leftHeader + "\n")
 	detailsContent.WriteString(metadataRows)
 
-	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection)
+	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection, false)
 }
 
 func (m model) renderDetailStatusBar() string {
@@ -898,7 +898,7 @@ func (m model) buildDescriptionContent(width int) string {
 
 func (m model) renderDescriptionPanel(width int) string {
 	viewport := m.descViewport.View()
-	return ui.RenderPanelWithLabel("Description", viewport, width, m.focusedSection == descriptionSection)
+	return ui.RenderPanelWithLabel("Description", viewport, width, m.focusedSection == descriptionSection, false)
 }
 
 func (m model) buildCommentsContent(width int) string {
@@ -951,7 +951,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 
 func (m model) renderCommentsPanel(width int) string {
 	viewport := m.commentsViewport.View()
-	return ui.RenderPanelWithLabel("Comments", viewport, width, m.focusedSection == commentsSection)
+	return ui.RenderPanelWithLabel("Comments", viewport, width, m.focusedSection == commentsSection, false)
 }
 
 func (m model) buildWorklogsContent(width int) string {
@@ -1002,7 +1002,7 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 
 func (m model) renderWorklogsPanel(width int) string {
 	viewport := m.worklogsViewport.View()
-	return ui.RenderPanelWithLabel("Worklogs", viewport, width, m.focusedSection == worklogsSection)
+	return ui.RenderPanelWithLabel("Worklogs", viewport, width, m.focusedSection == worklogsSection, false)
 }
 
 func (m model) getUserName(accountID string) string {
@@ -1065,7 +1065,7 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 
 func (m model) renderChildrenPanel(width int) string {
 	viewport := m.childrenViewport.View()
-	return ui.RenderPanelWithLabel("Children", viewport, width, m.focusedSection == childrenSection)
+	return ui.RenderPanelWithLabel("Children", viewport, width, m.focusedSection == childrenSection, false)
 }
 
 func (m model) renderSimpleBackground() string {
@@ -1076,4 +1076,23 @@ func (m model) renderSimpleBackground() string {
 		Render("")
 
 	return bg
+}
+
+func (m model) renderTabBar(width int) string {
+	tabs := []string{"My Work", "Report"}
+
+	var renderedTabs []string
+	for i, t := range tabs {
+		var style lipgloss.Style
+		if tabIndex(i) == m.activeTab {
+			style = ui.ActiveTabStyle
+		} else {
+			style = ui.InactiveTabStyle
+		}
+		renderedTabs = append(renderedTabs, style.Render(t))
+	}
+
+	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
+	gap := ui.TabGapStyle.Render(strings.Repeat("─", max(0, width-lipgloss.Width(row)-1)))
+	return row + gap
 }

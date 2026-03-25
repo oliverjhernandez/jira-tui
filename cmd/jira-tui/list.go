@@ -290,8 +290,8 @@ func (m model) renderListView() string {
 		}
 	}
 
-	panelsHeight := 6 + // infoPanel height
-		4 + // horizontal borders
+	panelsHeight := 4 + // infoPanel height
+		6 + // horizontal borders and tabs
 		1 // statusBar height
 	m.listViewport.SetHeight(m.windowHeight - panelsHeight)
 	m.listViewport.SetWidth(ui.GetAvailableWidth(m.windowWidth) - 4)
@@ -320,5 +320,5 @@ func (m model) renderListView() string {
 		}, "  "))
 	}
 
-	return ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
+	return ui.RenderPanelWithLabel("Issues", m.listViewport.View(), ui.GetAvailableWidth(m.windowWidth), true, true) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

@@ -38,6 +38,13 @@ const (
 	issueSearchView
 )
 
+type tabIndex int
+
+const (
+	myWorkTab tabIndex = iota
+	reportTab
+)
+
 type userSelectionMode int
 
 const (
@@ -100,6 +107,9 @@ type model struct {
 	commentsViewport viewport.Model
 	worklogsViewport viewport.Model
 	childrenViewport viewport.Model
+	Tabs             []string
+	TabContent       []string
+	activeTab        tabIndex
 
 	// User Data
 	myself *jira.User
@@ -197,6 +207,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.spinner, spinnerCmd = m.spinner.Update(tickMsg)
 		}
 	}
+
+	m.activeTab = myWorkTab
 
 	switch msg := msg.(type) {
 	case myselfLoadedMsg:
@@ -548,39 +560,47 @@ func (m model) View() tea.View {
 		return tea.NewView(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
 	}
 
-	switch m.mode {
-	case listView:
-		content = m.renderListView()
-	case newIssueView:
-		content = m.renderNewIssueView()
-	case detailView:
-		content = m.renderDetailView()
-	case transitionView:
-		content = m.renderTransitionView()
-	case descriptionView:
-		content = m.renderEditDescriptionView()
-	case priorityView:
-		content = m.renderEditPriorityView()
-	case commentView:
-		content = m.renderCommentView()
-	case userSearchView:
-		content = m.renderSearchUserView()
-	case worklogView:
-		content = m.renderWorklogView()
-	case estimateView:
-		content = m.renderPostEstimateView()
-	case cancelReasonView:
-		content = m.renderPostCancelReasonView()
-	case issueSearchView:
-		content = m.renderSearchIssueView()
-	default:
-		content = "Unknown view\n"
+	switch m.activeTab {
+	case myWorkTab:
+		switch m.mode {
+		case listView:
+			content = m.renderListView()
+		case newIssueView:
+			content = m.renderNewIssueView()
+		case detailView:
+			content = m.renderDetailView()
+		case transitionView:
+			content = m.renderTransitionView()
+		case descriptionView:
+			content = m.renderEditDescriptionView()
+		case priorityView:
+			content = m.renderEditPriorityView()
+		case commentView:
+			content = m.renderCommentView()
+		case userSearchView:
+			content = m.renderSearchUserView()
+		case worklogView:
+			content = m.renderWorklogView()
+		case estimateView:
+			content = m.renderPostEstimateView()
+		case cancelReasonView:
+			content = m.renderPostCancelReasonView()
+		case issueSearchView:
+			content = m.renderSearchIssueView()
+		default:
+			content = "Unknown view\n"
+		}
+
+		panelWidth := ui.GetAvailableWidth(m.windowWidth)
+		infoPanel := m.renderInfoPanel(panelWidth)
+
+		tabBar := m.renderTabBar(panelWidth)
+
+		return tea.NewView(infoPanel + "\n" + tabBar + content)
+
 	}
 
-	panelWidth := ui.GetAvailableWidth(m.windowWidth)
-	infoPanel := m.renderInfoPanel(panelWidth)
-
-	return tea.NewView(infoPanel + "\n" + content)
+	return tea.NewView(content)
 }
 
 func main() {
