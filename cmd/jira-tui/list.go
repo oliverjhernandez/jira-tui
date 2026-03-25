@@ -212,6 +212,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchMyIssues()
 
 		case "enter":
+			m.activeIssue = m.selectedIssue
 			sectionsToNavigate := m.sections
 			if m.filteredSections != nil {
 				sectionsToNavigate = m.filteredSections
