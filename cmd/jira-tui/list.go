@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -321,7 +320,5 @@ func (m model) renderListView() string {
 		}, "  "))
 	}
 
-	panelWidth := ui.GetAvailableWidth(m.windowWidth)
-	infoPanel := m.renderInfoPanel(panelWidth)
-	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
+	return ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
 }

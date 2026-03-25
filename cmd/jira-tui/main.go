@@ -577,7 +577,10 @@ func (m model) View() tea.View {
 		content = "Unknown view\n"
 	}
 
-	return tea.NewView(content)
+	panelWidth := ui.GetAvailableWidth(m.windowWidth)
+	infoPanel := m.renderInfoPanel(panelWidth)
+
+	return tea.NewView(infoPanel + "\n" + content)
 }
 
 func main() {
