@@ -6,6 +6,7 @@ import (
 	"log"
 	"maps"
 	"os"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -22,6 +23,8 @@ import (
 const jiraURL = "https://layer7.atlassian.net/browse/"
 
 type viewMode int
+
+const clearMsgTimeout = 5 * time.Second
 
 const (
 	listView viewMode = iota
@@ -342,9 +345,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case transitionCompleteMsg:
-		m.statusMessage = "Issue transitioned successfully"
-		m.mode = detailView
 		var cmds []tea.Cmd
+		m.statusMessage = "Issue transitioned successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+		m.mode = detailView
 		switch m.focusedSection {
 		case metadataSection:
 			m.loadingDetail = true
@@ -365,77 +369,100 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.fetchMyIssues())
 		}
 		m.statusMessage = "New issue created successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		return m, tea.Batch(cmds...)
 
 	case linkIssueCompleteMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Issue liked successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case editedDescriptionMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Description edited successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case editedPriorityMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Priority posted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case postedCommentMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Comment posted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case updatedCommentMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Comment edited successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
-		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case deletedCommentMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Comment deleted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
-		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case postedWorkLog:
+		var cmds []tea.Cmd
 		m.statusMessage = "Worklog posted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		var cmds []tea.Cmd
 		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
 		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case editedWorkLog:
+		var cmds []tea.Cmd
 		m.statusMessage = "Worklog edited successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		var cmds []tea.Cmd
 		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
 		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case deletedWorkLog:
+		var cmds []tea.Cmd
 		m.statusMessage = "Worklog deleted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingDetail = true
 		m.loadingWorkLogs = true
-		var cmds []tea.Cmd
 		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
 		cmds = append(cmds, m.fetchWorkLogs(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case postedEstimateMsg:
+		var cmds []tea.Cmd
 		m.statusMessage = "Estimate posted successfully"
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			if isCancelTransition(*transition) {
@@ -444,11 +471,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.cancelReasonData.Form.Init()
 			}
 			m.pendingTransition = nil
-			return m, tea.Batch(m.postTransition(m.issueDetail.Key, transition.ID, transition.Name))
+			cmds = append(cmds, m.postTransition(m.issueDetail.Key, transition.ID, transition.Name))
+			return m, tea.Batch(cmds...)
 		}
 		m.mode = detailView
 		m.loadingDetail = true
-		return m, tea.Batch(m.fetchIssueDetail(m.issueDetail.Key))
+		cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+		return m, tea.Batch(cmds...)
 
 	case assignUsersLoadedMsg:
 		m.loadingAssignUsers = false
@@ -490,18 +519,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lastKey = ""
 		return m, nil
 
+	case clearStatusMsg:
+		m.statusMessage = ""
+		return m, nil
+
 	case errMsg:
-		log.Printf("ERROR: %s", msg.err)
+		var cmds []tea.Cmd
+
 		m.loadingIssues = false
 		m.loadingDetail = false
 		m.loadingTransitions = false
+
+		log.Printf("ERROR: %s", msg.err)
+
+		m.statusMessage = msg.err.Error()
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		if m.mode == issueSearchView && m.searchData != nil {
 			m.searchData = NewSearchFormData()
 			m.searchData.Err = msg.err
 		}
 
-		return m, nil
+		return m, tea.Batch(cmds...)
 	}
 
 	var viewCmd tea.Cmd
@@ -539,10 +578,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() tea.View {
 	var content string
-
-	// if m.loadingIssues {
-	// 	return tea.NewView("\033[H\033[2J")
-	// }
 
 	if m.err != nil {
 		return tea.NewView(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))

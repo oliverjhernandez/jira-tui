@@ -175,7 +175,7 @@ type IssueLink struct {
 	Type         Link         `json:"type"`
 }
 
-const MonthlyChangeIssue = "IN-913"
+const MonthlyChangeIssue = "IN-1042" // April
 
 type LinkedIssue struct {
 	ID     string         `json:"id"`

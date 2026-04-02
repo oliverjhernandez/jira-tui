@@ -30,31 +30,34 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case keyPressMsg.String() == "y" && m.lastKey == "":
 				m.lastKey = "y"
-				// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-				// 	return keyTimeoutMsg{}
-				// })
 				return m, nil
 
 			case keyPressMsg.String() == "k" && m.lastKey == "y":
+				var cmds []tea.Cmd
 				m.lastKey = ""
 				textToCopy := m.issueDetail.Key
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Key yanked to clipboard"
-				return m, nil
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+				return m, tea.Batch(cmds...)
 
 			case keyPressMsg.String() == "K" && m.lastKey == "y":
+				var cmds []tea.Cmd
 				m.lastKey = ""
 				textToCopy := jiraURL + m.issueDetail.Key
 				yankToClipboard(textToCopy)
 				m.statusMessage = "URL yanked to clipboard"
-				return m, nil
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+				return m, tea.Batch(cmds...)
 
 			case keyPressMsg.String() == "s" && m.lastKey == "y":
+				var cmds []tea.Cmd
 				m.lastKey = ""
 				textToCopy := m.issueDetail.Summary
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Summary yanked to clipboard"
-				return m, nil
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+				return m, tea.Batch(cmds...)
 
 			case keyPressMsg.String() == "t":
 				m.activeIssue = &jira.Issue{
@@ -67,12 +70,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.issueDetail != nil {
 					if m.issueDetail.Description == nil {
 						m.statusMessage = "Cannot transition, missing description."
-						return m, nil
+						return m, m.clearStatusAfter(clearMsgTimeout)
 					}
 
 					if m.issueDetail.OriginalEstimate == "" {
 						m.statusMessage = "Cannot transition, missing original estimate"
-						return m, nil
+						return m, m.clearStatusAfter(clearMsgTimeout)
 					}
 
 					m.mode = transitionView
@@ -107,17 +110,16 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "y" && m.lastKey == "":
 				m.lastKey = "y"
-				// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-				// 	return keyTimeoutMsg{}
-				// })
 				return m, nil
 
 			case keyPressMsg.String() == "y" && m.lastKey == "y":
+				var cmds []tea.Cmd
 				m.lastKey = ""
 				textToCopy := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Description yanked to clipboard"
-				return m, nil
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+				return m, tea.Batch(cmds...)
 
 			case keyPressMsg.String() == "g" && m.lastKey == "":
 				m.lastKey = "g"
@@ -143,11 +145,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyPressMsg.String() == "y" && m.lastKey == "y":
+				var cmds []tea.Cmd
 				m.lastKey = ""
 				textToCopy := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
 				m.statusMessage = "Comment yanked to clipboard"
-				return m, nil
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+				return m, tea.Batch(cmds...)
 
 			case keyPressMsg.String() == "j":
 				if m.commentsCursor < len(m.issueDetail.Comments)-1 {
@@ -284,12 +288,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if m.issueDetail.Children[m.childrenCursor].Description == nil {
 					m.statusMessage = "Cannot transition, missing description."
-					return m, nil
+					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				if m.issueDetail.Children[m.childrenCursor].OriginalEstimate == "" {
 					m.statusMessage = "Cannot transition, missing original estimate"
-					return m, nil
+					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				m.mode = transitionView
@@ -367,9 +371,16 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.worklogFormData.Form.Init()
 
 		case "e":
-			m.mode = estimateView
-			m.estimateData = NewEstimateFormData()
-			return m, m.estimateData.Form.Init()
+			var cmds []tea.Cmd
+			if m.activeIssue != nil {
+				m.mode = estimateView
+				m.estimateData = NewEstimateFormData()
+				cmds = append(cmds, m.estimateData.Form.Init())
+			} else {
+				m.statusMessage = "No active issue selected. Cant open Estimate view"
+				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			}
+			return m, tea.Batch(cmds...)
 
 		case "ctrl+r":
 			if m.loadingDetail {

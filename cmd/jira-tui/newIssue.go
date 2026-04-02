@@ -150,9 +150,6 @@ func (m model) renderNewIssueView() string {
 
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
 
-	// modalWidth := lipgloss.Width(styledModal)
-	// modalHeight := lipgloss.Height(styledModal)
-
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
 

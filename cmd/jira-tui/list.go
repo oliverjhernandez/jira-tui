@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -83,26 +82,31 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case keyPressMsg.String() == "k" && m.lastKey == "y":
+			var cmds []tea.Cmd
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = "Key yanked to clipboard"
-			return m, nil
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
 
 		case keyPressMsg.String() == "K" && m.lastKey == "y":
+			var cmds []tea.Cmd
 			m.lastKey = ""
 			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = "URL yanked to clipboard"
-			return m, nil
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
 
 		case keyPressMsg.String() == "s" && m.lastKey == "y":
+			var cmds []tea.Cmd
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
 			yankToClipboard(textToCopy)
 			m.statusMessage = "Summary yanked to clipboard"
-			return m, nil
-
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
 		}
 
 		switch keyPressMsg.String() {
@@ -128,11 +132,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if len(sectionsToNavigate[prevSection].Issues) > 0 {
 						m.sectionCursor = prevSection
 						m.cursor = len(sectionsToNavigate[prevSection].Issues) - 1
+						m.selectedIssue = sectionsToNavigate[prevSection].Issues[m.cursor]
 						break
 					}
 				}
 			} else {
 				m.cursor--
+				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
 			cursorLine := m.getAbsoluteCursorLine()
@@ -160,11 +166,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if len(sectionsToNavigate[nextSection].Issues) > 0 {
 						m.sectionCursor = nextSection
 						m.cursor = 0
+						m.selectedIssue = sectionsToNavigate[nextSection].Issues[m.cursor]
 						break
 					}
 				}
 			} else {
 				m.cursor++
+				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
 			cursorLine := m.getAbsoluteCursorLine()

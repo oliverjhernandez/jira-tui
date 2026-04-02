@@ -115,6 +115,8 @@ type postedEstimateMsg struct {
 
 type keyTimeoutMsg struct{}
 
+type clearStatusMsg struct{}
+
 type errMsg struct {
 	err error
 }
@@ -1076,4 +1078,11 @@ func (m model) renderSimpleBackground() string {
 		Render("")
 
 	return bg
+}
+
+func (m model) clearStatusAfter(d time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(d)
+		return clearStatusMsg{}
+	}
 }

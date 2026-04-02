@@ -2,7 +2,6 @@ package jira
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -56,7 +55,6 @@ func formatParagraph(node ContentNode, panelWidth int) string {
 	for _, node := range node.Content {
 		text.WriteString(extractInlineText(node))
 	}
-	log.Printf("Log String: %s", text.String())
 
 	return lipgloss.NewStyle().Width(panelWidth).Render(text.String())
 }
