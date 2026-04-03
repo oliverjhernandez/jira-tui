@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -79,10 +80,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					m.mode = transitionView
-					m.loadingTransitions = true
 					m.transitionCursor = 0
-					m.loadingDetail = true
-					return m, m.fetchTransitions(m.issueDetail.Key)
+					m.loadingCount++
+					log.Printf("Count: %d", m.loadingCount)
+					return m, m.fetchTransitionsCmd(m.issueDetail.Key)
 				}
 
 			case keyPressMsg.String() == "a":
@@ -90,11 +91,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Key: m.issueDetail.Key,
 				}
 				m.mode = userSearchView
-				m.loadingAssignUsers = true
 				m.textInput.SetValue("")
 				m.textInput.Focus()
 				m.cursor = 0
-				return m, m.fetchAssignableUsers(m.issueDetail.Key)
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
 
 			}
 
@@ -201,7 +203,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyPressMsg.String() == "d":
-				cmd := m.deleteComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				cmd := m.deleteCommentCmd(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
 				return m, cmd
 			}
 
@@ -241,7 +245,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.worklogFormData.Form.Init()
 
 			case keyPressMsg.String() == "d":
-				cmd := m.deleteWorkLog(strconv.Itoa(m.issueDetail.Worklogs[m.worklogsCursor].ID))
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				cmd := m.deleteWorkLogCmd(strconv.Itoa(m.issueDetail.Worklogs[m.worklogsCursor].ID))
 				return m, cmd
 			}
 
@@ -297,10 +303,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				m.mode = transitionView
-				m.loadingTransitions = true
 				m.transitionCursor = 0
-				m.loadingDetail = true
-				return m, m.fetchTransitions(m.issueDetail.Children[m.childrenCursor].Key)
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				return m, m.fetchTransitionsCmd(m.issueDetail.Children[m.childrenCursor].Key)
 
 			case keyPressMsg.String() == "e":
 				m.mode = estimateView
@@ -310,11 +316,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case keyPressMsg.String() == "a":
 				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
 				m.mode = userSearchView
-				m.loadingAssignUsers = true
 				m.textInput.SetValue("")
 				m.textInput.Focus()
 				m.cursor = 0
-				return m, m.fetchAssignableUsers(m.issueDetail.Children[m.childrenCursor].Key)
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				return m, m.fetchAssignableUsersCmd(m.issueDetail.Children[m.childrenCursor].Key)
 			}
 		}
 
@@ -331,7 +338,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.priorityData = NewPriorityFormData(m.priorities, m.issueDetail.Priority.Name)
 			m.mode = priorityView
 			m.editingPriority = true
-			m.loadingDetail = true
 			return m, m.priorityData.Form.Init()
 
 		case "tab":
@@ -348,15 +354,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = issueSearchView
 			m.searchData = NewSearchFormData()
 			m.issueSelectionMode = linkIssue
-			m.loadingDetail = true
 			return m, m.searchData.Form.Init()
 
 		case "L":
 			m.mode = detailView
 			m.issueSelectionMode = linkIssue
 			if m.issueDetail.IsLinkedToChange {
-				m.loadingDetail = true
-				return m, m.unlinkIssue(m.issueDetail.ChangeIssueLinkID)
+				return m, m.unlinkIssueCmd(m.issueDetail.ChangeIssueLinkID)
 			}
 			return m, nil
 
@@ -383,11 +387,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 
 		case "ctrl+r":
-			if m.loadingDetail {
+			if m.loadingCount > 0 {
 				return m, nil
 			}
-			m.loadingDetail = true
-			return m, m.fetchIssueDetail(m.issueDetail.Key)
+			m.loadingCount++
+			log.Printf("Count: %d", m.loadingCount)
+			return m, m.fetchIssueDetailCmd(m.issueDetail.Key)
 
 		case "esc":
 			var cmds []tea.Cmd
@@ -396,11 +401,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.childrenViewport.SetContent("")
 			m.worklogsViewport.SetContent("")
 			m.textArea.SetValue("")
-			m.loadingIssues = true
 			m.commentsCursor = 0
 			m.worklogsCursor = 0
 			m.childrenCursor = 0
-			cmds = append(cmds, m.fetchMyIssues())
+			m.loadingCount++
+			log.Printf("Count: %d", m.loadingCount)
+			cmds = append(cmds, m.fetchMyIssuesCmd())
 			return m, tea.Batch(cmds...)
 
 		case "q", "ctrl+c":
@@ -423,7 +429,7 @@ func (m model) renderDetailView() string {
 	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth)
 	childrenPanel := m.renderChildrenPanel(m.detailLayout.rightColumnWidth)
 
-	statusBar := m.renderDetailStatusBar()
+	statusBar := m.renderStatusBar()
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, metadataPanel, descriptionPanel, commentsPanel)
 	rightColumn := lipgloss.JoinVertical(lipgloss.Right, worklogPanel, childrenPanel)

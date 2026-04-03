@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -27,23 +28,24 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "@":
 			m.mode = userSearchView
 			m.userSelectionMode = insertMention
-			m.loadingAssignUsers = true
 			m.textInput.SetValue("")
 			m.textInput.Focus()
 			m.cursor = 0
-			return m, m.fetchAssignableUsers(m.issueDetail.Key)
+			m.loadingCount++
+			log.Printf("Count: %d", m.loadingCount)
+			return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
 
 		case "alt+enter", "ctrl+s":
 			var cmd tea.Cmd
 			comment := m.textArea.Value()
 			if m.editingComment {
-				cmd = m.updateComment(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID, comment)
+				cmd = m.updateCommentCmd(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID, comment)
 				m.editingComment = false
 				return m, cmd
 			} else if m.textArea.Value() != "" {
 				m.textArea.Reset()
 				m.mode = detailView
-				cmd = m.postComment(m.issueDetail.Key, comment)
+				cmd = m.postCommentCmd(m.issueDetail.Key, comment)
 				return m, cmd
 			}
 		}

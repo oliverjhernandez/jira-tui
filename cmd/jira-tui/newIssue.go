@@ -125,7 +125,9 @@ func (m model) updateNewIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.newIssueData.Form.State == huh.StateCompleted {
 		m.mode = listView
-		cmds = append(cmds, m.postNewIssue(m.newIssueData))
+		m.loadingCount++
+		m.statusMessage = "Posting new issue"
+		cmds = append(cmds, m.postNewIssueCmd(m.newIssueData))
 	}
 
 	if m.newIssueData.Form.State == huh.StateAborted {

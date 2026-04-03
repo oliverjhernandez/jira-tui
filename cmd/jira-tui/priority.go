@@ -58,7 +58,7 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 		m.editingPriority = false
 		priority := m.priorityData.SelectedPriority
-		cmds = append(cmds, m.postPriority(m.issueDetail.Key, priority))
+		cmds = append(cmds, m.postPriorityCmd(m.issueDetail.Key, priority))
 	}
 
 	return m, tea.Batch(cmds...)

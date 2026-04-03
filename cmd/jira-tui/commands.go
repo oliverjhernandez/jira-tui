@@ -12,6 +12,15 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+type detailLayout struct {
+	leftColumnWidth  int
+	rightColumnWidth int
+	descHeight       int
+	commentsHeight   int
+	worklogsHeight   int
+	childrenHeight   int
+}
+
 // bubbletea messages from commands
 type issuesLoadedMsg struct {
 	issues []jira.Issue
@@ -49,7 +58,7 @@ type transitionsLoadedMsg struct {
 	transitions []jira.Transition
 }
 
-type assignUsersLoadedMsg struct {
+type assignableUsersLoadedMsg struct {
 	users []jira.User
 }
 
@@ -65,53 +74,31 @@ type worklogTotalsLoadedMsg struct {
 	totals map[string]int // issue ID -> total seconds
 }
 
-type transitionCompleteMsg struct {
-	success bool
-}
+type transitionPostedMsg struct{}
 
-type newIssueCompleteMsg struct {
-	success bool
-}
+type assigneePostedMsg struct{}
 
-type linkIssueCompleteMsg struct {
-	success bool
-}
+type newIssuePostedMsg struct{}
 
-type editedDescriptionMsg struct {
-	success bool
-}
+type issueLinkPostedMsg struct{}
 
-type editedPriorityMsg struct {
-	success bool
-}
+type updatedDescriptionMsg struct{}
 
-type postedCommentMsg struct {
-	success bool
-}
+type priorityPostedMsg struct{}
 
-type updatedCommentMsg struct {
-	success bool
-}
+type commentPostedMsg struct{}
 
-type deletedCommentMsg struct {
-	success bool
-}
+type commentUpdatedMsg struct{}
 
-type postedWorkLog struct {
-	success bool
-}
+type commentDeletedMsg struct{}
 
-type editedWorkLog struct {
-	success bool
-}
+type workLogPostedMsg struct{}
 
-type deletedWorkLog struct {
-	success bool
-}
+type workLogUpdatedMsg struct{}
 
-type postedEstimateMsg struct {
-	success bool
-}
+type workLogDeletedMsg struct{}
+
+type estimatePostedMsg struct{}
 
 type keyTimeoutMsg struct{}
 
@@ -121,7 +108,7 @@ type errMsg struct {
 	err error
 }
 
-func (m model) fetchMySelf() tea.Cmd {
+func (m model) fetchMySelfCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -136,7 +123,7 @@ func (m model) fetchMySelf() tea.Cmd {
 	}
 }
 
-func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
+func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -151,7 +138,7 @@ func (m model) fetchIssueDetail(issueKey string) tea.Cmd {
 	}
 }
 
-func (m model) fetchProjects() tea.Cmd {
+func (m model) fetchProjectsCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -177,7 +164,7 @@ func (m model) fetchProjects() tea.Cmd {
 	}
 }
 
-func (m model) fetchIssueTypes() tea.Cmd {
+func (m model) fetchIssueTypesCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -192,7 +179,7 @@ func (m model) fetchIssueTypes() tea.Cmd {
 	}
 }
 
-func (m model) fetchTransitions(issueKey string) tea.Cmd {
+func (m model) fetchTransitionsCmd(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -207,7 +194,7 @@ func (m model) fetchTransitions(issueKey string) tea.Cmd {
 	}
 }
 
-func (m model) postNewIssue(data *NewIssueFormData) tea.Cmd {
+func (m model) postNewIssueCmd(data *NewIssueFormData) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -289,11 +276,11 @@ func (m model) postNewIssue(data *NewIssueFormData) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return newIssueCompleteMsg{success: true}
+		return newIssuePostedMsg{}
 	}
 }
 
-func (m model) postTransition(issueKey, transitionID, transitionName string) tea.Cmd {
+func (m model) postTransitionCmd(issueKey, transitionID, transitionName string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -308,11 +295,11 @@ func (m model) postTransition(issueKey, transitionID, transitionName string) tea
 		if err != nil {
 			return errMsg{err}
 		}
-		return transitionCompleteMsg{success: true}
+		return transitionPostedMsg{}
 	}
 }
 
-func (m model) postTransitionWithReason(issueKey, transitionID, reason string) tea.Cmd {
+func (m model) postTransitionWithReasonCmd(issueKey, transitionID, reason string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -325,11 +312,11 @@ func (m model) postTransitionWithReason(issueKey, transitionID, reason string) t
 			return errMsg{err}
 		}
 
-		return transitionCompleteMsg{success: true}
+		return transitionPostedMsg{}
 	}
 }
 
-func (m model) postAssignee(issueKey, assigneeID string) tea.Cmd {
+func (m model) postAssigneeCmd(issueKey, assigneeID string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -340,11 +327,11 @@ func (m model) postAssignee(issueKey, assigneeID string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return transitionCompleteMsg{success: true}
+		return assigneePostedMsg{}
 	}
 }
 
-func (m model) updateDescription(issueKey, description string) tea.Cmd {
+func (m model) updateDescriptionCmd(issueKey, description string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -355,11 +342,11 @@ func (m model) updateDescription(issueKey, description string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return editedDescriptionMsg{success: true}
+		return updatedDescriptionMsg{}
 	}
 }
 
-func (m model) postPriority(issueKey, priorityName string) tea.Cmd {
+func (m model) postPriorityCmd(issueKey, priorityName string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -370,11 +357,11 @@ func (m model) postPriority(issueKey, priorityName string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return editedPriorityMsg{success: true}
+		return priorityPostedMsg{}
 	}
 }
 
-func (m model) fetchMyIssues() tea.Cmd {
+func (m model) fetchMyIssuesCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -389,7 +376,7 @@ func (m model) fetchMyIssues() tea.Cmd {
 	}
 }
 
-func (m model) fetchEpicChildren(epicKey string) tea.Cmd {
+func (m model) fetchEpicChildrenCmd(epicKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -404,7 +391,7 @@ func (m model) fetchEpicChildren(epicKey string) tea.Cmd {
 	}
 }
 
-func (m model) fetchPriorities() tea.Cmd {
+func (m model) fetchPrioritiesCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -419,7 +406,7 @@ func (m model) fetchPriorities() tea.Cmd {
 	}
 }
 
-func (m model) fetchStatuses(projects []jira.Project) tea.Cmd {
+func (m model) fetchStatusesCmd(projects []jira.Project) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -434,7 +421,7 @@ func (m model) fetchStatuses(projects []jira.Project) tea.Cmd {
 	}
 }
 
-func (m model) postComment(issueKey, comment string) tea.Cmd {
+func (m model) postCommentCmd(issueKey, comment string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -445,11 +432,11 @@ func (m model) postComment(issueKey, comment string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return postedCommentMsg{success: true}
+		return commentPostedMsg{}
 	}
 }
 
-func (m model) updateComment(issueKey, commentID, comment string) tea.Cmd {
+func (m model) updateCommentCmd(issueKey, commentID, comment string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -466,11 +453,11 @@ func (m model) updateComment(issueKey, commentID, comment string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return updatedCommentMsg{success: true}
+		return commentUpdatedMsg{}
 	}
 }
 
-func (m model) deleteComment(issueKey, commentID string) tea.Cmd {
+func (m model) deleteCommentCmd(issueKey, commentID string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -485,11 +472,11 @@ func (m model) deleteComment(issueKey, commentID string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return deletedCommentMsg{success: true}
+		return commentDeletedMsg{}
 	}
 }
 
-func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
+func (m model) fetchAssignableUsersCmd(issueKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -500,11 +487,11 @@ func (m model) fetchAssignableUsers(issueKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return assignUsersLoadedMsg{users}
+		return assignableUsersLoadedMsg{users}
 	}
 }
 
-func (m model) fetchAllUsers() tea.Cmd {
+func (m model) fetchAllUsersCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -519,7 +506,7 @@ func (m model) fetchAllUsers() tea.Cmd {
 	}
 }
 
-func (m model) fetchWorkLogs(issueID string) tea.Cmd {
+func (m model) fetchWorkLogsCmd(issueID string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -534,7 +521,7 @@ func (m model) fetchWorkLogs(issueID string) tea.Cmd {
 	}
 }
 
-func (m model) fetchAllWorklogsTotal(issues []jira.Issue) tea.Cmd {
+func (m model) fetchAllWorklogsTotalCmd(issues []jira.Issue) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -580,7 +567,7 @@ func (m model) fetchAllWorklogsTotal(issues []jira.Issue) tea.Cmd {
 	}
 }
 
-func (m model) postWorkLog(issueID, startDate, accountID, description string, time int) tea.Cmd {
+func (m model) postWorkLogCmd(issueID, startDate, accountID, description string, time int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -598,11 +585,11 @@ func (m model) postWorkLog(issueID, startDate, accountID, description string, ti
 			return errMsg{err}
 		}
 
-		return postedWorkLog{success: true}
+		return workLogPostedMsg{}
 	}
 }
 
-func (m model) putWorkLog(worklogID, issueID, startDate, accountID, description string, time int) tea.Cmd {
+func (m model) putWorkLogCmd(worklogID, issueID, startDate, accountID, description string, time int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -613,11 +600,11 @@ func (m model) putWorkLog(worklogID, issueID, startDate, accountID, description 
 			return errMsg{err}
 		}
 
-		return editedWorkLog{success: true}
+		return workLogUpdatedMsg{}
 	}
 }
 
-func (m model) deleteWorkLog(worklogID string) tea.Cmd {
+func (m model) deleteWorkLogCmd(worklogID string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -628,11 +615,11 @@ func (m model) deleteWorkLog(worklogID string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return deletedWorkLog{success: true}
+		return workLogDeletedMsg{}
 	}
 }
 
-func (m model) postEstimate(issueKey, estimate string) tea.Cmd {
+func (m model) postEstimateCmd(issueKey, estimate string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -643,12 +630,41 @@ func (m model) postEstimate(issueKey, estimate string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return postedEstimateMsg{success: true}
+		return estimatePostedMsg{}
+	}
+}
+
+func (m model) linkIssueCmd(fromKey, toKey string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.PostIssueLink(context.Background(), fromKey, toKey)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return issueLinkPostedMsg{}
+	}
+}
+
+func (m model) unlinkIssueCmd(linkID string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.DeleteIssueLink(context.Background(), linkID)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return issueLinkPostedMsg{}
 	}
 }
 
 func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Section {
-
 	sections := []Section{
 		{Name: "In Progress", CategoryKey: "indeterminate"},
 		{Name: "To Do", CategoryKey: "new"},
@@ -679,45 +695,6 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 	return sections
 }
 
-func (m model) linkIssue(fromKey, toKey string) tea.Cmd {
-	return func() tea.Msg {
-		if m.client == nil {
-			return errMsg{fmt.Errorf("jira client not initialized")}
-		}
-
-		err := m.client.PostIssueLink(context.Background(), fromKey, toKey)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return linkIssueCompleteMsg{success: true}
-	}
-}
-
-func (m model) unlinkIssue(linkID string) tea.Cmd {
-	return func() tea.Msg {
-		if m.client == nil {
-			return errMsg{fmt.Errorf("jira client not initialized")}
-		}
-
-		err := m.client.DeleteIssueLink(context.Background(), linkID)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return linkIssueCompleteMsg{success: true}
-	}
-}
-
-type detailLayout struct {
-	leftColumnWidth  int
-	rightColumnWidth int
-	descHeight       int
-	commentsHeight   int
-	worklogsHeight   int
-	childrenHeight   int
-}
-
 func (m model) calculateDetailLayout() detailLayout {
 	panelWidth := ui.GetAvailableWidth(m.windowWidth)
 	leftColumnWidth := int(float64(panelWidth) * 0.8)
@@ -726,7 +703,7 @@ func (m model) calculateDetailLayout() detailLayout {
 	metadataPanel := m.renderMetadataPanel(leftColumnWidth)
 	metadataPanelHeight := lipgloss.Height(metadataPanel)
 
-	statusBar := m.renderDetailStatusBar()
+	statusBar := m.renderStatusBar()
 	statusBarHeight := lipgloss.Height(statusBar)
 
 	leftFixedHeight := metadataPanelHeight + statusBarHeight + 8 // gaps
@@ -862,24 +839,15 @@ func (m model) renderMetadataPanel(width int) string {
 	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection)
 }
 
-func (m model) renderDetailStatusBar() string {
+func (m model) renderStatusBar() string {
 	var statusBar strings.Builder
-	if m.statusMessage != "" {
-		statusBar.WriteString(m.statusMessage)
-	} else if m.loadingDetail || m.loadingTransitions {
-		statusBar.WriteString(m.spinner.View() + "Loading...")
-	} else {
-		statusBar.WriteString(strings.Join([]string{
-			ui.RenderKeyBind("j/k", "scroll"),
-			ui.RenderKeyBind("d", "description"),
-			ui.RenderKeyBind("p", "priority"),
-			ui.RenderKeyBind("c", "comment"),
-			ui.RenderKeyBind("w", "worklog"),
-			ui.RenderKeyBind("a", "assignee"),
-			ui.RenderKeyBind("t", "transition"),
-			ui.RenderKeyBind("esc", "back"),
-			ui.RenderKeyBind("q", "quit"),
-		}, "  "))
+
+	if m.loadingCount > 0 {
+		if m.statusMessage != "" {
+			statusBar.WriteString("  " + m.spinner.View() + "  " + m.statusMessage)
+		} else {
+			statusBar.WriteString("  " + m.spinner.View() + "  Loading...")
+		}
 	}
 
 	return ui.StatusBarStyle.Render(statusBar.String())

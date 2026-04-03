@@ -74,7 +74,7 @@ func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		description := m.worklogFormData.Description
 		time, _ := parseStringToSeconds(m.worklogFormData.Time)
 		if m.editingWorklog {
-			cmds = append(cmds, m.putWorkLog(
+			cmds = append(cmds, m.putWorkLogCmd(
 				worklogID,
 				issueID,
 				startDate,
@@ -85,7 +85,7 @@ func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editingWorklog = false
 
 		} else {
-			cmds = append(cmds, m.postWorkLog(
+			cmds = append(cmds, m.postWorkLogCmd(
 				issueID,
 				startDate,
 				accountID,

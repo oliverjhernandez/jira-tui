@@ -99,7 +99,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.cancelReasonData.Form.Init()
 				}
 				m.mode = detailView
-				cmds = append(cmds, m.postTransition(m.activeIssue.Key, transition.ID, transition.Name))
+				m.loadingCount++
+				m.statusMessage = "Transitioning " + m.activeIssue.Key
+				cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
 			}
 		}
 	}
@@ -111,14 +113,6 @@ func (m model) renderTransitionView() string {
 	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
-
-	if m.loadingTransitions {
-		modalContent.WriteString("Loading available transitions...\n")
-	} else if len(m.transitions) == 0 {
-		modalContent.WriteString("No transitions available for this issue.\n")
-	} else {
-		modalContent.WriteString(m.transitionData.Form.View())
-	}
 
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
 
@@ -159,7 +153,9 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingTransition != nil {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
-			cmds = append(cmds, m.postTransitionWithReason(m.activeIssue.Key, transition.ID, reason))
+			m.loadingCount++
+			m.statusMessage = "Transitioning " + m.activeIssue.Key
+			cmds = append(cmds, m.postTransitionWithReasonCmd(m.activeIssue.Key, transition.ID, reason))
 		}
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -30,13 +31,19 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				switch m.userSelectionMode {
 				case assignUser:
-					cmds = append(cmds, m.postAssignee(m.activeIssue.Key, user.ID))
+					cmds = append(cmds, m.postAssigneeCmd(m.activeIssue.Key, user.ID))
 					if m.focusedSection == metadataSection {
-						cmds = append(cmds, m.fetchIssueDetail(m.issueDetail.Key))
+						m.loadingCount++
+						log.Printf("Count: %d", m.loadingCount)
+						cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 					} else if m.focusedSection == childrenSection {
-						cmds = append(cmds, m.fetchEpicChildren(m.issueDetail.Key))
+						m.loadingCount++
+						log.Printf("Count: %d", m.loadingCount)
+						cmds = append(cmds, m.fetchEpicChildrenCmd(m.issueDetail.Key))
 					}
-					cmds = append(cmds, m.fetchMyIssues())
+					m.loadingCount++
+					log.Printf("Count: %d", m.loadingCount)
+					cmds = append(cmds, m.fetchMyIssuesCmd())
 					m.filteredUsers = nil
 					return m, tea.Batch(cmds...)
 				case insertMention:
@@ -75,12 +82,6 @@ func (m model) renderSearchUserView() string {
 
 	if m.issueDetail != nil {
 		fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.issueDetail.Key)
-	}
-
-	if m.loadingAssignUsers {
-		modalContent.WriteString(m.spinner.View() + "Loading available users...\n")
-	} else if len(m.usersCache) == 0 {
-		modalContent.WriteString("No assignable users for this issue.\n")
 	}
 
 	modalContent.WriteString(m.textInput.View() + "\n\n")

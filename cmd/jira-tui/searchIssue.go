@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -54,11 +55,11 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.searchData.Form.State == huh.StateCompleted {
 		switch m.issueSelectionMode {
 		case standardIssueSearch:
-			m.loadingDetail = true
-			cmds = append(cmds, m.fetchIssueDetail(m.searchData.Query))
+			m.loadingCount++
+			log.Printf("Count: %d", m.loadingCount)
+			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchData.Query))
 		case linkIssue:
-			m.loadingDetail = true
-			cmds = append(cmds, m.linkIssue(m.issueDetail.Key, jira.MonthlyChangeIssue))
+			cmds = append(cmds, m.linkIssueCmd(m.issueDetail.Key, jira.MonthlyChangeIssue))
 		}
 	}
 

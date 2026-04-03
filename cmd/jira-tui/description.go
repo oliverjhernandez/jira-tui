@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -52,7 +53,9 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mode = detailView
 		m.editingDescription = false
 		description := m.descriptionData.Description
-		cmds = append(cmds, m.updateDescription(m.issueDetail.Key, description))
+		m.loadingCount++
+		log.Printf("Count: %d", m.loadingCount)
+		cmds = append(cmds, m.updateDescriptionCmd(m.issueDetail.Key, description))
 	}
 
 	return m, tea.Batch(cmds...)

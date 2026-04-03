@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
@@ -213,11 +214,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, textinput.Blink
 
 		case "ctrl+r":
-			if m.loadingIssues {
+			if m.loadingCount > 0 {
 				return m, nil
 			}
-			m.loadingIssues = true
-			return m, m.fetchMyIssues()
+			m.loadingCount++
+			log.Printf("Count: %d", m.loadingCount)
+			return m, m.fetchMyIssuesCmd()
 
 		case "enter":
 			m.activeIssue = m.selectedIssue
@@ -228,15 +230,14 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
-				m.loadingDetail = true
-				m.loadingWorkLogs = true
 				m.issueDetail = nil
 
 				var cmds []tea.Cmd
 
-				detailCmd := m.fetchIssueDetail(m.selectedIssue.Key)
+				m.loadingCount++
+				log.Printf("Count: %d", m.loadingCount)
+				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
-				cmds = append(cmds, m.spinner.Tick)
 
 				return m, tea.Batch(cmds...)
 			}
@@ -285,12 +286,7 @@ func (m model) renderListView() string {
 
 			if m.sectionCursor == si && m.cursor == ii {
 				cursor := ui.IconCursor
-
-				if m.loadingDetail {
-					line = m.spinner.View() + " " + ui.SelectedRowStyle.Render(line)
-				} else {
-					line = cursor + ui.SelectedRowStyle.Render(line)
-				}
+				line = cursor + ui.SelectedRowStyle.Render(line)
 			} else {
 				line = "  " + ui.NormalRowStyle.Render(line)
 			}
@@ -308,28 +304,10 @@ func (m model) renderListView() string {
 	m.listViewport.YPosition = 0
 
 	var statusBar strings.Builder
-	if m.statusMessage != "" {
-		statusBar.WriteString(m.statusMessage)
-	} else if m.filtering {
-		statusBar.WriteString(ui.StatusBarKeyStyle.Render("Filter: ") + m.textInput.View() +
-			ui.StatusBarDescStyle.Render(" (enter to confirm, esc to cancel)"))
-	} else if m.textInput.Value() != "" {
-		fmt.Fprintf(&statusBar, "%s '%s' %s | %s | %s",
-			ui.StatusBarDescStyle.Render("Filtered:"),
-			ui.StatusBarKeyStyle.Render(m.textInput.Value()),
-			ui.StatusBarDescStyle.Render(fmt.Sprintf("(%d/%d)", 10, len(m.issues))),
-			ui.RenderKeyBind("/", "change"),
-			ui.RenderKeyBind("esc", "clear"))
-	} else {
-		statusBar.WriteString(strings.Join([]string{
-			ui.RenderKeyBind("/", "filter"),
-			ui.RenderKeyBind("enter", "detail"),
-			ui.RenderKeyBind("t", "transition"),
-			ui.RenderKeyBind("q", "quit"),
-		}, "  "))
-	}
+
+	statusBar.WriteString(m.renderStatusBar())
 
 	panelWidth := ui.GetAvailableWidth(m.windowWidth)
 	infoPanel := m.renderInfoPanel(panelWidth)
-	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + ui.StatusBarStyle.Render(statusBar.String())
+	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + statusBar.String()
 }
