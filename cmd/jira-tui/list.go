@@ -295,7 +295,7 @@ func (m model) renderListView() string {
 		}
 	}
 
-	panelsHeight := 6 + // infoPanel height
+	panelsHeight := 5 + // infoPanel height
 		4 + // horizontal borders
 		1 // statusBar height
 	m.listViewport.SetHeight(m.windowHeight - panelsHeight)
