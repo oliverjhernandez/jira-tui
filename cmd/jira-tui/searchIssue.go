@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -56,7 +55,6 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.issueSelectionMode {
 		case standardIssueSearch:
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchData.Query))
 		case linkIssue:
 			cmds = append(cmds, m.linkIssueCmd(m.issueDetail.Key, jira.MonthlyChangeIssue))

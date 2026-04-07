@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strconv"
 	"time"
 
@@ -82,7 +81,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = transitionView
 					m.transitionCursor = 0
 					m.loadingCount++
-					log.Printf("Count: %d", m.loadingCount)
 					return m, m.fetchTransitionsCmd(m.issueDetail.Key)
 				}
 
@@ -95,7 +93,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				m.cursor = 0
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
 
 			}
@@ -204,7 +201,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "d":
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				cmd := m.deleteCommentCmd(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
 				return m, cmd
 			}
@@ -246,7 +242,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "d":
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				cmd := m.deleteWorkLogCmd(strconv.Itoa(m.issueDetail.Worklogs[m.worklogsCursor].ID))
 				return m, cmd
 			}
@@ -305,7 +300,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = transitionView
 				m.transitionCursor = 0
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				return m, m.fetchTransitionsCmd(m.issueDetail.Children[m.childrenCursor].Key)
 
 			case keyPressMsg.String() == "e":
@@ -320,7 +314,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				m.cursor = 0
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				return m, m.fetchAssignableUsersCmd(m.issueDetail.Children[m.childrenCursor].Key)
 			}
 		}
@@ -391,7 +384,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			return m, m.fetchIssueDetailCmd(m.issueDetail.Key)
 
 		case "esc":
@@ -405,7 +397,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.worklogsCursor = 0
 			m.childrenCursor = 0
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 			return m, tea.Batch(cmds...)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -32,7 +31,6 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.Focus()
 			m.cursor = 0
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
 
 		case "alt+enter", "ctrl+s":

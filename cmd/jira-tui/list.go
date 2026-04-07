@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
@@ -212,7 +211,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			return m, m.fetchMyIssuesCmd()
 
 		case "enter":
@@ -229,7 +227,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var cmds []tea.Cmd
 
 				m.loadingCount++
-				log.Printf("Count: %d", m.loadingCount)
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
 

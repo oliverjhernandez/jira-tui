@@ -204,13 +204,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case myselfLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.myself = msg.me
 		return m, nil
 
 	case issuesLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.issues = msg.issues
 
 		var cmds []tea.Cmd
@@ -229,11 +227,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchStatusesCmd(m.activeProjects))
 
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchAllWorklogsTotalCmd(msg.issues))
 		}
 
@@ -242,7 +238,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case childrenLoadedMsg:
 		log.Printf("childrenLoaded")
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.searchData = NewSearchFormData()
 		if m.issueDetail != nil {
 			m.issueDetail.Children = msg.children
@@ -257,7 +252,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case worklogTotalsLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		if m.worklogTotals == nil {
 			m.worklogTotals = make(map[string]int)
 		}
@@ -266,13 +260,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case prioritiesLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.priorities = msg.priorities
 		return m, nil
 
 	case projectsLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.projects = msg.projects
 		var cmds []tea.Cmd
 
@@ -289,7 +281,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchStatusesCmd(m.activeProjects))
 		}
 
@@ -297,7 +288,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issueDetailLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.issueDetail = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.mode = detailView
@@ -317,12 +307,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		var cmds []tea.Cmd
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		worklogsCmd := m.fetchWorkLogsCmd(m.issueDetail.ID)
 		cmds = append(cmds, worklogsCmd)
 
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		epicChildrenCmd := m.fetchEpicChildrenCmd(m.issueDetail.Key)
 		cmds = append(cmds, epicChildrenCmd)
 
@@ -331,7 +319,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workLogsLoadedMsg:
 		log.Printf("workLogsLoaded")
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		if m.issueDetail != nil {
 			m.issueDetail.Worklogs = msg.workLogs
 			var total int
@@ -353,20 +340,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issueTypesLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.issueTypes = msg.issueTypes
 		return m, nil
 
 	case transitionsLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.transitions = msg.transitions
 		m.transitionData = NewTransitionFormData(msg.transitions)
 		return m, tea.Batch(m.transitionData.Form.Init())
 
 	case statusesLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statuses = msg.statuses
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
@@ -376,7 +360,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionPostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Issue transitioned"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
@@ -384,11 +367,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.focusedSection {
 		case metadataSection:
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		case childrenSection:
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchEpicChildrenCmd(m.issueDetail.Key))
 		}
 
@@ -396,23 +377,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case assigneePostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "User assigned successfully"
 		return m, nil
 
 	case newIssuePostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		var cmds []tea.Cmd
 		if m.issueDetail != nil {
 			m.mode = detailView
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		} else {
 			m.mode = listView
 			m.loadingCount++
-			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 		}
 		m.statusMessage.content = "New issue created successfully"
@@ -422,125 +399,103 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issueLinkPostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Issue liked successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case updatedDescriptionMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		var cmds []tea.Cmd
 		m.statusMessage.content = "Description edited successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case priorityPostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Priority posted successfully"
 		var cmds []tea.Cmd
 		m.statusMessage.content = "Priority posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case commentPostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Comment posted successfully"
 		var cmds []tea.Cmd
 		m.statusMessage.content = "Comment posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case commentUpdatedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Comment edited successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case commentDeletedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Comment deleted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case workLogPostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Worklog posted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchWorkLogsCmd(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case workLogUpdatedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Worklog edited successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchWorkLogsCmd(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case workLogDeletedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchWorkLogsCmd(m.issueDetail.ID))
 		return m, tea.Batch(cmds...)
 
 	case estimatePostedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.statusMessage.content = "Estimate posted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
@@ -558,19 +513,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.mode = detailView
 		m.loadingCount++
-		log.Printf("Count: %d", m.loadingCount)
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
 	case assignableUsersLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.mode = userSearchView
 		return m, nil
 
 	case usersLoadedMsg:
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		m.usersCache = msg.users
 		return m, nil
 
@@ -618,7 +570,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		m.loadingCount--
-		log.Printf("Count: %d", m.loadingCount)
 		log.Printf("ERROR: %s", msg.err)
 
 		m.statusMessage.content = msg.err.Error()

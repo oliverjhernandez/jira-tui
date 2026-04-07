@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -34,15 +33,12 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, m.postAssigneeCmd(m.activeIssue.Key, user.ID))
 					if m.focusedSection == metadataSection {
 						m.loadingCount++
-						log.Printf("Count: %d", m.loadingCount)
 						cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 					} else if m.focusedSection == childrenSection {
 						m.loadingCount++
-						log.Printf("Count: %d", m.loadingCount)
 						cmds = append(cmds, m.fetchEpicChildrenCmd(m.issueDetail.Key))
 					}
 					m.loadingCount++
-					log.Printf("Count: %d", m.loadingCount)
 					cmds = append(cmds, m.fetchMyIssuesCmd())
 					m.filteredUsers = nil
 					return m, tea.Batch(cmds...)
