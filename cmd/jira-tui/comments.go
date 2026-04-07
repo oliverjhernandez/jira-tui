@@ -69,12 +69,6 @@ func (m model) renderCommentView() string {
 
 	modalContent.WriteString(m.textArea.View())
 
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("ctrl+enter", "submit"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString("\n" + footer)
-
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)

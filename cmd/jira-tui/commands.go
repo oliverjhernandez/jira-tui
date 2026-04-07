@@ -788,13 +788,13 @@ func (m model) renderInfoPanel(width int) string {
 }
 
 func (m model) renderMetadataPanel(width int) string {
-	index := ui.StatusBarDescStyle.Render(
+	index := ui.DimTextStyle.Render(
 		fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
 	)
 	var parent string
 	if m.issueDetail.Parent != nil {
 		parent = ui.RenderIssueType(m.issueDetail.Parent.Type, false) + " " +
-			ui.StatusBarDescStyle.Render(m.issueDetail.Parent.Key+" / ")
+			ui.DimTextStyle.Render(m.issueDetail.Parent.Key+" / ")
 	}
 
 	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
@@ -809,11 +809,11 @@ func (m model) renderMetadataPanel(width int) string {
 	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary + " " + linkedIssue
 
 	status := ui.RenderStatusBadge(m.issueDetail.Status)
-	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
+	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
 
 	logged := ""
 	if m.issueDetail.Worklogs != nil {
-		logged = ui.StatusBarDescStyle.Render("Logged: " + extractLoggedTime(m.issueDetail.Worklogs))
+		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.issueDetail.Worklogs))
 	}
 
 	detailsHeaderLine2 := status + "  " + assignee + "  " + logged
@@ -841,16 +841,24 @@ func (m model) renderMetadataPanel(width int) string {
 
 func (m model) renderStatusBar() string {
 	var statusBar strings.Builder
+	var style lipgloss.Style
+
+	switch m.statusMessage.msgType {
+	case infoStatusBarMsg:
+		style = ui.StatusBarInfoStyle
+	case errStatusBarMsg:
+		style = ui.StatusBarErrorStyle
+	}
 
 	if m.loadingCount > 0 {
-		if m.statusMessage != "" {
-			statusBar.WriteString("  " + m.spinner.View() + "  " + m.statusMessage)
+		if m.statusMessage.content != "" {
+			statusBar.WriteString("  " + m.spinner.View() + "  " + m.statusMessage.content)
 		} else {
 			statusBar.WriteString("  " + m.spinner.View() + "  Loading...")
 		}
 	}
 
-	return ui.StatusBarStyle.Render(statusBar.String())
+	return style.Render(statusBar.String())
 }
 
 func (m model) buildDescriptionContent(width int) string {
@@ -861,7 +869,7 @@ func (m model) buildDescriptionContent(width int) string {
 		wrappedDesc := ui.DetailValueStyle.Render(descText)
 		content.WriteString(wrappedDesc + "\n\n")
 	} else {
-		content.WriteString(ui.StatusBarDescStyle.Render("No description") + "\n\n")
+		content.WriteString(ui.StatusBarInfoStyle.Render("No description") + "\n\n")
 	}
 	return content.String()
 }
@@ -896,7 +904,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 	timestamp := ui.CommentTimestampStyle.Render(" • " + timeAgo(c.Created))
 
 	if c.Updated != c.Created {
-		timestamp += ui.StatusBarDescStyle.Render(" (edited)")
+		timestamp += ui.DimTextStyle.Render(" (edited)")
 	}
 
 	if isSelected {
@@ -1012,7 +1020,7 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 	key := i.Key
 	priority := ui.RenderPriority(i.Priority, false)
 	status := ui.RenderStatusBadge(i.Status)
-	assignee := ui.StatusBarDescStyle.Render("@" + strings.ToLower(strings.Split(i.Assignee, " ")[0]))
+	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(i.Assignee, " ")[0]))
 
 	if isSelected {
 		cursor := ui.IconCursor

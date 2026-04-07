@@ -64,9 +64,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case keyPressMsg.String() == "g" && m.lastKey == "":
 			m.lastKey = "g"
-			// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-			// 	return keyTimeoutMsg{}
-			// })
 			return m, nil
 
 		case keyPressMsg.String() == "g" && m.lastKey == "g":
@@ -77,9 +74,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case keyPressMsg.String() == "y" && m.lastKey == "":
 			m.lastKey = "y"
-			// tick := tea.Tick(300*time.Millisecond, func(t time.Time) tea.Msg {
-			// 	return keyTimeoutMsg{}
-			// })
 			return m, nil
 
 		case keyPressMsg.String() == "k" && m.lastKey == "y":
@@ -87,7 +81,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = "Key yanked to clipboard"
+			m.statusMessage.content = "Key yanked to clipboard"
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -96,7 +90,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = "URL yanked to clipboard"
+			m.statusMessage.content = "URL yanked to clipboard"
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -105,7 +99,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
 			yankToClipboard(textToCopy)
-			m.statusMessage = "Summary yanked to clipboard"
+			m.statusMessage.content = "Summary yanked to clipboard"
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 		}
@@ -270,6 +264,7 @@ func (m model) renderListView() string {
 			key := m.columnWidths.RenderKey(issue.Key)
 			priority := ui.RenderPriority(issue.Priority, false)
 			summary := m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
+			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
 			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
 			worklogSeconds := m.worklogTotals[issue.ID]
@@ -280,6 +275,7 @@ func (m model) renderListView() string {
 				key +
 				priority + emptySpace +
 				summary + emptySpace +
+				reporter + emptySpace +
 				statusBadge + emptySpace +
 				assignee + emptySpace +
 				timeSpent
@@ -293,6 +289,8 @@ func (m model) renderListView() string {
 
 			listContent.WriteString(line + "\n")
 		}
+
+		listContent.WriteString("\n\n")
 	}
 
 	panelsHeight := 5 + // infoPanel height

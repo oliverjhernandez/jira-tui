@@ -100,7 +100,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.mode = detailView
 				m.loadingCount++
-				m.statusMessage = "Transitioning " + m.activeIssue.Key
+				m.statusMessage.content = "Transitioning " + m.activeIssue.Key
 				cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
 			}
 		}
@@ -113,6 +113,10 @@ func (m model) renderTransitionView() string {
 	bg := lipgloss.NewLayer(m.renderDetailView())
 
 	var modalContent strings.Builder
+
+	if m.transitions != nil {
+		modalContent.WriteString(m.transitionData.Form.View())
+	}
 
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
 
@@ -154,7 +158,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
 			m.loadingCount++
-			m.statusMessage = "Transitioning " + m.activeIssue.Key
+			m.statusMessage.content = "Transitioning " + m.activeIssue.Key
 			cmds = append(cmds, m.postTransitionWithReasonCmd(m.activeIssue.Key, transition.ID, reason))
 		}
 	}
@@ -172,7 +176,7 @@ func (m model) renderPostCancelReasonView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalContent.WriteString(ui.StatusBarDescStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
+	modalContent.WriteString(ui.DimTextStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())

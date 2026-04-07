@@ -65,6 +65,18 @@ const (
 	childrenSection
 )
 
+type messageType int
+
+const (
+	infoStatusBarMsg = iota
+	errStatusBarMsg
+)
+
+type statusMessage struct {
+	content string
+	msgType messageType
+}
+
 func (f focusedSection) String() string {
 	switch f {
 	case descriptionSection:
@@ -170,7 +182,7 @@ type model struct {
 
 	// UI Elements
 	spinner       spinner.Model
-	statusMessage string
+	statusMessage statusMessage
 	loadingCount  int
 }
 
@@ -365,7 +377,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case transitionPostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Issue transitioned"
+		m.statusMessage.content = "Issue transitioned"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -385,7 +397,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case assigneePostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "User assigned successfully"
+		m.statusMessage.content = "User assigned successfully"
 		return m, nil
 
 	case newIssuePostedMsg:
@@ -403,7 +415,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			log.Printf("Count: %d", m.loadingCount)
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 		}
-		m.statusMessage = "New issue created successfully"
+		m.statusMessage.content = "New issue created successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		return m, tea.Batch(cmds...)
@@ -411,7 +423,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case issueLinkPostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Issue liked successfully"
+		m.statusMessage.content = "Issue liked successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -424,7 +436,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
 		var cmds []tea.Cmd
-		m.statusMessage = "Description edited successfully"
+		m.statusMessage.content = "Description edited successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -435,9 +447,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case priorityPostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Priority posted successfully"
+		m.statusMessage.content = "Priority posted successfully"
 		var cmds []tea.Cmd
-		m.statusMessage = "Priority posted successfully"
+		m.statusMessage.content = "Priority posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -448,9 +460,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commentPostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Comment posted successfully"
+		m.statusMessage.content = "Comment posted successfully"
 		var cmds []tea.Cmd
-		m.statusMessage = "Comment posted successfully"
+		m.statusMessage.content = "Comment posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -461,7 +473,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commentUpdatedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Comment edited successfully"
+		m.statusMessage.content = "Comment edited successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -473,7 +485,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commentDeletedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Comment deleted successfully"
+		m.statusMessage.content = "Comment deleted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -485,7 +497,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workLogPostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Worklog posted successfully"
+		m.statusMessage.content = "Worklog posted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -500,7 +512,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case workLogUpdatedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Worklog edited successfully"
+		m.statusMessage.content = "Worklog edited successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -529,7 +541,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case estimatePostedMsg:
 		m.loadingCount--
 		log.Printf("Count: %d", m.loadingCount)
-		m.statusMessage = "Estimate posted successfully"
+		m.statusMessage.content = "Estimate posted successfully"
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
@@ -599,7 +611,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case clearStatusMsg:
-		m.statusMessage = ""
+		m.statusMessage.content = ""
 		return m, nil
 
 	case errMsg:
@@ -609,7 +621,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		log.Printf("Count: %d", m.loadingCount)
 		log.Printf("ERROR: %s", msg.err)
 
-		m.statusMessage = msg.err.Error()
+		m.statusMessage.content = msg.err.Error()
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		if m.mode == issueSearchView && m.searchData != nil {

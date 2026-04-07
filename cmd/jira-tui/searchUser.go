@@ -94,13 +94,6 @@ func (m model) renderSearchUserView() string {
 		}
 	}
 
-	footer := strings.Join([]string{
-		ui.RenderKeyBind("type", "search"),
-		ui.RenderKeyBind("enter", "select"),
-		ui.RenderKeyBind("esc", "cancel"),
-	}, "  ")
-	modalContent.WriteString("\n" + footer)
-
 	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)

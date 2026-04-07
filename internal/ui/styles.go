@@ -8,16 +8,17 @@ import (
 const (
 	ColWidthType      = 4
 	ColWidthKey       = 12
-	ColWidthSummary   = 50
-	ColWidthStatus    = 13
+	ColWidthSummary   = 24
+	ColWidthStatus    = 18
 	ColWidthAssignee  = 20
+	ColWidthReporter  = 20
 	ColWidthPriority  = 1
 	ColWidthCursor    = 2
 	ColWidthEmpty     = 2
 	ColWidthTimeSpent = 8
 
 	// Total width of a list row (cursor + all columns + spacing)
-	ListRowWidth = ColWidthCursor + ColWidthType + ColWidthEmpty + ColWidthKey + ColWidthPriority + ColWidthEmpty + ColWidthSummary + ColWidthEmpty + ColWidthStatus + ColWidthEmpty + ColWidthAssignee + ColWidthEmpty + ColWidthTimeSpent
+	ListRowWidth = ColWidthCursor + ColWidthType + ColWidthEmpty + ColWidthKey + ColWidthPriority + ColWidthEmpty + ColWidthSummary + ColWidthEmpty + ColWidthReporter + ColWidthEmpty + ColWidthStatus + ColWidthEmpty + ColWidthAssignee + ColWidthEmpty + ColWidthTimeSpent
 )
 
 var (
@@ -95,10 +96,12 @@ var (
 	// Status indicators
 	IconStatusInProgress = `󰐊`
 	IconStatusDone       = `󰗠`
+	IconStatusReady      = `󰑣`
 	IconStatusValidation = `󱀝`
 	IconStatusToDo       = `󱃔`
+	IconStatusBacklog    = ``
 	IconStatusBlocked    = `󰜺`
-	IconStatusDefault    = ``
+	IconStatusSelected   = ``
 
 	// UI elements
 	IconCursor     = "▌"
@@ -195,7 +198,7 @@ var (
 )
 
 // ============================================================================
-// FIELD STYLES (for list columns)
+// FIELD STYLES
 // ============================================================================
 
 var (
@@ -212,6 +215,11 @@ var (
 	AssigneeFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
 				Width(ColWidthAssignee).
+				Align(lipgloss.Left)
+
+	ReporterFieldStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgMuted).
+				Width(ColWidthReporter).
 				Align(lipgloss.Left)
 
 	PriorityFieldStyle = lipgloss.NewStyle().
@@ -235,17 +243,22 @@ var (
 
 var (
 	StatusInProgressStyle = lipgloss.NewStyle().
-				Foreground(ThemeStatusInProgress).
+				Foreground(CatGreen).
 				Width(ColWidthStatus).
 				Bold(true)
 
 	StatusDoneStyle = lipgloss.NewStyle().
-			Foreground(ThemeStatusDone).
+			Foreground(CatOverlay1).
 			Width(ColWidthStatus).
 			Bold(true)
 
+	StatusReadyStyle = lipgloss.NewStyle().
+				Foreground(CatOverlay2).
+				Width(ColWidthStatus).
+				Bold(true)
+
 	StatusValidationStyle = lipgloss.NewStyle().
-				Foreground(ThemeStatusValidation).
+				Foreground(CatPeach).
 				Width(ColWidthStatus).
 				Bold(true)
 
@@ -253,6 +266,16 @@ var (
 			Foreground(ThemeStatusToDo).
 			Width(ColWidthStatus).
 			Bold(true)
+
+	StatusBacklogStyle = lipgloss.NewStyle().
+				Foreground(CatOverlay1).
+				Width(ColWidthStatus).
+				Bold(true)
+
+	StatusSelectedStyle = lipgloss.NewStyle().
+				Foreground(CatLavender).
+				Width(ColWidthStatus).
+				Bold(true)
 
 	StatusBlockedStyle = lipgloss.NewStyle().
 				Foreground(ThemeStatusBlocked).
@@ -374,16 +397,17 @@ var (
 // ============================================================================
 
 var (
-	StatusBarStyle = lipgloss.NewStyle().
-			Foreground(ThemeFgDim).
-			Italic(true)
+	StatusBarInfoStyle = lipgloss.NewStyle().
+				Foreground(CatSubtext1).
+				Italic(true)
 
-	StatusBarKeyStyle = lipgloss.NewStyle().
-				Foreground(ThemeAccent).
+	StatusBarLoadingStyle = lipgloss.NewStyle().
+				Foreground(CatOverlay1).
+				Italic(true)
+
+	StatusBarErrorStyle = lipgloss.NewStyle().
+				Foreground(CatRed).
 				Bold(true)
-
-	StatusBarDescStyle = lipgloss.NewStyle().
-				Foreground(ThemeFgDim)
 )
 
 var (
@@ -392,6 +416,7 @@ var (
 	KeyHeader        = lipgloss.NewStyle().Width(ColWidthKey).Render("KEY")
 	PriorityHeader   = lipgloss.NewStyle().Width(ColWidthPriority).Render("")
 	SummaryHeader    = lipgloss.NewStyle().Width(ColWidthSummary).Render("SUMMARY")
+	ReporterHeader   = lipgloss.NewStyle().Width(ColWidthReporter).Render("REPORTER")
 	StatusHeader     = lipgloss.NewStyle().Width(ColWidthStatus - ColWidthEmpty).Render("STATUS")
 	AssigneeHeader   = lipgloss.NewStyle().Width(ColWidthAssignee).Render("ASSIGNEE")
 )
@@ -401,6 +426,10 @@ var (
 // ============================================================================
 
 var (
+	DimTextStyle = lipgloss.NewStyle().
+			Foreground(ThemeFgDim).
+			Italic(true)
+
 	InfoPanelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(ThemeBorder).

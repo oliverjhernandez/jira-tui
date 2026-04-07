@@ -28,10 +28,10 @@ func FormatTimeSpent(seconds int) string {
 	return "-"
 }
 
-// RenderKeyBind - Helper to render a keybind in status bar: "q quit"
-func RenderKeyBind(key, desc string) string {
-	return StatusBarKeyStyle.Render(key) + " " + StatusBarDescStyle.Render(desc)
-}
+// // RenderKeyBind - Helper to render a keybind in status bar: "q quit"
+// func RenderKeyBind(key, desc string) string {
+// 	return StatusBarKeyStyle.Render(key) + " " + StatusBarDescStyle.Render(desc)
+// }
 
 // RenderSeparator - to create a separator line
 func RenderSeparator(width int) string {
@@ -65,7 +65,11 @@ func RenderFieldStyled(label, value string, width int) string {
 
 func RenderStatusBadge(status string) string {
 	if strings.ToLower(status) == "selected for development" {
-		status = "To Do"
+		status = "Selected"
+	}
+
+	if strings.ToLower(status) == "ready to deploy" {
+		status = "Ready"
 	}
 	statusLower := strings.ToLower(status)
 
@@ -74,14 +78,19 @@ func RenderStatusBadge(status string) string {
 		return StatusInProgressStyle.Render(IconStatusInProgress + " " + status)
 	case strings.Contains(statusLower, "done"), strings.Contains(statusLower, "closed"):
 		return StatusDoneStyle.Render(IconStatusDone + " " + status)
+	case strings.Contains(statusLower, "ready to deploy"), strings.Contains(statusLower, "ready"):
+		return StatusReadyStyle.Render(IconStatusReady + " " + status)
 	case strings.Contains(statusLower, "blocked"):
 		return StatusBlockedStyle.Render(IconStatusBlocked + " " + status)
 	case strings.Contains(statusLower, "to do"):
 		return StatusToDoStyle.Render(IconStatusToDo + " " + status)
 	case strings.Contains(statusLower, "backlog"):
-		return StatusToDoStyle.Render(IconStatusToDo + " " + status)
+		return StatusToDoStyle.Render(IconStatusBacklog + " " + status)
 	case strings.Contains(statusLower, "validación"):
 		return StatusValidationStyle.Render(IconStatusValidation + " " + status)
+	case strings.Contains(statusLower, "selected"):
+		return StatusSelectedStyle.Render(IconStatusSelected + " " + status)
+
 	default:
 		return StatusDefaultStyle.Render("● " + status)
 	}

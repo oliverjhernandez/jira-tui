@@ -31,6 +31,7 @@ type Issue struct {
 	Status           string
 	Type             string
 	Assignee         string
+	Reporter         Reporter
 	Priority         string
 	Project          Project
 	Description      *ContentDoc
