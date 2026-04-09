@@ -56,8 +56,16 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case standardIssueSearch:
 			m.loadingCount++
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchData.Query))
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Searching...",
+			}
 		case linkIssue:
 			cmds = append(cmds, m.linkIssueCmd(m.issueDetail.Key, jira.MonthlyChangeIssue))
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Linking...",
+			}
 		}
 	}
 
@@ -75,10 +83,6 @@ func (m model) renderSearchIssueView() string {
 	}
 
 	bg := lipgloss.NewLayer(bgContent)
-
-	if m.searchData.Form.State == huh.StateCompleted {
-		return m.renderDetailView()
-	}
 
 	var modalContent strings.Builder
 

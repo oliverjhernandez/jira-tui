@@ -100,7 +100,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.mode = detailView
 				m.loadingCount++
-				m.statusMessage.content = "Transitioning " + m.activeIssue.Key
+				m.statusMessage.content = "Transitioning..."
 				cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
 			}
 		}
