@@ -8,7 +8,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
-	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -23,7 +22,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
-		m.statusMessage.content = ""
+		m.statusMessage = statusMessage{}
 
 		switch m.focusedSection {
 		case metadataSection:
@@ -37,7 +36,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := m.issueDetail.Key
 				yankToClipboard(textToCopy)
-				m.statusMessage.content = "Key yanked to clipboard"
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "Key Yanked to clipboard",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -46,7 +48,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := jiraURL + m.issueDetail.Key
 				yankToClipboard(textToCopy)
-				m.statusMessage.content = "URL yanked to clipboard"
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "URL Yanked to clipboard",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -55,7 +60,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := m.issueDetail.Summary
 				yankToClipboard(textToCopy)
-				m.statusMessage.content = "Summary yanked to clipboard"
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "Summary yanked to clipboard",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -69,12 +77,18 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if m.issueDetail != nil {
 					if m.issueDetail.Description == nil {
-						m.statusMessage.content = "Cannot transition, missing description."
+						m.statusMessage = statusMessage{
+							msgType: errStatusBarMsg,
+							content: "Cannot transition, missing description.",
+						}
 						return m, m.clearStatusAfter(clearMsgTimeout)
 					}
 
 					if m.issueDetail.OriginalEstimate == "" {
-						m.statusMessage.content = "Cannot transition, missing original estimate"
+						m.statusMessage = statusMessage{
+							msgType: errStatusBarMsg,
+							content: "Cannot transition, missing original estimate",
+						}
 						return m, m.clearStatusAfter(clearMsgTimeout)
 					}
 
@@ -116,7 +130,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
-				m.statusMessage.content = "Description yanked to clipboard"
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "Description yanked to clipboard",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -148,7 +165,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := jira.ExtractText(m.issueDetail.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
-				m.statusMessage.content = "Comment yanked to clipboard"
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "Comment yanked to clipboard",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -288,12 +308,18 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				if m.issueDetail.Children[m.childrenCursor].Description == nil {
-					m.statusMessage.content = "Cannot transition, missing description."
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing description",
+					}
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				if m.issueDetail.Children[m.childrenCursor].OriginalEstimate == "" {
-					m.statusMessage.content = "Cannot transition, missing original estimate"
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing original estimate",
+					}
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
@@ -374,7 +400,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.estimateData = NewEstimateFormData()
 				cmds = append(cmds, m.estimateData.Form.Init())
 			} else {
-				m.statusMessage.content = "No active issue selected. Cant open Estimate view"
+				m.statusMessage = statusMessage{
+					msgType: errStatusBarMsg,
+					content: "No active issue selected. Cant open Estimate view",
+				}
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			}
 			return m, tea.Batch(cmds...)
@@ -409,10 +438,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderDetailView() string {
-	if m.issueDetail == nil {
-		return ui.PanelActiveSecondaryStyle.Render("Loading issue...")
-	}
-
 	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth)
 	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth)
 	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)

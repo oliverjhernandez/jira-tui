@@ -80,7 +80,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
-			m.statusMessage.content = "Key yanked to clipboard"
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Key Yanked to clipboard",
+			}
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -89,7 +92,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
 			yankToClipboard(textToCopy)
-			m.statusMessage.content = "URL yanked to clipboard"
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "URL yanked to clipboard",
+			}
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -98,7 +104,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
 			yankToClipboard(textToCopy)
-			m.statusMessage.content = "Summary yanked to clipboard"
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Summary yanked to clipboard",
+			}
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 		}
