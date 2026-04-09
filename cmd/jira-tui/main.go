@@ -109,6 +109,7 @@ type model struct {
 	windowWidth      int
 	windowHeight     int
 	detailLayout     detailLayout
+	listLayout       listLayout
 	columnWidths     ui.ColumnWidths
 	listViewport     viewport.Model
 	descViewport     viewport.Model
@@ -236,7 +237,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case childrenLoadedMsg:
-		log.Printf("childrenLoaded")
 		m.loadingCount--
 		m.searchData = NewSearchFormData()
 		if m.issueDetail != nil {
@@ -296,12 +296,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
-			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth - 6)
+			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetContent(descContent)
 
 			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
-			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth - 6)
+			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
@@ -317,7 +317,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case workLogsLoadedMsg:
-		log.Printf("workLogsLoaded")
 		m.loadingCount--
 		if m.issueDetail != nil {
 			m.issueDetail.Worklogs = msg.workLogs
@@ -549,12 +548,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
-		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
+		m.listLayout = m.calculateListLayout()
+		m.listViewport.SetWidth(m.listLayout.panelContentWidth)
+		m.listViewport.SetHeight(m.listLayout.listHeight)
 
-		// INFO: this should be calculated
-		infoPanelHeight := 6
-		m.listViewport.SetWidth(m.windowWidth - 4)
-		m.listViewport.SetHeight(m.windowHeight - 3 - infoPanelHeight)
+		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
 
 		return m, nil
 

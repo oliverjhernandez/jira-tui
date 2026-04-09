@@ -123,17 +123,6 @@ var (
 					BorderForeground(ThemeBorderActive).
 					Padding(1, 2)
 
-	// Panel title
-	PanelTitleStyle = lipgloss.NewStyle().
-			Foreground(ThemeAccent).
-			Bold(true).
-			Padding(0, 1)
-
-	PanelTitleInactiveStyle = lipgloss.NewStyle().
-				Foreground(ThemeFgDim).
-				Bold(true).
-				Padding(0, 1)
-
 	PanelActiveStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color("86")).

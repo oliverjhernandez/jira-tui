@@ -1,6 +1,8 @@
 package ui
 
-import "charm.land/lipgloss/v2"
+import (
+	"charm.land/lipgloss/v2"
+)
 
 type ColumnWidths struct {
 	Type      int
@@ -24,11 +26,11 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		Key:       12,
 		Priority:  1,
 		Cursor:    2,
-		Empty:     2,
+		Empty:     1,
 		TimeSpent: 8,
 	}
 
-	statusWidth := 13
+	statusWidth := 15
 	assigneeWidth := 20
 	reporterWidth := 20
 
@@ -36,10 +38,6 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		statusWidth = 10
 		assigneeWidth = 15
 		reporterWidth = 15
-	} else if availableWidth > 140 {
-		statusWidth = 15
-		assigneeWidth = 25
-		reporterWidth = 25
 	}
 
 	fixedWidths.Status = statusWidth
@@ -50,7 +48,7 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		fixedWidths.Key + fixedWidths.Priority + fixedWidths.Empty +
 		fixedWidths.Status + fixedWidths.Empty +
 		fixedWidths.Assignee + fixedWidths.Empty +
-		fixedWidths.TimeSpent + fixedWidths.Reporter + fixedWidths.Empty
+		fixedWidths.TimeSpent + fixedWidths.Empty + fixedWidths.Reporter + fixedWidths.Empty
 
 	summaryWidth := max(availableWidth-fixedTotal, 50)
 

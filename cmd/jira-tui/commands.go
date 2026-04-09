@@ -21,6 +21,13 @@ type detailLayout struct {
 	childrenHeight   int
 }
 
+type listLayout struct {
+	panelContentWidth int
+	infoHeight        int
+	listHeight        int
+	statusBarHeight   int
+}
+
 // bubbletea messages from commands
 type issuesLoadedMsg struct {
 	issues []jira.Issue
@@ -696,9 +703,9 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 }
 
 func (m model) calculateDetailLayout() detailLayout {
-	panelWidth := ui.GetAvailableWidth(m.windowWidth)
+	panelWidth := m.listLayout.panelContentWidth
 	leftColumnWidth := int(float64(panelWidth) * 0.8)
-	rightColumnWidth := int(float64(panelWidth)*0.2) - 1
+	rightColumnWidth := int(float64(panelWidth) * 0.2)
 
 	metadataPanel := m.renderMetadataPanel(leftColumnWidth)
 	metadataPanelHeight := lipgloss.Height(metadataPanel)
@@ -728,10 +735,27 @@ func (m model) calculateDetailLayout() detailLayout {
 
 }
 
-func (m model) renderInfoPanel(width int) string {
-	panelWidth := ui.GetAvailableWidth(m.windowWidth)
+func (m model) calculateListLayout() listLayout {
+	infoHeight := 5
+	statusBarHeight := 1
+	listHeight := m.windowHeight - infoHeight - statusBarHeight - ui.PanelOverheadHeight
+	panelWidth := m.windowWidth - ui.PanelOverheadWidth
 
-	userName := "loading..."
+	return listLayout{
+		panelWidth,
+		infoHeight,
+		listHeight,
+		statusBarHeight,
+	}
+}
+
+func (m model) renderInfoPanel() string {
+	m.statusMessage = statusMessage{
+		msgType: infoStatusBarMsg,
+		content: "Loading...",
+	}
+
+	var userName string
 	if m.myself != nil {
 		userName = "@" + m.myself.Name
 	}
@@ -758,7 +782,7 @@ func (m model) renderInfoPanel(width int) string {
 
 	userStyled := ui.InfoPanelUserStyle.Render(userName)
 	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
-	line1InnerWidth := width - 6
+	line1InnerWidth := m.listLayout.panelContentWidth
 	line1Gap := line1InnerWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
 	if line1Gap < 0 {
 		line1Gap = 1
@@ -784,7 +808,7 @@ func (m model) renderInfoPanel(width int) string {
 	line3 := totalLoggedStr
 
 	content := line1 + "\n" + line2 + "\n" + line3
-	return ui.InfoPanelStyle.Width(panelWidth).Render(content)
+	return ui.InfoPanelStyle.Render(content)
 }
 
 func (m model) renderMetadataPanel(width int) string {
@@ -856,6 +880,8 @@ func (m model) renderStatusBar() string {
 		} else {
 			statusBar.WriteString("  " + m.spinner.View() + "  Loading...")
 		}
+	} else {
+		statusBar.WriteString("  " + m.statusMessage.content)
 	}
 
 	return style.Render(statusBar.String())

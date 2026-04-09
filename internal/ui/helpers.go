@@ -170,10 +170,6 @@ func RenderIssueType(issueType string, showText bool) string {
 	}
 }
 
-func GetAvailableWidth(windowWidth int) int {
-	return max(120, windowWidth-2)
-}
-
 func GetPanelHeight(windowHeight int) int {
 	infoPanelHeight := 6
 	return windowHeight - 2 - infoPanelHeight
