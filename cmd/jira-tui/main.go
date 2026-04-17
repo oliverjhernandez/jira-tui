@@ -105,8 +105,8 @@ type model struct {
 	mode   viewMode
 	err    error
 
+	windowWidth int
 	// Window & Layout
-	windowWidth      int
 	windowHeight     int
 	detailLayout     detailLayout
 	listLayout       listLayout
@@ -537,12 +537,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.issueDetail != nil {
 			m.detailLayout = m.calculateDetailLayout()
 
-			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth - 10)
+			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.descViewport.SetHeight(m.detailLayout.descHeight)
 			m.descViewport.SetContent(descContent)
 
-			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 10)
+			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
 			m.commentsViewport.SetContent(commentsContent)
@@ -684,21 +684,16 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		mode:             listView,
-		client:           client,
-		textInput:        textInput,
-		textArea:         textAreaBox,
-		windowWidth:      80,
-		windowHeight:     24,
-		spinner:          spinner,
-		worklogTotals:    make(map[string]int),
-		columnWidths:     ui.CalculateColumnWidths(80),
-		listViewport:     viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
-		descViewport:     viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
-		commentsViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
-		worklogsViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
-		childrenViewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(40)),
-		loadingCount:     6, // Init cmds
+		mode:          listView,
+		client:        client,
+		textInput:     textInput,
+		textArea:      textAreaBox,
+		windowWidth:   80,
+		windowHeight:  24,
+		spinner:       spinner,
+		worklogTotals: make(map[string]int),
+		columnWidths:  ui.CalculateColumnWidths(80),
+		loadingCount:  6, // Init cmds
 	})
 
 	if _, err := p.Run(); err != nil {

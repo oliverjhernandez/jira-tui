@@ -448,7 +448,7 @@ func (m model) renderDetailView() string {
 	statusBar := m.renderStatusBar()
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, metadataPanel, descriptionPanel, commentsPanel)
-	rightColumn := lipgloss.JoinVertical(lipgloss.Right, worklogPanel, childrenPanel)
+	rightColumn := lipgloss.JoinVertical(lipgloss.Left, worklogPanel, childrenPanel)
 
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 

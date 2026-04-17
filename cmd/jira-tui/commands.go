@@ -703,7 +703,7 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 }
 
 func (m model) calculateDetailLayout() detailLayout {
-	panelWidth := m.listLayout.panelContentWidth
+	panelWidth := m.windowWidth
 	leftColumnWidth := int(float64(panelWidth) * 0.8)
 	rightColumnWidth := int(float64(panelWidth) * 0.2)
 
@@ -732,7 +732,6 @@ func (m model) calculateDetailLayout() detailLayout {
 		worklogsHeight,
 		childrenHeight,
 	}
-
 }
 
 func (m model) calculateListLayout() listLayout {
@@ -891,7 +890,7 @@ func (m model) buildDescriptionContent(width int) string {
 	var content strings.Builder
 
 	if m.issueDetail.Description != nil {
-		descText := jira.ExtractText(m.issueDetail.Description, width-4)
+		descText := jira.ExtractText(m.issueDetail.Description, width)
 		wrappedDesc := ui.DetailValueStyle.Render(descText)
 		content.WriteString(wrappedDesc + "\n\n")
 	} else {
