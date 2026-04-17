@@ -707,11 +707,8 @@ func (m model) calculateDetailLayout() detailLayout {
 	leftColumnWidth := int(float64(panelWidth) * 0.8)
 	rightColumnWidth := int(float64(panelWidth) * 0.2)
 
-	metadataPanel := m.renderMetadataPanel(leftColumnWidth)
-	metadataPanelHeight := lipgloss.Height(metadataPanel)
-
-	statusBar := m.renderStatusBar()
-	statusBarHeight := lipgloss.Height(statusBar)
+	metadataPanelHeight := 8
+	statusBarHeight := 1
 
 	leftFixedHeight := metadataPanelHeight + statusBarHeight + 8 // gaps
 	rightFixedHeight := statusBarHeight + 8
@@ -1030,9 +1027,10 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToString(w.Time))
 	author := ui.WorklogsAuthorStyle.Render(user)
 	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
-	description := ui.WorkLogsDescriptionStyle.Render(w.Description)
+	description := truncateLongString(ui.WorkLogsDescriptionStyle.Render(w.Description), width)
 
 	line1 := loggedTime + " " + author + " " + timestamp
+	line2 := description
 
 	if isSelected {
 		cursor := ui.IconCursor
@@ -1041,7 +1039,7 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 		wl.WriteString(ui.NormalRowStyle.MaxWidth(width-4).Render(line1) + "\n")
 	}
 
-	wl.WriteString(description + "\n")
+	wl.WriteString(line2 + "\n")
 
 	if !isLast {
 		wl.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
@@ -1103,7 +1101,7 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 		content.WriteString(issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
 	}
 
-	summary := ui.CommentBodyStyle.Render(truncateLongString(i.Summary, width-4))
+	summary := ui.CommentBodyStyle.Render(truncateLongString(i.Summary, width-5))
 	content.WriteString(summary + "\n")
 
 	if !isLast {
