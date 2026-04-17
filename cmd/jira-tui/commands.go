@@ -748,6 +748,55 @@ func (m model) calculateListLayout() listLayout {
 	}
 }
 
+func (m model) buildListContent() string {
+	var listContent strings.Builder
+
+	sectionsToRender := m.sections
+	if m.filteredSections != nil {
+		sectionsToRender = m.filteredSections
+	}
+
+	for si, s := range sectionsToRender {
+		sectionHeader := ui.SectionTitleStyle.Render(fmt.Sprintf("%s (%d)", s.Name, len(s.Issues)))
+		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
+
+		for ii, issue := range s.Issues {
+			issueType := ui.RenderIssueType(issue.Type, false)
+			key := m.columnWidths.RenderKey(issue.Key)
+			priority := ui.RenderPriority(issue.Priority, false)
+			summary := m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
+			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
+			statusBadge := ui.RenderStatusBadge(issue.Status)
+			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
+			worklogSeconds := m.worklogTotals[issue.ID]
+			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
+
+			emptySpace := m.columnWidths.RenderEmptySpace()
+			line := issueType + emptySpace +
+				key +
+				priority + emptySpace +
+				summary + emptySpace +
+				reporter + emptySpace +
+				statusBadge + emptySpace +
+				assignee + emptySpace +
+				timeSpent
+
+			if m.sectionCursor == si && m.cursor == ii {
+				cursor := ui.IconCursor
+				line = cursor + ui.SelectedRowStyle.Render(line)
+			} else {
+				line = "  " + ui.NormalRowStyle.Render(line)
+			}
+
+			listContent.WriteString(line + "\n")
+		}
+
+		listContent.WriteString("\n\n")
+	}
+
+	return listContent.String()
+}
+
 func (m model) renderInfoPanel() string {
 	m.statusMessage = statusMessage{
 		msgType: infoStatusBarMsg,

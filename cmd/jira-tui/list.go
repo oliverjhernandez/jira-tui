@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
@@ -144,6 +141,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
+			m.listViewport.SetContent(m.buildListContent())
 			cursorLine := m.getAbsoluteCursorLine()
 			viewportHeight := m.listViewport.Height()
 			currentOffset := m.listViewport.YOffset()
@@ -178,6 +176,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
+			m.listViewport.SetContent(m.buildListContent())
 			cursorLine := m.getAbsoluteCursorLine()
 			viewportHeight := m.listViewport.Height()
 			currentOffset := m.listViewport.YOffset()
@@ -252,62 +251,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	m.listViewport.SetContent(m.buildListContent())
 	return m, nil
 }
 
 func (m model) renderListView() string {
-	var listContent strings.Builder
-
-	sectionsToRender := m.sections
-	if m.filteredSections != nil {
-		sectionsToRender = m.filteredSections
-	}
-
-	for si, s := range sectionsToRender {
-		sectionHeader := ui.SectionTitleStyle.Render(fmt.Sprintf("%s (%d)", s.Name, len(s.Issues)))
-		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
-
-		for ii, issue := range s.Issues {
-			issueType := ui.RenderIssueType(issue.Type, false)
-			key := m.columnWidths.RenderKey(issue.Key)
-			priority := ui.RenderPriority(issue.Priority, false)
-			summary := m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
-			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
-			statusBadge := ui.RenderStatusBadge(issue.Status)
-			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
-			worklogSeconds := m.worklogTotals[issue.ID]
-			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
-
-			emptySpace := m.columnWidths.RenderEmptySpace()
-			line := issueType + emptySpace +
-				key +
-				priority + emptySpace +
-				summary + emptySpace +
-				reporter + emptySpace +
-				statusBadge + emptySpace +
-				assignee + emptySpace +
-				timeSpent
-
-			if m.sectionCursor == si && m.cursor == ii {
-				cursor := ui.IconCursor
-				line = cursor + ui.SelectedRowStyle.Render(line)
-			} else {
-				line = "  " + ui.NormalRowStyle.Render(line)
-			}
-
-			listContent.WriteString(line + "\n")
-		}
-
-		listContent.WriteString("\n\n")
-	}
-
-	m.listViewport.SetContent(listContent.String())
-	m.listViewport.YPosition = 0
-
-	var statusBar strings.Builder
-
-	statusBar.WriteString(m.renderStatusBar())
-
+	statusBar := m.renderStatusBar()
 	infoPanel := m.renderInfoPanel()
-	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + statusBar.String()
+
+	return infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + statusBar
 }

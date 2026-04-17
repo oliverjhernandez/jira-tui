@@ -353,6 +353,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statuses = msg.statuses
 		if len(m.statuses) > 0 {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
+			m.listViewport.SetContent(m.buildListContent())
 		}
 
 		return m, nil
