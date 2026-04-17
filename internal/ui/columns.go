@@ -19,7 +19,7 @@ type ColumnWidths struct {
 
 func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 	minWidth := 80
-	availableWidth := max(minWidth, terminalWidth-4)
+	availableWidth := max(minWidth, terminalWidth-PanelOverheadWidth)
 
 	fixedWidths := ColumnWidths{
 		Type:      4,

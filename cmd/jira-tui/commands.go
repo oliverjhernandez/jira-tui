@@ -710,8 +710,8 @@ func (m model) calculateDetailLayout() detailLayout {
 	metadataPanelHeight := 8
 	statusBarHeight := 1
 
-	leftFixedHeight := metadataPanelHeight + statusBarHeight + 8 // gaps
-	rightFixedHeight := statusBarHeight + 8
+	leftFixedHeight := metadataPanelHeight + statusBarHeight + (ui.PanelOverheadHeight * 2)
+	rightFixedHeight := statusBarHeight + (ui.PanelOverheadHeight * 2)
 	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
 	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
 
@@ -986,7 +986,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 	}
 
 	bodyText := jira.ExtractText(c.Body, width)
-	wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
+	wrappedBody := ui.CommentBodyStyle.Width(width - ui.PanelOverheadWidth).Render(bodyText)
 	comment.WriteString(wrappedBody + "\n")
 
 	if !isLast {

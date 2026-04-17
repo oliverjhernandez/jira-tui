@@ -145,8 +145,8 @@ func (m model) renderNewIssueView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.6)
 
-	m.textArea.SetWidth(modalWidth - 6)
-	m.textArea.SetHeight(modalHeight - 8)
+	m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
+	m.textArea.SetHeight(modalHeight - ui.PanelOverheadHeight)
 
 	modalContent.WriteString(m.newIssueData.Form.View())
 

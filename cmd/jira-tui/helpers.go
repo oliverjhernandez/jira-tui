@@ -194,8 +194,8 @@ func (m model) getCommentCursorLine() int {
 
 		lines += 1
 
-		bodyText := jira.ExtractText(c.Body, width-4)
-		wrappedBody := ui.CommentBodyStyle.Width(width - 4).Render(bodyText)
+		bodyText := jira.ExtractText(c.Body, width-ui.PanelOverheadWidth)
+		wrappedBody := ui.CommentBodyStyle.Width(width - ui.PanelOverheadWidth).Render(bodyText)
 		lines += lipgloss.Height(wrappedBody)
 
 		lines += 2

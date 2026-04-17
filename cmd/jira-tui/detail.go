@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -180,7 +181,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.getCommentCursorLine()
 				m.commentsViewport.SetYOffset(cursorLine)
 
-				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 8)
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - ui.PanelOverheadWidth)
 				m.commentsViewport.SetContent(commentsContent)
 
 				return m, nil
@@ -193,7 +194,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.getCommentCursorLine()
 				m.commentsViewport.SetYOffset(cursorLine)
 
-				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - 8)
+				commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth - ui.PanelOverheadWidth)
 				m.commentsViewport.SetContent(commentsContent)
 				return m, nil
 
@@ -236,7 +237,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.worklogsCursor * 4
 				m.worklogsViewport.SetYOffset(cursorLine)
 
-				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 				m.worklogsViewport.SetContent(wlContent)
 
 				return m, nil
@@ -249,7 +250,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.worklogsCursor * 4
 				m.worklogsViewport.SetYOffset(cursorLine)
 
-				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
+				wlContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 				m.worklogsViewport.SetContent(wlContent)
 				return m, nil
 
@@ -277,7 +278,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.childrenCursor * 4
 				m.childrenViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 				m.childrenViewport.SetContent(chContent)
 
 				return m, nil
@@ -290,7 +291,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cursorLine := m.childrenCursor * 4
 				m.childrenViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
+				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 				m.childrenViewport.SetContent(chContent)
 				return m, nil
 

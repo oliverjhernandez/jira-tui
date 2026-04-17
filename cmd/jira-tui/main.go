@@ -243,7 +243,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.issueDetail.Children = msg.children
 		}
 
-		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - 10)
+		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 		m.childrenViewport.SetWidth(m.detailLayout.rightColumnWidth)
 		m.childrenViewport.SetHeight(m.detailLayout.childrenHeight)
 		m.childrenViewport.SetContent(childrenContent)
@@ -256,6 +256,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.worklogTotals = make(map[string]int)
 		}
 		maps.Copy(m.worklogTotals, msg.totals)
+		m.listViewport.SetContent(m.buildListContent())
 		return m, nil
 
 	case prioritiesLoadedMsg:
@@ -329,7 +330,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.worklogTotals[m.issueDetail.ID] = total
 
-			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - 10)
+			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 			m.worklogsViewport.SetWidth(m.detailLayout.rightColumnWidth)
 			m.worklogsViewport.SetHeight(m.detailLayout.worklogsHeight)
 			m.worklogsViewport.SetContent(worklogsContent)
@@ -554,6 +555,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.listViewport.SetHeight(m.listLayout.listHeight)
 
 		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
+		m.listViewport.SetContent(m.buildListContent())
 
 		return m, nil
 
