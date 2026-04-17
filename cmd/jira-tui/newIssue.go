@@ -112,7 +112,7 @@ func (m model) updateNewIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 		switch keyPressMsg.String() {
 		case "esc":
-			m.mode = detailView
+			m.mode = listView
 			return m, m.newIssueData.Form.Init()
 		}
 	}
@@ -131,14 +131,14 @@ func (m model) updateNewIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.newIssueData.Form.State == huh.StateAborted {
-		m.mode = detailView
+		m.mode = listView
 	}
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderNewIssueView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
+	bg := lipgloss.NewLayer(m.renderListView())
 
 	var modalContent strings.Builder
 
