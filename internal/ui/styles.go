@@ -81,7 +81,7 @@ var (
 	IconStory         = `󰂺`
 	IconEpic          = `󱐋`
 	IconInvestigacion = `󰍉`
-	IconChildren      = `󰘑`
+	IconSubTask       = `󰘑`
 	IconImprovement   = ""
 	IconDefault       = `󰧞`
 
@@ -308,13 +308,13 @@ var (
 // ============================================================================
 
 var (
-	TypeBaseStyle     = lipgloss.NewStyle()
-	TypeBugStyle      = TypeBaseStyle.Foreground(ThemeError)
-	TypeTaskStyle     = TypeBaseStyle.Foreground(ThemeInfo)
-	TypeStoryStyle    = TypeBaseStyle.Foreground(ThemeSuccess)
-	TypeEpicStyle     = TypeBaseStyle.Foreground(ThemeAccentAlt)
-	TypeInvestStyle   = TypeBaseStyle.Foreground(ThemeAccentAlt)
-	TypeChildrenStyle = TypeBaseStyle.Foreground(ThemeFgMuted)
+	TypeBaseStyle    = lipgloss.NewStyle()
+	TypeBugStyle     = TypeBaseStyle.Foreground(ThemeError)
+	TypeTaskStyle    = TypeBaseStyle.Foreground(ThemeInfo)
+	TypeStoryStyle   = TypeBaseStyle.Foreground(ThemeSuccess)
+	TypeEpicStyle    = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeInvestStyle  = TypeBaseStyle.Foreground(ThemeAccentAlt)
+	TypeSubtaskStyle = TypeBaseStyle.Foreground(ThemeFgMuted)
 )
 
 // ============================================================================

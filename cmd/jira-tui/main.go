@@ -62,7 +62,7 @@ const (
 	descriptionSection
 	commentsSection
 	worklogsSection
-	childrenSection
+	subTasksSection
 )
 
 type messageType int
@@ -85,8 +85,8 @@ func (f focusedSection) String() string {
 		return "commentsSection"
 	case worklogsSection:
 		return "worklogsSection"
-	case childrenSection:
-		return "childrenSection"
+	case subTasksSection:
+		return "subTasksSection"
 	default:
 		return "unknown"
 	}
@@ -115,7 +115,7 @@ type model struct {
 	descViewport     viewport.Model
 	commentsViewport viewport.Model
 	worklogsViewport viewport.Model
-	childrenViewport viewport.Model
+	subTasksViewport viewport.Model
 
 	// User Data
 	myself *jira.User
@@ -156,7 +156,7 @@ type model struct {
 	userCursor       int
 	commentsCursor   int
 	worklogsCursor   int
-	childrenCursor   int
+	subTasksCursor   int
 
 	// Input Components
 	textInput textinput.Model
@@ -236,17 +236,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, tea.Batch(cmds...)
 
-	case childrenLoadedMsg:
+	case subTasksLoadedMsg:
 		m.loadingCount--
 		m.searchData = NewSearchFormData()
 		if m.issueDetail != nil {
-			m.issueDetail.Children = msg.children
+			m.issueDetail.SubTasks = msg.subTasks
 		}
 
-		childrenContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
-		m.childrenViewport.SetWidth(m.detailLayout.rightColumnWidth)
-		m.childrenViewport.SetHeight(m.detailLayout.childrenHeight)
-		m.childrenViewport.SetContent(childrenContent)
+		subTasksContent := m.buildSubTasksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+		m.subTasksViewport.SetWidth(m.detailLayout.rightColumnWidth)
+		m.subTasksViewport.SetHeight(m.detailLayout.subTasksHeight)
+		m.subTasksViewport.SetContent(subTasksContent)
 
 		return m, nil
 
@@ -312,8 +312,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, worklogsCmd)
 
 		m.loadingCount++
-		epicChildrenCmd := m.fetchEpicChildrenCmd(m.issueDetail.Key)
-		cmds = append(cmds, epicChildrenCmd)
+		subTasksCmd := m.fetchSubTasksCmd(m.issueDetail.Key)
+		cmds = append(cmds, subTasksCmd)
 
 		return m, tea.Batch(cmds...)
 
@@ -369,9 +369,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case metadataSection:
 			m.loadingCount++
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
-		case childrenSection:
+		case subTasksSection:
 			m.loadingCount++
-			cmds = append(cmds, m.fetchEpicChildrenCmd(m.issueDetail.Key))
+			cmds = append(cmds, m.fetchSubTasksCmd(m.issueDetail.Key))
 		}
 
 		return m, tea.Batch(cmds...)

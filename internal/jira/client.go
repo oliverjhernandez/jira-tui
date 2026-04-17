@@ -56,7 +56,7 @@ type IssueDetail struct {
 	OriginalEstimate  string
 	Created           string
 	Updated           string
-	Children          []Issue
+	SubTasks          []Issue
 	Worklogs          []Worklog
 }
 
@@ -466,8 +466,8 @@ func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	return c.SearchIssuesJql(ctx, jql)
 }
 
-func (c *Client) GetChildren(ctx context.Context, epicKey string) ([]Issue, error) {
-	jql := fmt.Sprintf("parent = %s ORDER BY status DESC", epicKey)
+func (c *Client) GetSubTasks(ctx context.Context, parentKey string) ([]Issue, error) {
+	jql := fmt.Sprintf("parent = %s ORDER BY status DESC", parentKey)
 	return c.SearchIssuesJql(ctx, jql)
 }
 

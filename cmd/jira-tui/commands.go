@@ -18,7 +18,7 @@ type detailLayout struct {
 	descHeight       int
 	commentsHeight   int
 	worklogsHeight   int
-	childrenHeight   int
+	subTasksHeight   int
 }
 
 type listLayout struct {
@@ -33,8 +33,8 @@ type issuesLoadedMsg struct {
 	issues []jira.Issue
 }
 
-type childrenLoadedMsg struct {
-	children []jira.Issue
+type subTasksLoadedMsg struct {
+	subTasks []jira.Issue
 }
 
 type myselfLoadedMsg struct {
@@ -383,18 +383,18 @@ func (m model) fetchMyIssuesCmd() tea.Cmd {
 	}
 }
 
-func (m model) fetchEpicChildrenCmd(epicKey string) tea.Cmd {
+func (m model) fetchSubTasksCmd(parentKey string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		children, err := m.client.GetChildren(context.Background(), epicKey)
+		subTasks, err := m.client.GetSubTasks(context.Background(), parentKey)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return childrenLoadedMsg{children}
+		return subTasksLoadedMsg{subTasks}
 	}
 }
 
@@ -719,7 +719,7 @@ func (m model) calculateDetailLayout() detailLayout {
 	commentsHeight := leftColumnFreeHeight / 2
 
 	worklogsHeight := rightColumnFreeHeight / 2
-	childrenHeight := rightColumnFreeHeight / 2
+	subTasksHeight := rightColumnFreeHeight / 2
 
 	return detailLayout{
 		leftColumnWidth,
@@ -727,7 +727,7 @@ func (m model) calculateDetailLayout() detailLayout {
 		descHeight,
 		commentsHeight,
 		worklogsHeight,
-		childrenHeight,
+		subTasksHeight,
 	}
 }
 
@@ -1065,18 +1065,18 @@ func (m model) getUserName(accountID string) string {
 	return accountID
 }
 
-func (m model) buildChildrenContent(width int) string {
+func (m model) buildSubTasksContent(width int) string {
 	var content strings.Builder
 	if m.issueDetail != nil {
-		sortIssuesByStatus(m.issueDetail.Children)
-		childrenCount := len(m.issueDetail.Children)
+		sortIssuesByStatus(m.issueDetail.SubTasks)
+		subTasksCount := len(m.issueDetail.SubTasks)
 
-		if childrenCount > 0 {
-			for i, c := range m.issueDetail.Children {
-				isSelected := m.childrenCursor == i
-				isLast := i == childrenCount-1
+		if subTasksCount > 0 {
+			for i, c := range m.issueDetail.SubTasks {
+				isSelected := m.subTasksCursor == i
+				isLast := i == subTasksCount-1
 
-				ch := m.renderChildren(c, width, isSelected, isLast)
+				ch := m.renderSubTask(c, width, isSelected, isLast)
 				content.WriteString(ch)
 			}
 		}
@@ -1085,7 +1085,7 @@ func (m model) buildChildrenContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast bool) string {
+func (m model) renderSubTask(i jira.Issue, width int, isSelected bool, isLast bool) string {
 	var content strings.Builder
 
 	issue := ui.RenderIssueType(i.Type, false)
@@ -1113,9 +1113,9 @@ func (m model) renderChildren(i jira.Issue, width int, isSelected bool, isLast b
 	return content.String()
 }
 
-func (m model) renderChildrenPanel(width int) string {
-	viewport := m.childrenViewport.View()
-	return ui.RenderPanelWithLabel("Children", viewport, width, m.focusedSection == childrenSection)
+func (m model) renderSubTasksPanel(width int) string {
+	viewport := m.subTasksViewport.View()
+	return ui.RenderPanelWithLabel("SubTasks", viewport, width, m.focusedSection == subTasksSection)
 }
 
 func (m model) renderSimpleBackground() string {

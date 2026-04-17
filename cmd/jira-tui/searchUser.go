@@ -34,9 +34,9 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if m.focusedSection == metadataSection {
 						m.loadingCount++
 						cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
-					} else if m.focusedSection == childrenSection {
+					} else if m.focusedSection == subTasksSection {
 						m.loadingCount++
-						cmds = append(cmds, m.fetchEpicChildrenCmd(m.issueDetail.Key))
+						cmds = append(cmds, m.fetchSubTasksCmd(m.issueDetail.Key))
 					}
 					m.loadingCount++
 					cmds = append(cmds, m.fetchMyIssuesCmd())

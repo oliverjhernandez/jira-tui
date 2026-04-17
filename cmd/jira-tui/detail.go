@@ -19,7 +19,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		descriptionSection,
 		commentsSection,
 		worklogsSection,
-		childrenSection,
+		subTasksSection,
 	}
 
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
@@ -267,32 +267,32 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 
-		case childrenSection:
+		case subTasksSection:
 			switch {
 
 			case keyPressMsg.String() == "j":
-				if m.childrenCursor < len(m.issueDetail.Children)-1 {
-					m.childrenCursor++
+				if m.subTasksCursor < len(m.issueDetail.SubTasks)-1 {
+					m.subTasksCursor++
 				}
 
-				cursorLine := m.childrenCursor * 4
-				m.childrenViewport.SetYOffset(cursorLine)
+				cursorLine := m.subTasksCursor * 4
+				m.subTasksViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
-				m.childrenViewport.SetContent(chContent)
+				chContent := m.buildSubTasksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+				m.subTasksViewport.SetContent(chContent)
 
 				return m, nil
 
 			case keyPressMsg.String() == "k":
-				if m.childrenCursor > 0 {
-					m.childrenCursor--
+				if m.subTasksCursor > 0 {
+					m.subTasksCursor--
 				}
 
-				cursorLine := m.childrenCursor * 4
-				m.childrenViewport.SetYOffset(cursorLine)
+				cursorLine := m.subTasksCursor * 4
+				m.subTasksViewport.SetYOffset(cursorLine)
 
-				chContent := m.buildChildrenContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
-				m.childrenViewport.SetContent(chContent)
+				chContent := m.buildSubTasksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+				m.subTasksViewport.SetContent(chContent)
 				return m, nil
 
 			case keyPressMsg.String() == "c":
@@ -305,10 +305,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "t":
 				if m.issueDetail != nil {
-					m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
+					m.activeIssue = &m.issueDetail.SubTasks[m.subTasksCursor]
 				}
 
-				if m.issueDetail.Children[m.childrenCursor].Description == nil {
+				if m.issueDetail.SubTasks[m.subTasksCursor].Description == nil {
 					m.statusMessage = statusMessage{
 						msgType: errStatusBarMsg,
 						content: "Cannot transition, missing description",
@@ -316,7 +316,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
-				if m.issueDetail.Children[m.childrenCursor].OriginalEstimate == "" {
+				if m.issueDetail.SubTasks[m.subTasksCursor].OriginalEstimate == "" {
 					m.statusMessage = statusMessage{
 						msgType: errStatusBarMsg,
 						content: "Cannot transition, missing original estimate",
@@ -327,7 +327,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = transitionView
 				m.transitionCursor = 0
 				m.loadingCount++
-				return m, m.fetchTransitionsCmd(m.issueDetail.Children[m.childrenCursor].Key)
+				return m, m.fetchTransitionsCmd(m.issueDetail.SubTasks[m.subTasksCursor].Key)
 
 			case keyPressMsg.String() == "e":
 				m.mode = estimateView
@@ -335,13 +335,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.estimateData.Form.Init()
 
 			case keyPressMsg.String() == "a":
-				m.activeIssue = &m.issueDetail.Children[m.childrenCursor]
+				m.activeIssue = &m.issueDetail.SubTasks[m.subTasksCursor]
 				m.mode = userSearchView
 				m.textInput.SetValue("")
 				m.textInput.Focus()
 				m.cursor = 0
 				m.loadingCount++
-				return m, m.fetchAssignableUsersCmd(m.issueDetail.Children[m.childrenCursor].Key)
+				return m, m.fetchAssignableUsersCmd(m.issueDetail.SubTasks[m.subTasksCursor].Key)
 			}
 		}
 
@@ -420,12 +420,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmds []tea.Cmd
 			m.mode = listView
 			m.issueDetail = nil
-			m.childrenViewport.SetContent("")
+			m.subTasksViewport.SetContent("")
 			m.worklogsViewport.SetContent("")
 			m.textArea.SetValue("")
 			m.commentsCursor = 0
 			m.worklogsCursor = 0
-			m.childrenCursor = 0
+			m.subTasksCursor = 0
 			m.loadingCount++
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 			return m, tea.Batch(cmds...)
@@ -444,12 +444,12 @@ func (m model) renderDetailView() string {
 	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)
 
 	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth)
-	childrenPanel := m.renderChildrenPanel(m.detailLayout.rightColumnWidth)
+	subTasksPanel := m.renderSubTasksPanel(m.detailLayout.rightColumnWidth)
 
 	statusBar := m.renderStatusBar()
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, metadataPanel, descriptionPanel, commentsPanel)
-	rightColumn := lipgloss.JoinVertical(lipgloss.Left, worklogPanel, childrenPanel)
+	rightColumn := lipgloss.JoinVertical(lipgloss.Left, worklogPanel, subTasksPanel)
 
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 
