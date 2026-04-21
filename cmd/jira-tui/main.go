@@ -185,11 +185,19 @@ type model struct {
 	spinner       spinner.Model
 	statusMessage statusMessage
 	loadingCount  int
+
+	// Pollers
+	detailPolling bool
 }
 
 func (m model) Init() tea.Cmd {
 
 	var cmds []tea.Cmd
+
+	cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+		return myIssuesPollMsg{}
+	}))
+
 	cmds = append(cmds, m.spinner.Tick)
 	cmds = append(cmds, m.fetchMySelfCmd())
 	cmds = append(cmds, m.fetchProjectsCmd())
@@ -288,10 +296,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case issueDetailLoadedMsg:
+		var cmds []tea.Cmd
 		m.loadingCount--
 		m.issueDetail = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.mode = detailView
+
+		if !m.detailPolling {
+			m.detailPolling = true
+			cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+				return issueDetailPollMsg{}
+			}))
+		}
 
 		if m.issueDetail != nil {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
@@ -306,7 +322,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetContent(commentsContent)
 		}
 
-		var cmds []tea.Cmd
 		m.loadingCount++
 		worklogsCmd := m.fetchWorkLogsCmd(m.issueDetail.ID)
 		cmds = append(cmds, worklogsCmd)
@@ -526,6 +541,42 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingCount--
 		m.usersCache = msg.users
 		return m, nil
+
+	case myIssuesPollMsg:
+		var cmds []tea.Cmd
+		m.loadingCount++
+		cmds = append(cmds, m.fetchMyIssuesCmd())
+		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+			return myIssuesPollMsg{}
+		}))
+		log.Print("fetching my issues...")
+		m.statusMessage = statusMessage{
+			"Fetching my issues...",
+			infoStatusBarMsg,
+		}
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+
+		return m, tea.Batch(cmds...)
+
+	case issueDetailPollMsg:
+		var cmds []tea.Cmd
+		if m.mode != detailView {
+			return m, nil
+		}
+		m.loadingCount++
+		detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
+		cmds = append(cmds, detailCmd)
+		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+			return issueDetailPollMsg{}
+		}))
+
+		m.statusMessage = statusMessage{
+			"Fetching issue details...",
+			infoStatusBarMsg,
+		}
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+
+		return m, tea.Batch(cmds...)
 
 	case spinner.TickMsg:
 		var tickCmd tea.Cmd

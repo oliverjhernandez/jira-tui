@@ -111,6 +111,10 @@ type keyTimeoutMsg struct{}
 
 type clearStatusMsg struct{}
 
+type myIssuesPollMsg struct{}
+
+type issueDetailPollMsg struct{}
+
 type errMsg struct {
 	err error
 }

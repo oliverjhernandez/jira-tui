@@ -419,6 +419,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			var cmds []tea.Cmd
 			m.mode = listView
+			m.detailPolling = false
 			m.issueDetail = nil
 			m.subTasksViewport.SetContent("")
 			m.worklogsViewport.SetContent("")
