@@ -549,7 +549,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
 			return myIssuesPollMsg{}
 		}))
-		log.Print("fetching my issues...")
 		m.statusMessage = statusMessage{
 			"Fetching my issues...",
 			infoStatusBarMsg,

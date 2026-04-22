@@ -252,6 +252,30 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 
+		case "alt+enter":
+			var cmds []tea.Cmd
+			sectionsToNavigate := m.sections
+			if m.filteredSections != nil {
+				sectionsToNavigate = m.filteredSections
+			}
+
+			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
+				m.activeIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				if m.activeIssue.Parent != nil {
+					m.issueDetail = nil
+					m.loadingCount++
+					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Parent.Key)
+					m.statusMessage = statusMessage{
+						"Fetching parent...",
+						infoStatusBarMsg,
+					}
+					cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+
+					cmds = append(cmds, detailCmd)
+				}
+			}
+			return m, tea.Batch(cmds...)
+
 		case "esc":
 			m.textInput.SetValue("")
 			m.filteredSections = nil
