@@ -217,11 +217,20 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, textinput.Blink
 
 		case "ctrl+r":
+			var cmds []tea.Cmd
 			if m.loadingCount > 0 {
 				return m, nil
 			}
+			m.statusMessage = statusMessage{
+				"Refreshing...",
+				infoStatusBarMsg,
+			}
+
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			m.loadingCount++
-			return m, m.fetchMyIssuesCmd()
+			cmds = append(cmds, m.fetchMyIssuesCmd())
+
+			return m, tea.Batch(cmds...)
 
 		case "enter":
 			m.activeIssue = m.selectedIssue
