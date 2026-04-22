@@ -198,10 +198,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listViewport.GotoBottom()
 			return m, nil
 
-		case "ctrl+p":
-			sortSectionsByPriority(m.sections)
-			return m, nil
-
 		case "ctrl+s":
 			var cmds []tea.Cmd
 			m.mode = issueSearchView

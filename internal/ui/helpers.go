@@ -103,7 +103,7 @@ func RenderPriority(priority string, showText bool) string {
 	var icon string
 
 	switch {
-	case strings.Contains(p, "crítica"):
+	case strings.Contains(p, "critica") || strings.Contains(p, "crítica"):
 		style = PriorityCriticalStyle
 		icon = IconPriorityCritical
 	case strings.Contains(p, "highest"):
@@ -122,8 +122,8 @@ func RenderPriority(priority string, showText bool) string {
 		style = PriorityLowestStyle
 		icon = IconPriorityLowest
 	default:
-		style = PriorityMediumStyle
-		icon = IconPriorityMedium
+		style = ErrorStyle
+		icon = IconError
 	}
 
 	if showText {

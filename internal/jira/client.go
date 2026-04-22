@@ -32,7 +32,7 @@ type Issue struct {
 	Type             string
 	Assignee         string
 	Reporter         Reporter
-	Priority         string
+	Priority         Priority
 	Parent           *Parent
 	Project          Project
 	Description      *ContentDoc
@@ -226,6 +226,7 @@ type typeField struct {
 }
 
 type priorityField struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -276,6 +277,16 @@ type StatusCategory struct {
 	Key  string `json:"key"`
 	Name string `json:"name"`
 }
+
+var (
+	PriorityOrder = map[string]int{
+		"Highest": 0,
+		"High":    1,
+		"Medium":  2,
+		"Low":     3,
+		"Lowest":  4,
+	}
+)
 
 func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, queryParams url.Values, body any, result any, expectedStatus ...int) error {
 	apiURL := fmt.Sprintf("%s%s", c.jiraURL, endpoint)
@@ -444,8 +455,14 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			Status:   issue.Fields.Status.Name,
 			Type:     issue.Fields.Type.Name,
 			Assignee: assignee,
-			Priority: issue.Fields.Priority.Name,
 			Project:  issue.Fields.Project,
+		}
+
+		if issue.Fields.Priority != nil {
+			i.Priority = Priority{
+				ID:   issue.Fields.Priority.ID,
+				Name: issue.Fields.Priority.Name,
+			}
 		}
 
 		if issue.Fields.Parent != nil {

@@ -110,6 +110,9 @@ var (
 	IconComment    = ""
 	IconAttachment = ""
 	IconTime       = ""
+
+	// Error
+	IconError = ""
 )
 
 // ============================================================================

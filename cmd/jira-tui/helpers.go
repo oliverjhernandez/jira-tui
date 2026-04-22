@@ -16,7 +16,7 @@ import (
 )
 
 var priorityOrder = map[string]int{
-	"Crítica": 1,
+	"Critica": 1,
 	"Highest": 2,
 	"High":    3,
 	"Medium":  4,
@@ -207,7 +207,7 @@ func (m model) getCommentCursorLine() int {
 func sortSectionsByPriority(sections []Section) {
 	for si := range sections {
 		sort.Slice(sections[si].Issues, func(i, j int) bool {
-			return priorityOrder[sections[si].Issues[i].Priority] < priorityOrder[sections[si].Issues[j].Priority]
+			return priorityOrder[sections[si].Issues[i].Priority.Name] < priorityOrder[sections[si].Issues[j].Priority.Name]
 		})
 	}
 }

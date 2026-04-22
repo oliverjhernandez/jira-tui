@@ -752,6 +752,7 @@ func (m model) calculateListLayout() listLayout {
 func (m model) buildListContent() string {
 	var listContent strings.Builder
 
+	sortSectionsByPriority(m.sections)
 	sectionsToRender := m.sections
 	if m.filteredSections != nil {
 		sectionsToRender = m.filteredSections
@@ -764,7 +765,7 @@ func (m model) buildListContent() string {
 		for ii, issue := range s.Issues {
 			issueType := ui.RenderIssueType(issue.Type, false)
 			key := m.columnWidths.RenderKey(issue.Key)
-			priority := ui.RenderPriority(issue.Priority, false)
+			priority := ui.RenderPriority(issue.Priority.Name, false)
 			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
 			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
@@ -1100,7 +1101,7 @@ func (m model) renderSubTask(i jira.Issue, width int, isSelected bool, isLast bo
 
 	issue := ui.RenderIssueType(i.Type, false)
 	key := i.Key
-	priority := ui.RenderPriority(i.Priority, false)
+	priority := ui.RenderPriority(i.Priority.Name, false)
 	status := ui.RenderStatusBadge(i.Status)
 	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(i.Assignee, " ")[0]))
 
