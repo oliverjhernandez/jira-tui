@@ -33,6 +33,7 @@ type Issue struct {
 	Assignee         string
 	Reporter         Reporter
 	Priority         string
+	Parent           *Parent
 	Project          Project
 	Description      *ContentDoc
 	OriginalEstimate string
@@ -412,7 +413,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,priority,project,timeoriginalestimate")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,timeoriginalestimate")
 
 	var searchResp issuesSearchResponse
 
@@ -445,6 +446,14 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			Assignee: assignee,
 			Priority: issue.Fields.Priority.Name,
 			Project:  issue.Fields.Project,
+		}
+
+		if issue.Fields.Parent != nil {
+			i.Parent = &Parent{
+				issue.Fields.Parent.ID,
+				issue.Fields.Parent.Key,
+				issue.Fields.Parent.ParentType,
+			}
 		}
 
 		if issue.Fields.Description != nil {

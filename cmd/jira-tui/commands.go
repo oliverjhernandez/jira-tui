@@ -765,12 +765,18 @@ func (m model) buildListContent() string {
 			issueType := ui.RenderIssueType(issue.Type, false)
 			key := m.columnWidths.RenderKey(issue.Key)
 			priority := ui.RenderPriority(issue.Priority, false)
-			summary := m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
 			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
 			statusBadge := ui.RenderStatusBadge(issue.Status)
 			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
 			worklogSeconds := m.worklogTotals[issue.ID]
 			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
+
+			var summary string
+			if issue.Parent != nil {
+				summary = m.columnWidths.RenderSummary(truncateLongString(ui.DimTextStyle.Render("↳ "+issue.Parent.Key)+" "+issue.Summary, m.columnWidths.Summary))
+			} else {
+				summary = m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
+			}
 
 			emptySpace := m.columnWidths.RenderEmptySpace()
 			line := issueType + emptySpace +
