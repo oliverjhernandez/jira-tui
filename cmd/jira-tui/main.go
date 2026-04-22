@@ -563,7 +563,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.loadingCount++
-		detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
+		detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
 		cmds = append(cmds, detailCmd)
 		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
 			return issueDetailPollMsg{}

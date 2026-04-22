@@ -3,6 +3,7 @@ package main
 import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -260,17 +261,21 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
-				m.activeIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
-				if m.activeIssue.Parent != nil {
+				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				if m.selectedIssue.Parent != nil {
+					m.activeIssue = &jira.Issue{
+						ID:   m.selectedIssue.Parent.ID,
+						Key:  m.selectedIssue.Parent.Key,
+						Type: m.selectedIssue.Parent.Type,
+					}
 					m.issueDetail = nil
 					m.loadingCount++
-					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Parent.Key)
+					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
 					m.statusMessage = statusMessage{
 						"Fetching parent...",
 						infoStatusBarMsg,
 					}
 					cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-
 					cmds = append(cmds, detailCmd)
 				}
 			}
