@@ -42,12 +42,25 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 		return "─────────────────────"
 	default:
 		var text strings.Builder
-		text.WriteString(fmt.Sprintf("Unknown node type: %s", node.Type))
+		text.WriteString(fmt.Sprintf("Unknown node type: %s\n", node.Type))
 		for _, node := range node.Content {
 			text.WriteString(extractInlineText(node))
 		}
 		return text.String()
 	}
+}
+
+func hardWrap(s string, width int) string {
+	lines := strings.Split(s, "\n")
+	var result []string
+	for _, line := range lines {
+		for len(line) > width {
+			result = append(result, line[:width])
+			line = line[width:]
+		}
+		result = append(result, line)
+	}
+	return strings.Join(result, "\n")
 }
 
 func formatParagraph(node ContentNode, panelWidth int) string {
@@ -56,7 +69,8 @@ func formatParagraph(node ContentNode, panelWidth int) string {
 		text.WriteString(extractInlineText(node))
 	}
 
-	return lipgloss.NewStyle().Width(panelWidth).Render(text.String())
+	wrapped := hardWrap(text.String(), panelWidth)
+	return lipgloss.NewStyle().Width(panelWidth).Render(wrapped)
 }
 
 func extractInlineText(node ContentNode) string {
@@ -182,12 +196,12 @@ func formatTable(node ContentNode, panelWidth int) string {
 
 	var output strings.Builder
 	for _, row := range allRows {
+		var cells []string
 		for i, cell := range row {
 			cellStyle := lipgloss.NewStyle().Width(colWidths[i])
-			padded := cellStyle.Render(cell)
-			output.WriteString(padded)
+			cells = append(cells, cellStyle.Render(hardWrap(cell, colWidths[i])))
 		}
-		output.WriteString("\n")
+		output.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, cells...) + "\n")
 	}
 
 	return output.String()

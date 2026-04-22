@@ -990,7 +990,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 	}
 
 	bodyText := jira.ExtractText(c.Body, width)
-	wrappedBody := ui.CommentBodyStyle.Width(width - ui.PanelOverheadWidth).Render(bodyText)
+	wrappedBody := ui.CommentBodyStyle.MaxWidth(width - ui.PanelOverheadWidth).Render(bodyText)
 	comment.WriteString(wrappedBody + "\n")
 
 	if !isLast {
