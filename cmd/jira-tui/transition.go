@@ -48,7 +48,6 @@ func NewCancelReasonFormData() *CancelReasonFormData {
 	c.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewText().
-				Title("Cancellation Reason").
 				Value(&c.Reason).
 				Lines(10),
 		),
@@ -186,13 +185,12 @@ func (m model) renderPostCancelReasonView() string {
 		modalContent.WriteString(header + "\n\n")
 	}
 
-	modalContent.WriteString(ui.DimTextStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
+	styledModal := ui.RenderPanelWithLabel("Cancel Reason", modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

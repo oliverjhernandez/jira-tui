@@ -102,20 +102,15 @@ func (m model) renderWorklogView() string {
 
 	var modalContent strings.Builder
 
-	if m.issueDetail != nil {
-		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
-		modalContent.WriteString(header + "\n\n")
-	}
-
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.6)
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
 	m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
 	m.textArea.SetHeight(modalHeight - ui.PanelOverheadHeight)
 
 	modalContent.WriteString(m.worklogFormData.Form.View())
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	styledModal := ui.RenderPanelWithLabel("Worklog", modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

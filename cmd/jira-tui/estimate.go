@@ -61,17 +61,12 @@ func (m model) renderPostEstimateView() string {
 
 	var modalContent strings.Builder
 
-	if m.issueDetail != nil {
-		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
-		modalContent.WriteString(header + "\n\n")
-	}
-
 	modalContent.WriteString(m.estimateData.Form.View())
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
+	styledModal := ui.RenderPanelWithLabel("Original Estimate", modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

@@ -142,7 +142,7 @@ func (m model) renderNewIssueView() string {
 
 	var modalContent strings.Builder
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.7)
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.6)
 
 	m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
@@ -150,7 +150,7 @@ func (m model) renderNewIssueView() string {
 
 	modalContent.WriteString(m.newIssueData.Form.View())
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	styledModal := ui.RenderPanelWithLabel("New Issue", modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
