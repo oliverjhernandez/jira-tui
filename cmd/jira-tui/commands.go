@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -145,10 +144,6 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 		detail, err := m.client.GetIssueDetail(context.Background(), issueKey)
 		if err != nil {
 			return errMsg{err}
-		}
-
-		if detail.IssueLinks != nil {
-			log.Printf("Links: %+v", detail.IssueLinks)
 		}
 
 		return issueDetailLoadedMsg{detail}
@@ -876,9 +871,14 @@ func (m model) renderInfoPanel() string {
 }
 
 func (m model) renderMetadataPanel(width int) string {
+	if m.issueDetail == nil {
+		return ui.RenderPanelWithLabel("Metadata", "", width, m.focusedSection == metadataSection)
+	}
+
 	index := ui.DimTextStyle.Render(
 		fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
 	)
+
 	var parent string
 	if m.issueDetail.Parent != nil {
 		parent = ui.RenderIssueType(m.issueDetail.Parent.Type, false) + " " +
@@ -888,23 +888,18 @@ func (m model) renderMetadataPanel(width int) string {
 	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
 	summaryMaxWidth := 50
 	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
-	var linkedIssue string
-
-	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary + " " + linkedIssue
+	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
 	status := ui.RenderStatusBadge(m.issueDetail.Status)
 	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
-
 	logged := ""
 	if m.issueDetail.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.issueDetail.Worklogs))
 	}
-
 	detailsHeaderLine2 := status + "  " + assignee + "  " + logged
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
 	colwidth := 30
-
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), colwidth)
 	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, colwidth)
 	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), colwidth)
@@ -914,11 +909,9 @@ func (m model) renderMetadataPanel(width int) string {
 	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), colwidth)
 	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
 
-	metadataRows := metadataRow1 + "\n" + metadataRow2
-
 	var detailsContent strings.Builder
 	detailsContent.WriteString(leftHeader + "\n")
-	detailsContent.WriteString(metadataRows)
+	detailsContent.WriteString(metadataRow1 + "\n" + metadataRow2)
 
 	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection)
 }

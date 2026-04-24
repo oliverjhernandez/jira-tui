@@ -70,7 +70,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			m.mode = detailView
+			m.mode = m.previousMode
 			m.transitions = nil
 			return m, nil
 		}
@@ -110,7 +110,12 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderTransitionView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
+	var bg *lipgloss.Layer
+	if m.previousMode == detailView {
+		bg = lipgloss.NewLayer(m.renderDetailView())
+	} else if m.previousMode == listView {
+		bg = lipgloss.NewLayer(m.renderListView())
+	}
 
 	var modalContent strings.Builder
 
@@ -118,10 +123,10 @@ func (m model) renderTransitionView() string {
 		modalContent.WriteString(m.transitionData.Form.View())
 	}
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
+	styledModal := ui.RenderPanelWithLabel("Transition "+m.activeIssue.Key, modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
@@ -139,7 +144,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 		switch keyPressMsg.String() {
 		case "esc":
-			m.mode = detailView
+			m.mode = m.previousMode
 			m.pendingTransition = nil
 			return m, m.cancelReasonData.Form.Init()
 		}
@@ -167,7 +172,12 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostCancelReasonView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
+	var bg *lipgloss.Layer
+	if m.mode == detailView {
+		bg = lipgloss.NewLayer(m.renderDetailView())
+	} else {
+		bg = lipgloss.NewLayer(m.renderListView())
+	}
 
 	var modalContent strings.Builder
 

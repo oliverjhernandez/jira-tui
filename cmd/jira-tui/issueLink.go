@@ -47,8 +47,8 @@ func (m model) updateIssueLinkView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
-			m.mode = detailView
-			return m, m.issueLinkData.Form.Init()
+			m.mode = m.previousMode
+			return m, nil
 		}
 	}
 
@@ -87,7 +87,7 @@ func (m model) renderIssueLinkView() string {
 
 	modalContent.WriteString(m.issueLinkData.Form.View())
 
-	styledModal := ui.RenderPanelWithLabel("Link", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Link "+m.activeIssue.Key, modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

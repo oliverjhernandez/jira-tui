@@ -19,6 +19,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		descriptionSection,
 		commentsSection,
 		worklogsSection,
+		issueLinksSection,
 		subTasksSection,
 	}
 
@@ -26,92 +27,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusMessage = statusMessage{}
 
 		switch m.focusedSection {
-		case metadataSection:
-			switch {
-			case keyPressMsg.String() == "y" && m.lastKey == "":
-				m.lastKey = "y"
-				return m, nil
-
-			case keyPressMsg.String() == "k" && m.lastKey == "y":
-				var cmds []tea.Cmd
-				m.lastKey = ""
-				textToCopy := m.issueDetail.Key
-				yankToClipboard(textToCopy)
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "Key Yanked to clipboard",
-				}
-				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-				return m, tea.Batch(cmds...)
-
-			case keyPressMsg.String() == "K" && m.lastKey == "y":
-				var cmds []tea.Cmd
-				m.lastKey = ""
-				textToCopy := jiraURL + m.issueDetail.Key
-				yankToClipboard(textToCopy)
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "URL Yanked to clipboard",
-				}
-				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-				return m, tea.Batch(cmds...)
-
-			case keyPressMsg.String() == "s" && m.lastKey == "y":
-				var cmds []tea.Cmd
-				m.lastKey = ""
-				textToCopy := m.issueDetail.Summary
-				yankToClipboard(textToCopy)
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "Summary yanked to clipboard",
-				}
-				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-				return m, tea.Batch(cmds...)
-
-			case keyPressMsg.String() == "t":
-				m.activeIssue = &jira.Issue{
-					Key:              m.issueDetail.Key,
-					Description:      m.issueDetail.Description,
-					OriginalEstimate: m.issueDetail.OriginalEstimate,
-					Type:             m.issueDetail.Type,
-				}
-
-				if m.issueDetail != nil {
-					if m.issueDetail.Description == nil {
-						m.statusMessage = statusMessage{
-							msgType: errStatusBarMsg,
-							content: "Cannot transition, missing description.",
-						}
-						return m, m.clearStatusAfter(clearMsgTimeout)
-					}
-
-					if m.issueDetail.OriginalEstimate == "" {
-						m.statusMessage = statusMessage{
-							msgType: errStatusBarMsg,
-							content: "Cannot transition, missing original estimate",
-						}
-						return m, m.clearStatusAfter(clearMsgTimeout)
-					}
-
-					m.mode = transitionView
-					m.transitionCursor = 0
-					m.loadingCount++
-					return m, m.fetchTransitionsCmd(m.issueDetail.Key)
-				}
-
-			case keyPressMsg.String() == "a":
-				m.activeIssue = &jira.Issue{
-					Key: m.issueDetail.Key,
-				}
-				m.mode = userSearchView
-				m.textInput.SetValue("")
-				m.textInput.Focus()
-				m.cursor = 0
-				m.loadingCount++
-				return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
-
-			}
-
 		case descriptionSection:
 			switch {
 			case keyPressMsg.String() == "j":
@@ -146,6 +61,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				m.descViewport.GotoTop()
 				return m, nil
+
+			case keyPressMsg.String() == "e":
+				descText := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
+				m.descriptionData = NewDescriptionFormData(descText)
+				m.mode = descriptionView
+				m.editingDescription = true
+				return m, m.descriptionData.Form.Init()
 
 			case keyPressMsg.String() == "G":
 				m.descViewport.GotoBottom()
@@ -222,7 +144,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := m.deleteCommentCmd(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID)
 				return m, cmd
 			}
-
 		case worklogsSection:
 			switch {
 
@@ -263,7 +184,6 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := m.deleteWorkLogCmd(strconv.Itoa(m.issueDetail.Worklogs[m.worklogsCursor].ID))
 				return m, cmd
 			}
-
 		case subTasksSection:
 			switch {
 
@@ -292,7 +212,18 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.subTasksViewport.SetContent(chContent)
 				return m, nil
 
-			case keyPressMsg.String() == "c":
+			case keyPressMsg.String() == "enter":
+				var cmds []tea.Cmd
+
+				if m.issueDetail.SubTasks != nil {
+					m.loadingCount++
+					m.activeIssue = &m.issueDetail.SubTasks[m.subTasksCursor]
+					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
+					cmds = append(cmds, detailCmd)
+				}
+				return m, tea.Batch(cmds...)
+
+			case keyPressMsg.String() == "n":
 				i := &NewIssueFormData{
 					ParentKey: m.issueDetail.Key,
 				}
@@ -342,46 +273,132 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		switch keyPressMsg.String() {
+		switch {
+		case keyPressMsg.String() == "y" && m.lastKey == "":
+			m.lastKey = "y"
+			return m, nil
 
-		case "d":
-			descText := jira.ExtractText(m.issueDetail.Description, m.detailLayout.leftColumnWidth)
-			m.descriptionData = NewDescriptionFormData(descText)
-			m.mode = descriptionView
-			m.editingDescription = true
-			return m, m.descriptionData.Form.Init()
+		case keyPressMsg.String() == "k" && m.lastKey == "y":
+			var cmds []tea.Cmd
+			m.lastKey = ""
+			textToCopy := m.issueDetail.Key
+			yankToClipboard(textToCopy)
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Key Yanked to clipboard",
+			}
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
 
-		case "p":
+		case keyPressMsg.String() == "K" && m.lastKey == "y":
+			var cmds []tea.Cmd
+			m.lastKey = ""
+			textToCopy := jiraURL + m.issueDetail.Key
+			yankToClipboard(textToCopy)
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "URL Yanked to clipboard",
+			}
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
+
+		case keyPressMsg.String() == "s" && m.lastKey == "y":
+			var cmds []tea.Cmd
+			m.lastKey = ""
+			textToCopy := m.issueDetail.Summary
+			yankToClipboard(textToCopy)
+			m.statusMessage = statusMessage{
+				msgType: infoStatusBarMsg,
+				content: "Summary yanked to clipboard",
+			}
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
+
+		case keyPressMsg.String() == "g" && m.lastKey == "":
+			m.lastKey = "g"
+			return m, nil
+
+		// Go to Parent
+		case keyPressMsg.String() == "p" && m.lastKey == "g":
+			if m.issueDetail.Parent != nil {
+				issue := jira.Issue{
+					ID:   m.issueDetail.Parent.ID,
+					Key:  m.issueDetail.Parent.Key,
+					Type: m.issueDetail.Parent.Type,
+				}
+				m.activeIssue = &issue
+				m.loadingCount++
+				return m, m.fetchIssueDetailCmd(m.activeIssue.Key)
+			}
+			return m, nil
+
+		case keyPressMsg.String() == "t":
+			m.previousMode = m.mode
+			m.mode = transitionView
+			m.transitionCursor = 0
+			m.activeIssue = &jira.Issue{
+				Key:              m.issueDetail.Key,
+				Description:      m.issueDetail.Description,
+				OriginalEstimate: m.issueDetail.OriginalEstimate,
+				Type:             m.issueDetail.Type,
+			}
+
+			if m.issueDetail != nil {
+				if m.issueDetail.Description == nil {
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing description.",
+					}
+					return m, m.clearStatusAfter(clearMsgTimeout)
+				}
+
+				if m.issueDetail.OriginalEstimate == "" {
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing original estimate",
+					}
+					return m, m.clearStatusAfter(clearMsgTimeout)
+				}
+
+				m.loadingCount++
+				return m, m.fetchTransitionsCmd(m.activeIssue.Key)
+			}
+
+			return m, nil
+
+		case keyPressMsg.String() == "a":
+			m.activeIssue = &jira.Issue{
+				Key: m.issueDetail.Key,
+			}
+			m.previousMode = m.mode
+			m.mode = userSearchView
+			m.textInput.SetValue("")
+			m.textInput.Focus()
+			m.loadingCount++
+			return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
+
+		case keyPressMsg.String() == "p":
 			m.priorityData = NewPriorityFormData(m.priorities, m.issueDetail.Priority.Name)
+			m.previousMode = m.mode
 			m.mode = priorityView
-			m.editingPriority = true
 			return m, m.priorityData.Form.Init()
 
-		case "tab":
+		case keyPressMsg.String() == "tab":
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx+1)%len(detailViewSections)]
 			return m, nil
 
-		case "shift+tab":
+		case keyPressMsg.String() == "shift+tab":
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx-1+len(detailViewSections))%len(detailViewSections)]
 			return m, nil
 
-		case "l":
-			m.mode = issueSearchView
-			m.searchData = NewSearchFormData()
-			m.issueSelectionMode = linkIssue
-			return m, m.searchData.Form.Init()
+		case keyPressMsg.String() == "l":
+			m.issueLinkData = NewIssueLinkForm(40)
+			m.mode = issueLinkView
+			return m, m.issueLinkData.Form.Init()
 
-		case "L":
-			m.mode = detailView
-			m.issueSelectionMode = linkIssue
-			if m.issueDetail.IsLinkedToChange {
-				return m, m.unlinkIssueCmd(m.issueDetail.ChangeIssueLinkID)
-			}
-			return m, nil
-
-		case "w":
+		case keyPressMsg.String() == "w":
 			w := &jira.Worklog{
 				Time:        0,
 				StartDate:   time.Now().Format("2006-01-02"),
@@ -391,7 +408,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = worklogView
 			return m, m.worklogFormData.Form.Init()
 
-		case "e":
+		case keyPressMsg.String() == "e":
 			var cmds []tea.Cmd
 			if m.activeIssue != nil {
 				m.mode = estimateView
@@ -406,14 +423,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmds...)
 
-		case "ctrl+r":
+		case keyPressMsg.String() == "ctrl+r":
 			if m.loadingCount > 0 {
 				return m, nil
 			}
 			m.loadingCount++
 			return m, m.fetchIssueDetailCmd(m.issueDetail.Key)
 
-		case "esc":
+		case keyPressMsg.String() == "esc":
 			var cmds []tea.Cmd
 			m.mode = listView
 			m.detailPolling = false
@@ -428,7 +445,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 			return m, tea.Batch(cmds...)
 
-		case "q", "ctrl+c":
+		case keyPressMsg.String() == "q" || keyPressMsg.String() == "ctrl+c":
 			return m, tea.Quit
 		}
 	}

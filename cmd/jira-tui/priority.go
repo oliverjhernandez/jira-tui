@@ -42,8 +42,7 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 		switch keyPressMsg.String() {
 		case "esc":
-			m.mode = detailView
-			m.editingPriority = false
+			m.mode = m.previousMode
 			return m, m.priorityData.Form.Init()
 		}
 	}
@@ -56,7 +55,6 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.priorityData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		m.editingPriority = false
 		priority := m.priorityData.SelectedPriority
 		cmds = append(cmds, m.postPriorityCmd(m.issueDetail.Key, priority))
 	}
@@ -65,7 +63,12 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditPriorityView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
+	var bg *lipgloss.Layer
+	if m.previousMode == detailView {
+		bg = lipgloss.NewLayer(m.renderDetailView())
+	} else if m.previousMode == listView {
+		bg = lipgloss.NewLayer(m.renderListView())
+	}
 
 	var modalContent strings.Builder
 
@@ -75,11 +78,10 @@ func (m model) renderEditPriorityView() string {
 	}
 
 	modalContent.WriteString(m.priorityData.Form.View())
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
-
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
+	styledModal := ui.RenderPanelWithLabel("Priority "+m.activeIssue.Key, modalContent.String(), modalWidth, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

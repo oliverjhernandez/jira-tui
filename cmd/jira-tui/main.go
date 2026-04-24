@@ -22,9 +22,9 @@ import (
 
 const jiraURL = "https://layer7.atlassian.net/browse/"
 
-type viewMode int
-
 const clearMsgTimeout = 5 * time.Second
+
+type viewMode int
 
 const (
 	listView viewMode = iota
@@ -41,6 +41,39 @@ const (
 	cancelReasonView
 	issueSearchView
 )
+
+func (v viewMode) String() string {
+	switch v {
+	case listView:
+		return "listView"
+	case newIssueView:
+		return "newIssueView"
+	case detailView:
+		return "detailView"
+	case transitionView:
+		return "transitionView"
+	case userSearchView:
+		return "userSearchView"
+	case descriptionView:
+		return "descriptionView"
+	case priorityView:
+		return "priorityView"
+	case commentView:
+		return "commentView"
+	case worklogView:
+		return "worklogView"
+	case issueLinkView:
+		return "issueLinkView"
+	case estimateView:
+		return "estimateView"
+	case cancelReasonView:
+		return "cancelReasonView"
+	case issueSearchView:
+		return "issueSearchView"
+	default:
+		return "unknown"
+	}
+}
 
 type userSelectionMode int
 
@@ -103,9 +136,10 @@ type Section struct {
 
 type model struct {
 	// Core
-	client *jira.Client
-	mode   viewMode
-	err    error
+	client       *jira.Client
+	mode         viewMode
+	previousMode viewMode
+	err          error
 
 	windowWidth int
 	// Window & Layout
@@ -163,6 +197,7 @@ type model struct {
 	subTasksCursor   int
 
 	// Input Components
+	// TODO: Move to huh form
 	textInput textinput.Model
 	textArea  textarea.Model
 	filtering bool
@@ -170,7 +205,6 @@ type model struct {
 
 	// Editing State
 	editingDescription bool
-	editingPriority    bool
 	editingComment     bool
 	editingWorklog     bool
 
@@ -305,6 +339,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingCount--
 		m.issueDetail = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
+		m.previousMode = m.mode
 		m.mode = detailView
 
 		if !m.detailPolling {
@@ -381,6 +416,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 			m.listViewport.SetContent(m.buildListContent())
 		}
+		m.selectedIssue = m.sections[0].Issues[0]
 
 		return m, nil
 
@@ -543,8 +579,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case assignableUsersLoadedMsg:
+		log.Printf("Users %s", msg.users)
+		m.usersCache = msg.users
 		m.loadingCount--
-		m.mode = userSearchView
 		return m, nil
 
 	case usersLoadedMsg:

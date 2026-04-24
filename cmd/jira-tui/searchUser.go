@@ -15,8 +15,7 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.textInput.SetValue("")
 			m.textInput.Blur()
-			m.cursor = 0
-			m.mode = detailView
+			m.mode = m.previousMode
 			return m, nil
 		case "enter":
 			m.filtering = false
@@ -72,12 +71,17 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchUserView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
+	var bg *lipgloss.Layer
+	if m.previousMode == detailView {
+		bg = lipgloss.NewLayer(m.renderDetailView())
+	} else if m.previousMode == listView {
+		bg = lipgloss.NewLayer(m.renderListView())
+	}
 
 	var modalContent strings.Builder
 
-	if m.issueDetail != nil {
-		fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.issueDetail.Key)
+	if m.activeIssue != nil {
+		fmt.Fprintf(&modalContent, "Change Assignee for %s\n", m.activeIssue.Key)
 	}
 
 	modalContent.WriteString(m.textInput.View() + "\n\n")

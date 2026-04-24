@@ -213,6 +213,31 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sectionCursor = 0
 			return m, textinput.Blink
 
+		case "t":
+			m.activeIssue = m.selectedIssue
+			m.previousMode = m.mode
+			m.mode = transitionView
+			m.transitionCursor = 0
+			m.loadingCount++
+			return m, m.fetchTransitionsCmd(m.activeIssue.Key)
+
+		case "a":
+			m.activeIssue = m.selectedIssue
+			m.previousMode = m.mode
+			m.mode = userSearchView
+			m.textInput.SetValue("")
+			m.textInput.Focus()
+			m.loadingCount++
+			return m, m.fetchAssignableUsersCmd(m.activeIssue.Key)
+
+		case "p":
+			m.activeIssue = m.selectedIssue
+			m.previousMode = m.mode
+			m.mode = priorityView
+			m.priorityData = NewPriorityFormData(m.priorities, m.activeIssue.Priority.Name)
+			m.loadingCount++
+			return m, m.priorityData.Form.Init()
+
 		case "ctrl+r":
 			var cmds []tea.Cmd
 			if m.loadingCount > 0 {
@@ -245,10 +270,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadingCount++
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
-
 				return m, tea.Batch(cmds...)
 			}
 
+		// Go to Parent
 		case "alt+enter":
 			var cmds []tea.Cmd
 			sectionsToNavigate := m.sections
