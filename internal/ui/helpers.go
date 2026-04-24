@@ -179,6 +179,7 @@ func GetModalHeight(windowHeight int, scale float64) int {
 }
 
 func RenderPanelWithLabel(label string, content string, width int, active bool) string {
+	// TODO: move all this to ui package
 	var borderColor color.Color
 	if active {
 		borderColor = lipgloss.Color("86")

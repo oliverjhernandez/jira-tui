@@ -90,7 +90,7 @@ func (m model) renderSearchUserView() string {
 		}
 	}
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)

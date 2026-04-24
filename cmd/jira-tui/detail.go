@@ -442,12 +442,13 @@ func (m model) renderDetailView() string {
 	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)
 
 	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth)
+	issueLinksPanel := m.renderIssueLinksPanel(m.detailLayout.rightColumnWidth)
 	subTasksPanel := m.renderSubTasksPanel(m.detailLayout.rightColumnWidth)
 
 	statusBar := m.renderStatusBar()
 
 	leftColumn := lipgloss.JoinVertical(lipgloss.Left, metadataPanel, descriptionPanel, commentsPanel)
-	rightColumn := lipgloss.JoinVertical(lipgloss.Left, worklogPanel, subTasksPanel)
+	rightColumn := lipgloss.JoinVertical(lipgloss.Left, worklogPanel, issueLinksPanel, subTasksPanel)
 
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 

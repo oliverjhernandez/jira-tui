@@ -150,7 +150,7 @@ func (m model) renderNewIssueView() string {
 
 	modalContent.WriteString(m.newIssueData.Form.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

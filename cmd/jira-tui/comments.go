@@ -67,7 +67,7 @@ func (m model) renderCommentView() string {
 
 	modalContent.WriteString(m.textArea.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)

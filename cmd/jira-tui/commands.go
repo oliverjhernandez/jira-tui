@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ type detailLayout struct {
 	descHeight       int
 	commentsHeight   int
 	worklogsHeight   int
+	issueLinksHeight int
 	subTasksHeight   int
 }
 
@@ -143,6 +145,10 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 		detail, err := m.client.GetIssueDetail(context.Background(), issueKey)
 		if err != nil {
 			return errMsg{err}
+		}
+
+		if detail.IssueLinks != nil {
+			log.Printf("Links: %+v", detail.IssueLinks)
 		}
 
 		return issueDetailLoadedMsg{detail}
@@ -645,13 +651,13 @@ func (m model) postEstimateCmd(issueKey, estimate string) tea.Cmd {
 	}
 }
 
-func (m model) linkIssueCmd(fromKey, toKey string) tea.Cmd {
+func (m model) postLinkIssueCmd(fromKey, toKey string, linkType jira.LinkType) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		err := m.client.PostIssueLink(context.Background(), fromKey, toKey)
+		err := m.client.PostIssueLink(context.Background(), fromKey, toKey, linkType)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -715,15 +721,16 @@ func (m model) calculateDetailLayout() detailLayout {
 	statusBarHeight := 1
 
 	leftFixedHeight := metadataPanelHeight + statusBarHeight + (ui.PanelOverheadHeight * 2)
-	rightFixedHeight := statusBarHeight + (ui.PanelOverheadHeight * 2)
+	rightFixedHeight := statusBarHeight + (ui.PanelOverheadHeight * 3)
 	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
 	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
 
 	descHeight := leftColumnFreeHeight / 2
 	commentsHeight := leftColumnFreeHeight / 2
 
-	worklogsHeight := rightColumnFreeHeight / 2
-	subTasksHeight := rightColumnFreeHeight / 2
+	worklogsHeight := rightColumnFreeHeight / 3
+	issueLinksHeight := rightColumnFreeHeight / 3
+	subTasksHeight := rightColumnFreeHeight / 3
 
 	return detailLayout{
 		leftColumnWidth,
@@ -731,6 +738,7 @@ func (m model) calculateDetailLayout() detailLayout {
 		descHeight,
 		commentsHeight,
 		worklogsHeight,
+		issueLinksHeight,
 		subTasksHeight,
 	}
 }
@@ -881,10 +889,6 @@ func (m model) renderMetadataPanel(width int) string {
 	summaryMaxWidth := 50
 	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
 	var linkedIssue string
-	// TODO: make all links available
-	if m.issueDetail.IsLinkedToChange {
-		linkedIssue = "🔗 " + jira.MonthlyChangeIssue
-	}
 
 	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary + " " + linkedIssue
 
@@ -1066,6 +1070,28 @@ func (m model) renderWorklogsPanel(width int) string {
 	return ui.RenderPanelWithLabel("Worklogs", viewport, width, m.focusedSection == worklogsSection)
 }
 
+func (m model) buildIssueLinksContent(width int) string {
+	var content strings.Builder
+	ilCount := len(m.issueDetail.IssueLinks)
+
+	if ilCount > 0 {
+		for i, l := range m.issueDetail.IssueLinks {
+			isSelected := m.IssueLinksCursor == i
+			isLast := i == ilCount-1
+
+			il := m.renderIssueLink(l, width, isSelected, isLast)
+			content.WriteString(il)
+		}
+	}
+
+	return content.String()
+}
+
+func (m model) renderIssueLinksPanel(width int) string {
+	viewport := m.issueLinksViewport.View()
+	return ui.RenderPanelWithLabel("Issue Links", viewport, width, m.focusedSection == issueLinksSection)
+}
+
 func (m model) getUserName(accountID string) string {
 	for _, u := range m.usersCache {
 		if u.ID == accountID {
@@ -1074,6 +1100,35 @@ func (m model) getUserName(accountID string) string {
 	}
 
 	return accountID
+}
+
+func (m model) renderIssueLink(l jira.IssueLink, width int, isSelected bool, isLast bool) string {
+	var content strings.Builder
+
+	if l.InwardIssue != nil {
+		linkType := ui.DimTextStyle.Render(l.Type.Inward)
+		key := ui.KeyFieldStyle.Render(l.InwardIssue.Key)
+		content.WriteString(linkType + " " + key + "\n")
+	} else {
+		linkType := ui.DimTextStyle.Render(l.Type.Outward)
+		key := ui.KeyFieldStyle.Render(l.OutwardIssue.Key)
+		content.WriteString(linkType + " " + key + "\n")
+	}
+
+	// if isSelected {
+	// 	cursor := ui.IconCursor
+	// 	content.WriteString(cursor + issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
+	// } else {
+	// 	content.WriteString(issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
+	// }
+
+	if !isLast {
+		content.WriteString(ui.SeparatorStyle.Render("  ────") + "\n\n")
+	} else {
+		content.WriteString("\n")
+	}
+
+	return content.String()
 }
 
 func (m model) buildSubTasksContent(width int) string {
@@ -1100,7 +1155,7 @@ func (m model) renderSubTask(i jira.Issue, width int, isSelected bool, isLast bo
 	var content strings.Builder
 
 	issue := ui.RenderIssueType(i.Type, false)
-	key := i.Key
+	key := ui.KeyFieldStyle.Render(i.Key)
 	priority := ui.RenderPriority(i.Priority.Name, false)
 	status := ui.RenderStatusBadge(i.Status)
 	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(i.Assignee, " ")[0]))

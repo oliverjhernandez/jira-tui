@@ -76,7 +76,7 @@ func (m model) renderEditPriorityView() string {
 
 	modalContent.WriteString(m.priorityData.Form.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)

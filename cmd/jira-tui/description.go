@@ -71,7 +71,7 @@ func (m model) renderEditDescriptionView() string {
 
 	modalContent.WriteString(m.descriptionData.Form.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)

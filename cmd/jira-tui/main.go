@@ -36,6 +36,7 @@ const (
 	priorityView
 	commentView
 	worklogView
+	issueLinkView
 	estimateView
 	cancelReasonView
 	issueSearchView
@@ -62,6 +63,7 @@ const (
 	descriptionSection
 	commentsSection
 	worklogsSection
+	issueLinksSection
 	subTasksSection
 )
 
@@ -107,15 +109,16 @@ type model struct {
 
 	windowWidth int
 	// Window & Layout
-	windowHeight     int
-	detailLayout     detailLayout
-	listLayout       listLayout
-	columnWidths     ui.ColumnWidths
-	listViewport     viewport.Model
-	descViewport     viewport.Model
-	commentsViewport viewport.Model
-	worklogsViewport viewport.Model
-	subTasksViewport viewport.Model
+	windowHeight       int
+	detailLayout       detailLayout
+	listLayout         listLayout
+	columnWidths       ui.ColumnWidths
+	listViewport       viewport.Model
+	descViewport       viewport.Model
+	commentsViewport   viewport.Model
+	worklogsViewport   viewport.Model
+	issueLinksViewport viewport.Model
+	subTasksViewport   viewport.Model
 
 	// User Data
 	myself *jira.User
@@ -156,6 +159,7 @@ type model struct {
 	userCursor       int
 	commentsCursor   int
 	worklogsCursor   int
+	IssueLinksCursor int
 	subTasksCursor   int
 
 	// Input Components
@@ -175,6 +179,7 @@ type model struct {
 	newIssueData     *NewIssueFormData
 	estimateData     *EstimateFormData
 	searchData       *SearchIssueFormData
+	issueLinkData    *IssueLinkFormData
 	commentData      *CommentFormData
 	descriptionData  *DescriptionFormData
 	priorityData     *PriorityFormData
@@ -321,6 +326,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
 			m.commentsViewport.SetContent(commentsContent)
 		}
+
+		issueLinksContent := m.buildIssueLinksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+		m.issueLinksViewport.SetWidth(m.detailLayout.rightColumnWidth)
+		m.issueLinksViewport.SetHeight(m.detailLayout.issueLinksHeight)
+		m.issueLinksViewport.SetContent(issueLinksContent)
 
 		m.loadingCount++
 		worklogsCmd := m.fetchWorkLogsCmd(m.issueDetail.ID)
@@ -655,6 +665,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateSearchUserView(msg)
 	case worklogView:
 		tmpModel, viewCmd = m.updateWorklogView(msg)
+	case issueLinkView:
+		tmpModel, viewCmd = m.updateIssueLinkView(msg)
 	case estimateView:
 		tmpModel, viewCmd = m.updatePostEstimateView(msg)
 	case cancelReasonView:
@@ -693,6 +705,8 @@ func (m model) View() tea.View {
 		content = m.renderSearchUserView()
 	case worklogView:
 		content = m.renderWorklogView()
+	case issueLinkView:
+		content = m.renderIssueLinkView()
 	case estimateView:
 		content = m.renderPostEstimateView()
 	case cancelReasonView:

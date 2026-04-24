@@ -40,25 +40,24 @@ type Issue struct {
 }
 
 type IssueDetail struct {
-	ID                string
-	Key               string
-	Project           Project
-	Summary           string
-	Status            string
-	Type              string
-	Assignee          string
-	Priority          Priority
-	Description       *ContentDoc
-	Reporter          string
-	Comments          []Comment
-	Parent            *Parent
-	IsLinkedToChange  bool
-	ChangeIssueLinkID string
-	OriginalEstimate  string
-	Created           string
-	Updated           string
-	SubTasks          []Issue
-	Worklogs          []Worklog
+	ID               string
+	Key              string
+	Project          Project
+	Summary          string
+	Status           string
+	Type             string
+	Assignee         string
+	Priority         Priority
+	Description      *ContentDoc
+	Reporter         string
+	Comments         []Comment
+	Parent           *Parent
+	IssueLinks       []IssueLink
+	OriginalEstimate string
+	Created          string
+	Updated          string
+	SubTasks         []Issue
+	Worklogs         []Worklog
 }
 
 type IssueType struct {
@@ -177,8 +176,6 @@ type IssueLink struct {
 	Type         Link         `json:"type"`
 }
 
-const MonthlyChangeIssue = "IN-1042" // April
-
 type LinkedIssue struct {
 	ID     string         `json:"id"`
 	Key    string         `json:"key"`
@@ -191,6 +188,27 @@ type Link struct {
 	Name    string `json:"name"`
 	Inward  string `json:"inward"`
 	Outward string `json:"outward"`
+}
+
+type LinkType int
+
+const (
+	Relates LinkType = iota
+	Blocks
+	Duplicates
+)
+
+func (l LinkType) String() string {
+	switch l {
+	case Relates:
+		return "Relates"
+	case Blocks:
+		return "Blocks"
+	case Duplicates:
+		return "Duplicates"
+	default:
+		return ""
+	}
 }
 
 type ContentDoc struct {
@@ -593,20 +611,8 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		}
 	}
 
-	for _, link := range issue.Fields.IssueLinks {
-		var linkedKey string
-
-		if link.InwardIssue != nil {
-			linkedKey = link.InwardIssue.Key
-		} else if link.OutwardIssue != nil {
-			linkedKey = link.OutwardIssue.Key
-		}
-
-		if linkedKey == MonthlyChangeIssue {
-			detail.IsLinkedToChange = true
-			detail.ChangeIssueLinkID = link.ID
-			break
-		}
+	if issue.Fields.IssueLinks != nil {
+		detail.IssueLinks = issue.Fields.IssueLinks
 	}
 
 	if issue.Fields.OriginalEstimate != nil {
@@ -1093,10 +1099,10 @@ func (c *Client) DeleteWorkLog(ctx context.Context, worklogID string) error {
 	return err
 }
 
-func (c *Client) PostIssueLink(ctx context.Context, fromKey, toKey string) error {
+func (c *Client) PostIssueLink(ctx context.Context, fromKey, toKey string, linkType LinkType) error {
 	body := map[string]any{
 		"type": map[string]string{
-			"name": "Relates",
+			"name": linkType.String(),
 		},
 		"inwardIssue": map[string]string{
 			"key": fromKey,

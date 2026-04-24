@@ -118,7 +118,7 @@ func (m model) renderTransitionView() string {
 		modalContent.WriteString(m.transitionData.Form.View())
 	}
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)
@@ -179,7 +179,7 @@ func (m model) renderPostCancelReasonView() string {
 	modalContent.WriteString(ui.DimTextStyle.Render("Please provide a reason for canceling this issue:") + "\n\n")
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)

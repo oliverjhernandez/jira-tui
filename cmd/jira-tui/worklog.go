@@ -115,7 +115,7 @@ func (m model) renderWorklogView() string {
 
 	modalContent.WriteString(m.worklogFormData.Form.View())
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

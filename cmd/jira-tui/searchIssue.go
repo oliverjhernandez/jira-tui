@@ -6,7 +6,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -61,7 +60,7 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				content: "Searching...",
 			}
 		case linkIssue:
-			cmds = append(cmds, m.linkIssueCmd(m.issueDetail.Key, jira.MonthlyChangeIssue))
+			cmds = append(cmds, m.postLinkIssueCmd(m.issueDetail.Key, m.issueLinkData.IssueKey, m.issueLinkData.Relation))
 			m.statusMessage = statusMessage{
 				msgType: infoStatusBarMsg,
 				content: "Linking...",
@@ -93,7 +92,7 @@ func (m model) renderSearchIssueView() string {
 		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchData.Err.Error()))
 	}
 
-	styledModal := ui.ModalBlockInputStyle.Render(modalContent.String())
+	styledModal := ui.ModalStyle.Render(modalContent.String())
 
 	modalWidth := lipgloss.Width(styledModal)
 	modalHeight := lipgloss.Height(styledModal)
