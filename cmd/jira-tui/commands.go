@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -145,6 +146,7 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 		if err != nil {
 			return errMsg{err}
 		}
+		log.Printf("Description: %+v", detail.Description)
 
 		return issueDetailLoadedMsg{detail}
 	}
@@ -945,8 +947,7 @@ func (m model) buildDescriptionContent(width int) string {
 
 	if m.issueDetail.Description != nil {
 		descText := jira.ExtractText(m.issueDetail.Description, width)
-		wrappedDesc := ui.DetailValueStyle.Render(descText)
-		content.WriteString(wrappedDesc + "\n\n")
+		content.WriteString(descText + "\n\n")
 	} else {
 		content.WriteString(ui.StatusBarInfoStyle.Render("No description") + "\n\n")
 	}

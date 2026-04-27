@@ -84,6 +84,7 @@ var (
 	IconSubTask       = `󰘑`
 	IconImprovement   = ""
 	IconDefault       = `󰧞`
+	IconBullet        = ``
 
 	// Priority
 	IconPriorityCritical = `󰈸`

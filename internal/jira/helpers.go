@@ -17,7 +17,7 @@ func ExtractText(doc *ContentDoc, panelWidth int) string {
 
 	var text strings.Builder
 	for _, node := range doc.Content {
-		text.WriteString(extractBlockText(node, panelWidth) + "\n")
+		text.WriteString(extractBlockText(node, panelWidth-ui.PanelOverheadWidth) + "\n")
 	}
 	return text.String()
 }
@@ -69,8 +69,8 @@ func formatParagraph(node ContentNode, panelWidth int) string {
 		text.WriteString(extractInlineText(node))
 	}
 
-	wrapped := hardWrap(text.String(), panelWidth)
-	return lipgloss.NewStyle().Width(panelWidth).Render(wrapped)
+	wrapped := ansi.Wrap(text.String(), panelWidth, "")
+	return wrapped + "\n"
 }
 
 func extractInlineText(node ContentNode) string {
@@ -80,6 +80,8 @@ func extractInlineText(node ContentNode) string {
 			userName = node.Attrs.ID
 		}
 		return ui.MentionStyle.Render(userName)
+	} else if node.Type == "hardBreak" {
+		return "\n"
 	}
 
 	text := node.Text
@@ -133,8 +135,9 @@ func formatBulletList(node ContentNode, indent int, width int) string {
 	var items strings.Builder
 	for _, item := range node.Content {
 		if item.Type == "listItem" {
-			itemText := formatListItem(item, indent, width)
-			items.WriteString(strings.Repeat("  ", indent) + "• " + itemText + "\n")
+			bullet := ui.IconBullet + " "
+			itemText := formatListItem(item, indent, width-lipgloss.Width(bullet))
+			items.WriteString(strings.Repeat("  ", indent) + bullet + itemText + "\n")
 		}
 	}
 	return items.String()
@@ -144,7 +147,7 @@ func formatMediaSingle(node ContentNode) string {
 	var content strings.Builder
 	for _, item := range node.Content {
 		if item.Type == "media" {
-			content.WriteString("[📎 " + item.Attrs.Alt + "]")
+			content.WriteString("[📎 " + item.Attrs.Alt + "]\n")
 		}
 	}
 
@@ -243,6 +246,11 @@ func calculateColumnWidths(rows [][]string, maxWidth int) []int {
 		for i := range widths {
 			widths[i] = max(int(float64(widths[i])*scale),
 				10)
+		}
+	} else {
+		scale := float64(maxWidth) / float64(totalWidth)
+		for i := range widths {
+			widths[i] = int(float64(widths[i]) * scale)
 		}
 	}
 
