@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -146,7 +145,6 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 		if err != nil {
 			return errMsg{err}
 		}
-		log.Printf("Description: %+v", detail.Description)
 
 		return issueDetailLoadedMsg{detail}
 	}
@@ -995,7 +993,7 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 	}
 
 	bodyText := jira.ExtractText(c.Body, width)
-	wrappedBody := ui.CommentBodyStyle.MaxWidth(width - ui.PanelOverheadWidth).Render(bodyText)
+	wrappedBody := ui.CommentBodyStyle.Render(bodyText)
 	comment.WriteString(wrappedBody + "\n")
 
 	if !isLast {

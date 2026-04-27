@@ -29,7 +29,7 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 	case "paragraph":
 		return formatParagraph(node, panelWidth)
 	case "codeBlock":
-		return formatCodeBlock(node)
+		return formatCodeBlock(node, panelWidth)
 	case "bulletList":
 		return formatBulletList(node, 0, panelWidth)
 	case "orderedList":
@@ -112,12 +112,13 @@ func formatHeading(node ContentNode) string {
 	return ui.HeadingStyle.Render("# " + text.String())
 }
 
-func formatCodeBlock(node ContentNode) string {
+func formatCodeBlock(node ContentNode, panelWidth int) string {
 	var text strings.Builder
 	for _, node := range node.Content {
 		text.WriteString(extractInlineText(node))
 	}
-	return ui.CodeBlockStyle.Render(text.String())
+	wrapped := ansi.Wrap(text.String(), panelWidth, "")
+	return ui.CodeBlockStyle.Render(wrapped)
 }
 
 func formatOrderedList(node ContentNode) string {

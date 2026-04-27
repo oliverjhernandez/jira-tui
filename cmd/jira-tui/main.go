@@ -579,7 +579,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case assignableUsersLoadedMsg:
-		log.Printf("Users %s", msg.users)
 		m.usersCache = msg.users
 		m.loadingCount--
 		return m, nil
