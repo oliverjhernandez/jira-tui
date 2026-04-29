@@ -121,13 +121,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textArea = textarea.New()
 				m.textArea.Placeholder = "Add a comment..."
 				m.textArea.Focus()
-				m.textArea.SetWidth(100)
+				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - ui.PanelOverheadWidth
+				m.textArea.SetWidth(textAreaWidth)
 				m.mode = commentView
 				return m, nil
 
 			case keyPressMsg.String() == "e":
 				m.textArea = textarea.New()
-				textAreaWidth := 100
+				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - ui.PanelOverheadWidth
 				m.textArea.SetWidth(textAreaWidth)
 				var comment string
 				if m.issueDetail.Comments != nil {
