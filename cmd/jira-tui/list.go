@@ -68,6 +68,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = 0
 			m.sectionCursor = 0
 			m.listViewport.GotoTop()
+			return m, nil
 
 		case keyPressMsg.String() == "y" && m.lastKey == "":
 			m.lastKey = "y"

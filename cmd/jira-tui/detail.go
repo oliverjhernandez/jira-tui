@@ -221,6 +221,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.activeIssue = &m.issueDetail.SubTasks[m.subTasksCursor]
 					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
 					cmds = append(cmds, detailCmd)
+					m.focusedSection = metadataSection
 				}
 				return m, tea.Batch(cmds...)
 
