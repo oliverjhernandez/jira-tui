@@ -45,7 +45,7 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 		switch keyPressMsg.String() {
 		case "esc":
-			m.mode = listView
+			m.mode = m.previousMode
 			m.searchUserData = nil
 			return m, nil
 		}
@@ -117,9 +117,15 @@ func (m model) renderSearchUserView() string {
 	}
 
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.1)
 
-	styledModal := ui.RenderPanelWithLabel("Assign "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	var label string
+	if m.userSelectionMode == assignUser && m.activeIssue != nil {
+		label = "Assign " + m.activeIssue.Key
+	} else {
+		label = "Mention User"
+	}
+	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

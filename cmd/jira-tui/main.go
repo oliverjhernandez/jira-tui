@@ -196,7 +196,6 @@ type model struct {
 	subTasksCursor   int
 
 	// Input Components
-	// TODO: Move to huh form
 	textInput textinput.Model
 	textArea  textarea.Model
 	filtering bool

@@ -222,11 +222,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loadingCount++
 			return m, m.fetchTransitionsCmd(m.activeIssue.Key)
 
+		// assign
 		case "a":
 			var cmds []tea.Cmd
 			m.activeIssue = m.selectedIssue
 			m.previousMode = m.mode
 			m.mode = userSearchView
+			m.userSelectionMode = assignUser
 			if m.usersCache != nil {
 				m.loadingCount++
 				m.searchUserData = NewSearchUserFormData(m.usersCache)
@@ -234,6 +236,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmds...)
 
+			// priorities
 		case "p":
 			m.activeIssue = m.selectedIssue
 			m.previousMode = m.mode
