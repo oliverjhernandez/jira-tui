@@ -101,6 +101,7 @@ type Transition struct {
 
 type User struct {
 	ID    string `json:"accountId"`
+	Type  string `json:"accountType"`
 	Name  string `json:"displayName"`
 	Email string `json:"emailAddress"`
 }
@@ -659,35 +660,10 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 	return transitions, err
 }
 
-func (c *Client) GetAssignableUsers(ctx context.Context, issueKey string) ([]User, error) {
-	apiURL := fmt.Sprintf("/rest/api/3/user/assignable/search?issueKey=%s", issueKey)
-
-	var result []User
-
-	err := c.doJiraRequest(
-		ctx,
-		"GET",
-		apiURL,
-		nil,
-		nil,
-		&result,
-	)
-
-	users := make([]User, 0, len(result))
-	for _, t := range result {
-		users = append(users, User{
-			ID:   t.ID,
-			Name: t.Name,
-		})
-	}
-
-	return users, err
-}
-
 func (c Client) GetAllUsers(ctx context.Context) ([]User, error) {
 	apiURL := "/rest/api/3/users/search"
 	params := url.Values{}
-	params.Add("maxResults", "200")
+	params.Add("maxResults", "500")
 
 	var result []User
 
@@ -699,13 +675,16 @@ func (c Client) GetAllUsers(ctx context.Context) ([]User, error) {
 		&result,
 	)
 
-	users := make([]User, len(result))
+	users := make([]User, 0, len(result))
 	for _, u := range result {
-		users = append(users, User{
-			ID:    u.ID,
-			Name:  u.Name,
-			Email: u.Email,
-		})
+		if u.Type == "atlassian" {
+			users = append(users, User{
+				ID:    u.ID,
+				Name:  u.Name,
+				Type:  u.Type,
+				Email: u.Email,
+			})
+		}
 	}
 
 	return users, err

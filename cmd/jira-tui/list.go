@@ -202,8 +202,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+s":
 			var cmds []tea.Cmd
 			m.mode = issueSearchView
-			m.searchData = NewSearchFormData()
-			cmds = append(cmds, m.searchData.Form.Init())
+			m.searchIssueData = NewSearchIssueFormData()
+			cmds = append(cmds, m.searchIssueData.Form.Init())
 			return m, tea.Batch(cmds...)
 
 		case "/":
@@ -223,13 +223,16 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchTransitionsCmd(m.activeIssue.Key)
 
 		case "a":
+			var cmds []tea.Cmd
 			m.activeIssue = m.selectedIssue
 			m.previousMode = m.mode
 			m.mode = userSearchView
-			m.textInput.SetValue("")
-			m.textInput.Focus()
-			m.loadingCount++
-			return m, m.fetchAssignableUsersCmd(m.activeIssue.Key)
+			if m.usersCache != nil {
+				m.loadingCount++
+				m.searchUserData = NewSearchUserFormData(m.usersCache)
+				cmds = append(cmds, m.searchUserData.Form.Init())
+			}
+			return m, tea.Batch(cmds...)
 
 		case "p":
 			m.activeIssue = m.selectedIssue
@@ -258,6 +261,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.activeIssue = m.selectedIssue
 			sectionsToNavigate := m.sections
+
+			m.detailLayout = m.calculateDetailLayout()
 			if m.filteredSections != nil {
 				sectionsToNavigate = m.filteredSections
 			}
@@ -265,12 +270,14 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				m.issueDetail = nil
+				m.activeIssue = nil
 
 				var cmds []tea.Cmd
 
 				m.loadingCount++
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
+				m.mode = detailView
 				return m, tea.Batch(cmds...)
 			}
 

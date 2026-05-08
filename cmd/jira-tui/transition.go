@@ -125,7 +125,7 @@ func (m model) renderTransitionView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("Transition "+m.activeIssue.Key, modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Transition "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
@@ -190,7 +190,7 @@ func (m model) renderPostCancelReasonView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("Cancel Reason", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Cancel Reason", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

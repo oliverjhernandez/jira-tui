@@ -69,7 +69,7 @@ func (m model) renderEditDescriptionView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("Description", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Description", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

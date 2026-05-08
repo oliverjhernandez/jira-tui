@@ -15,6 +15,7 @@ import (
 type detailLayout struct {
 	leftColumnWidth  int
 	rightColumnWidth int
+	metadataHeight   int
 	descHeight       int
 	commentsHeight   int
 	worklogsHeight   int
@@ -64,10 +65,6 @@ type issueDetailLoadedMsg struct {
 
 type transitionsLoadedMsg struct {
 	transitions []jira.Transition
-}
-
-type assignableUsersLoadedMsg struct {
-	users []jira.User
 }
 
 type usersLoadedMsg struct {
@@ -488,21 +485,6 @@ func (m model) deleteCommentCmd(issueKey, commentID string) tea.Cmd {
 	}
 }
 
-func (m model) fetchAssignableUsersCmd(issueKey string) tea.Cmd {
-	return func() tea.Msg {
-		if m.client == nil {
-			return errMsg{fmt.Errorf("jira client not initialized")}
-		}
-
-		users, err := m.client.GetAssignableUsers(context.Background(), issueKey)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return assignableUsersLoadedMsg{users}
-	}
-}
-
 func (m model) fetchAllUsersCmd() tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
@@ -712,10 +694,10 @@ func (m model) calculateDetailLayout() detailLayout {
 	leftColumnWidth := int(float64(panelWidth) * 0.8)
 	rightColumnWidth := int(float64(panelWidth) * 0.2)
 
-	metadataPanelHeight := 8
+	metadataHeight := 7
 	statusBarHeight := 1
 
-	leftFixedHeight := metadataPanelHeight + statusBarHeight + (ui.PanelOverheadHeight * 2)
+	leftFixedHeight := metadataHeight + statusBarHeight + (ui.PanelOverheadHeight * 2)
 	rightFixedHeight := statusBarHeight + (ui.PanelOverheadHeight * 3)
 	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
 	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
@@ -730,6 +712,7 @@ func (m model) calculateDetailLayout() detailLayout {
 	return detailLayout{
 		leftColumnWidth,
 		rightColumnWidth,
+		metadataHeight,
 		descHeight,
 		commentsHeight,
 		worklogsHeight,
@@ -870,9 +853,9 @@ func (m model) renderInfoPanel() string {
 	return ui.InfoPanelStyle.Render(content)
 }
 
-func (m model) renderMetadataPanel(width int) string {
+func (m model) renderMetadataPanel(width int, height int) string {
 	if m.issueDetail == nil {
-		return ui.RenderPanelWithLabel("Metadata", "", width, m.focusedSection == metadataSection)
+		return ui.RenderPanelWithLabel("Metadata", "", width, height, m.focusedSection == metadataSection)
 	}
 
 	var index string
@@ -916,7 +899,7 @@ func (m model) renderMetadataPanel(width int) string {
 	detailsContent.WriteString(leftHeader + "\n")
 	detailsContent.WriteString(metadataRow1 + "\n" + metadataRow2)
 
-	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, m.focusedSection == metadataSection)
+	return ui.RenderPanelWithLabel("Metadata", detailsContent.String(), width, height, m.focusedSection == metadataSection)
 }
 
 func (m model) renderStatusBar() string {
@@ -928,6 +911,11 @@ func (m model) renderStatusBar() string {
 		style = ui.StatusBarInfoStyle
 	case errStatusBarMsg:
 		style = ui.StatusBarErrorStyle
+	}
+
+	if m.filtering {
+		statusBar.WriteString("  Filter: " + m.textInput.Value())
+		return ui.StatusBarInfoStyle.Render(statusBar.String())
 	}
 
 	if m.loadingCount > 0 {
@@ -955,9 +943,9 @@ func (m model) buildDescriptionContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderDescriptionPanel(width int) string {
+func (m model) renderDescriptionPanel(width int, height int) string {
 	viewport := m.descViewport.View()
-	return ui.RenderPanelWithLabel("Description", viewport, width, m.focusedSection == descriptionSection)
+	return ui.RenderPanelWithLabel("Description", viewport, width, height, m.focusedSection == descriptionSection)
 }
 
 func (m model) buildCommentsContent(width int) string {
@@ -1008,9 +996,9 @@ func (m model) renderComment(c jira.Comment, width int, isSelected bool, isLast 
 	return comment.String()
 }
 
-func (m model) renderCommentsPanel(width int) string {
+func (m model) renderCommentsPanel(width int, height int) string {
 	viewport := m.commentsViewport.View()
-	return ui.RenderPanelWithLabel("Comments", viewport, width, m.focusedSection == commentsSection)
+	return ui.RenderPanelWithLabel("Comments", viewport, width, height, m.focusedSection == commentsSection)
 }
 
 func (m model) buildWorklogsContent(width int) string {
@@ -1060,9 +1048,9 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 	return wl.String()
 }
 
-func (m model) renderWorklogsPanel(width int) string {
+func (m model) renderWorklogsPanel(width int, height int) string {
 	viewport := m.worklogsViewport.View()
-	return ui.RenderPanelWithLabel("Worklogs", viewport, width, m.focusedSection == worklogsSection)
+	return ui.RenderPanelWithLabel("Worklogs", viewport, width, height, m.focusedSection == worklogsSection)
 }
 
 func (m model) buildIssueLinksContent(width int) string {
@@ -1082,9 +1070,9 @@ func (m model) buildIssueLinksContent(width int) string {
 	return content.String()
 }
 
-func (m model) renderIssueLinksPanel(width int) string {
+func (m model) renderIssueLinksPanel(width int, height int) string {
 	viewport := m.issueLinksViewport.View()
-	return ui.RenderPanelWithLabel("Issue Links", viewport, width, m.focusedSection == issueLinksSection)
+	return ui.RenderPanelWithLabel("Issue Links", viewport, width, height, m.focusedSection == issueLinksSection)
 }
 
 func (m model) getUserName(accountID string) string {
@@ -1174,9 +1162,9 @@ func (m model) renderSubTask(i jira.Issue, width int, isSelected bool, isLast bo
 	return content.String()
 }
 
-func (m model) renderSubTasksPanel(width int) string {
+func (m model) renderSubTasksPanel(width int, height int) string {
 	viewport := m.subTasksViewport.View()
-	return ui.RenderPanelWithLabel("SubTasks", viewport, width, m.focusedSection == subTasksSection)
+	return ui.RenderPanelWithLabel("SubTasks", viewport, width, height, m.focusedSection == subTasksSection)
 }
 
 func (m model) renderSimpleBackground() string {

@@ -15,7 +15,7 @@ type SearchIssueFormData struct {
 	Err   error
 }
 
-func NewSearchFormData() *SearchIssueFormData {
+func NewSearchIssueFormData() *SearchIssueFormData {
 	e := &SearchIssueFormData{
 		Query: "",
 	}
@@ -38,23 +38,23 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyPressMsg.String() {
 		case "esc":
 			m.mode = listView
-			m.searchData = nil
+			m.searchIssueData = nil
 			return m, nil
 		}
 	}
 
-	form, cmd := m.searchData.Form.Update(msg)
+	form, cmd := m.searchIssueData.Form.Update(msg)
 
 	if f, ok := form.(*huh.Form); ok {
-		m.searchData.Form = f
+		m.searchIssueData.Form = f
 		cmds = append(cmds, cmd)
 	}
 
-	if m.searchData.Form.State == huh.StateCompleted {
+	if m.searchIssueData.Form.State == huh.StateCompleted {
 		switch m.issueSelectionMode {
 		case standardIssueSearch:
 			m.loadingCount++
-			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchData.Query))
+			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchIssueData.Query))
 			m.statusMessage = statusMessage{
 				msgType: infoStatusBarMsg,
 				content: "Searching...",
@@ -68,13 +68,14 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.searchData.Err = nil
+	m.searchIssueData.Err = nil
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) renderSearchIssueView() string {
 	var bgContent string
+	// FIX: Shouldnt be based on mode
 	if m.issueSelectionMode == linkIssue {
 		bgContent = m.renderDetailView()
 	} else {
@@ -85,11 +86,11 @@ func (m model) renderSearchIssueView() string {
 
 	var modalContent strings.Builder
 
-	modalContent.WriteString(m.searchData.Form.View())
+	modalContent.WriteString(m.searchIssueData.Form.View())
 	modalContent.WriteString("\n")
 
-	if m.searchData.Err != nil {
-		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchData.Err.Error()))
+	if m.searchIssueData.Err != nil {
+		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchIssueData.Err.Error()))
 	}
 
 	styledModal := ui.ModalStyle.Render(modalContent.String())

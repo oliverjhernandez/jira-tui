@@ -178,35 +178,31 @@ func GetModalHeight(windowHeight int, scale float64) int {
 	return int(float64(windowHeight) * scale)
 }
 
-func RenderPanelWithLabel(label string, content string, width int, active bool) string {
-	// TODO: move all this to ui package
+func RenderPanelWithLabel(label string, content string, width int, height int, active bool) string {
 	var borderColor color.Color
 	if active {
 		borderColor = lipgloss.Color("86")
 	} else {
 		borderColor = lipgloss.Color("240")
 	}
-
 	border := lipgloss.RoundedBorder()
 	topBorderStyler := lipgloss.NewStyle().Foreground(borderColor).Render
 	topLeft := topBorderStyler(border.TopLeft)
 	topRight := topBorderStyler(border.TopRight)
-
 	labelStyle := lipgloss.NewStyle().Foreground(borderColor).Padding(0, 1)
 	renderedLabel := labelStyle.Render(label)
-
 	cellsShort := max(0, width-lipgloss.Width(topLeft+topRight+renderedLabel))
 	gap := strings.Repeat(border.Top, cellsShort)
 	top := topLeft + renderedLabel + topBorderStyler(gap) + topRight
-
 	boxStyle := lipgloss.NewStyle().
 		Border(border).
 		BorderForeground(borderColor).
 		BorderTop(false).
 		Padding(1, 2).
 		Width(width)
-
+	if height > 0 {
+		boxStyle = boxStyle.Height(height)
+	}
 	bottom := boxStyle.Render(content)
-
 	return top + "\n" + bottom
 }

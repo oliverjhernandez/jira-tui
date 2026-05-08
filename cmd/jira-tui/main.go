@@ -182,7 +182,6 @@ type model struct {
 
 	//  Selection
 	usersCache         []jira.User
-	filteredUsers      []*jira.User
 	userSelectionMode  userSelectionMode
 	issueSelectionMode issueSelectionMode
 
@@ -212,13 +211,14 @@ type model struct {
 	worklogFormData  *WorklogFormData
 	newIssueData     *NewIssueFormData
 	estimateData     *EstimateFormData
-	searchData       *SearchIssueFormData
+	searchIssueData  *SearchIssueFormData
 	issueLinkData    *IssueLinkFormData
 	commentData      *CommentFormData
 	descriptionData  *DescriptionFormData
 	priorityData     *PriorityFormData
 	transitionData   *TransitionFormData
 	cancelReasonData *CancelReasonFormData
+	searchUserData   *SearchUserFormData
 
 	// UI Elements
 	spinner       spinner.Model
@@ -285,7 +285,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case subTasksLoadedMsg:
 		m.loadingCount--
-		m.searchData = NewSearchFormData()
+		m.searchIssueData = NewSearchIssueFormData()
 		if m.issueDetail != nil {
 			m.issueDetail.SubTasks = msg.subTasks
 		}
@@ -340,7 +340,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.issueDetail = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.previousMode = m.mode
-		m.mode = detailView
 
 		if !m.detailPolling {
 			m.detailPolling = true
@@ -578,11 +577,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.issueDetail.Key))
 		return m, tea.Batch(cmds...)
 
-	case assignableUsersLoadedMsg:
-		m.usersCache = msg.users
-		m.loadingCount--
-		return m, nil
-
 	case usersLoadedMsg:
 		m.loadingCount--
 		m.usersCache = msg.users
@@ -605,9 +599,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issueDetailPollMsg:
 		var cmds []tea.Cmd
+
 		if m.mode != detailView {
 			return m, nil
 		}
+		if m.activeIssue == nil {
+			return m, nil
+		}
+
 		m.loadingCount++
 		detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
 		cmds = append(cmds, detailCmd)
@@ -672,9 +671,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusMessage.content = msg.err.Error()
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
-		if m.mode == issueSearchView && m.searchData != nil {
-			m.searchData = NewSearchFormData()
-			m.searchData.Err = msg.err
+		if m.mode == issueSearchView && m.searchIssueData != nil {
+			m.searchIssueData = NewSearchIssueFormData()
+			m.searchIssueData.Err = msg.err
 		}
 
 		return m, tea.Batch(cmds...)
@@ -779,18 +778,12 @@ func main() {
 	textInput := textinput.New()
 	textInput.CharLimit = 50
 
-	textAreaBox := textarea.New()
-	textAreaBox.CharLimit = 3000
-	textAreaBox.MaxHeight = 20
-	textAreaBox.MaxHeight = 80
-
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
 		mode:          listView,
 		client:        client,
 		textInput:     textInput,
-		textArea:      textAreaBox,
 		windowWidth:   80,
 		windowHeight:  24,
 		spinner:       spinner,

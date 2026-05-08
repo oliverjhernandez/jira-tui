@@ -265,13 +265,18 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.estimateData.Form.Init()
 
 			case keyPressMsg.String() == "a":
+				var cmds []tea.Cmd
 				m.activeIssue = &m.issueDetail.SubTasks[m.subTasksCursor]
+				m.previousMode = m.mode
 				m.mode = userSearchView
-				m.textInput.SetValue("")
-				m.textInput.Focus()
-				m.cursor = 0
-				m.loadingCount++
-				return m, m.fetchAssignableUsersCmd(m.issueDetail.SubTasks[m.subTasksCursor].Key)
+
+				if m.usersCache != nil {
+					m.loadingCount++
+					m.searchUserData = NewSearchUserFormData(m.usersCache)
+					cmds = append(cmds, m.searchUserData.Form.Init())
+				}
+
+				return m, tea.Batch(cmds...)
 			}
 		}
 
@@ -369,15 +374,19 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case keyPressMsg.String() == "a":
+			var cmds []tea.Cmd
 			m.activeIssue = &jira.Issue{
 				Key: m.issueDetail.Key,
 			}
 			m.previousMode = m.mode
 			m.mode = userSearchView
-			m.textInput.SetValue("")
-			m.textInput.Focus()
-			m.loadingCount++
-			return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
+
+			if m.usersCache != nil {
+				m.loadingCount++
+				m.searchUserData = NewSearchUserFormData(m.usersCache)
+				cmds = append(cmds, m.searchUserData.Form.Init())
+			}
+			return m, tea.Batch(cmds...)
 
 		case keyPressMsg.String() == "p":
 			m.priorityData = NewPriorityFormData(m.priorities, m.issueDetail.Priority.Name)
@@ -436,9 +445,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmds []tea.Cmd
 			m.mode = listView
 			m.detailPolling = false
-			m.issueDetail = nil
-			m.subTasksViewport.SetContent("")
+			m.activeIssue = nil
+
+			m.descViewport.SetContent("")
+			m.commentsViewport.SetContent("")
 			m.worklogsViewport.SetContent("")
+			m.issueLinksViewport.SetContent("")
+			m.subTasksViewport.SetContent("")
+
 			m.textArea.SetValue("")
 			m.commentsCursor = 0
 			m.worklogsCursor = 0
@@ -456,13 +470,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderDetailView() string {
-	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth)
-	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth)
-	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth)
+	metadataPanel := m.renderMetadataPanel(m.detailLayout.leftColumnWidth, m.detailLayout.metadataHeight)
+	descriptionPanel := m.renderDescriptionPanel(m.detailLayout.leftColumnWidth, m.detailLayout.descHeight)
+	commentsPanel := m.renderCommentsPanel(m.detailLayout.leftColumnWidth, m.detailLayout.commentsHeight)
 
-	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth)
-	issueLinksPanel := m.renderIssueLinksPanel(m.detailLayout.rightColumnWidth)
-	subTasksPanel := m.renderSubTasksPanel(m.detailLayout.rightColumnWidth)
+	worklogPanel := m.renderWorklogsPanel(m.detailLayout.rightColumnWidth, m.detailLayout.worklogsHeight)
+	issueLinksPanel := m.renderIssueLinksPanel(m.detailLayout.rightColumnWidth, m.detailLayout.issueLinksHeight)
+	subTasksPanel := m.renderSubTasksPanel(m.detailLayout.rightColumnWidth, m.detailLayout.subTasksHeight)
 
 	statusBar := m.renderStatusBar()
 

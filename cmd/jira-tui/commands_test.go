@@ -14,7 +14,7 @@ func TestRenderMetadataPanel_NilIssueDetail(t *testing.T) {
 	}()
 
 	m := model{}
-	m.renderMetadataPanel(80)
+	m.renderMetadataPanel(80, 8)
 }
 
 func TestRenderMetadataPanel_NilParent(t *testing.T) {
@@ -32,7 +32,7 @@ func TestRenderMetadataPanel_NilParent(t *testing.T) {
 			Type:    "Task",
 		},
 	}
-	m.renderMetadataPanel(80)
+	m.renderMetadataPanel(80, 8)
 }
 
 func TestBuildDescriptionContent_NilDescription(t *testing.T) {

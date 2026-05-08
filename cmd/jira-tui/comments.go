@@ -25,13 +25,17 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "@":
+			var cmds []tea.Cmd
 			m.mode = userSearchView
 			m.userSelectionMode = insertMention
-			m.textInput.SetValue("")
-			m.textInput.Focus()
-			m.cursor = 0
-			m.loadingCount++
-			return m, m.fetchAssignableUsersCmd(m.issueDetail.Key)
+
+			if m.usersCache != nil {
+				m.loadingCount++
+				m.searchUserData = NewSearchUserFormData(m.usersCache)
+				cmds = append(cmds, m.searchUserData.Form.Init())
+			}
+
+			return m, tea.Batch(cmds...)
 
 		case "alt+enter", "ctrl+s":
 			var cmd tea.Cmd
@@ -65,7 +69,7 @@ func (m model) renderCommentView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("New Comment", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("New Comment", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

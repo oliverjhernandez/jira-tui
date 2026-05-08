@@ -110,7 +110,7 @@ func (m model) renderWorklogView() string {
 
 	modalContent.WriteString(m.worklogFormData.Form.View())
 
-	styledModal := ui.RenderPanelWithLabel("Worklog", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Worklog", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

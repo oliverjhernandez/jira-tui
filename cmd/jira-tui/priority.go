@@ -81,7 +81,7 @@ func (m model) renderEditPriorityView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("Priority "+m.activeIssue.Key, modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("Priority "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

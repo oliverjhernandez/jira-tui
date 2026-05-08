@@ -150,7 +150,7 @@ func (m model) renderNewIssueView() string {
 
 	modalContent.WriteString(m.newIssueData.Form.View())
 
-	styledModal := ui.RenderPanelWithLabel("New Issue", modalContent.String(), modalWidth, true)
+	styledModal := ui.RenderPanelWithLabel("New Issue", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
