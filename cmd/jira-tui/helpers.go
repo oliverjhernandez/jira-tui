@@ -76,6 +76,7 @@ func truncateLongString(s string, max int) string {
 func issueMatchesFilter(issue jira.Issue, filter string) bool {
 	filterLower := strings.ToLower(filter)
 	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||
+		strings.Contains(strings.ToLower(issue.Status), filterLower) ||
 		strings.Contains(strings.ToLower(issue.Key), filterLower)
 }
 

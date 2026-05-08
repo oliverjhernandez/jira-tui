@@ -72,24 +72,24 @@ func TestTimeAgo(t *testing.T) {
 			expected: "NA",
 		},
 		{
-			name:     "1 hour ago",
+			name:     "1h ago",
 			date:     now.Add(-1 * time.Hour).Format(jiraFormat),
-			expected: "1 hours ago",
+			expected: "1h ago",
 		},
 		{
-			name:     "30 minutes ago",
+			name:     "30m ago",
 			date:     now.Add(-30 * time.Minute).Format(jiraFormat),
-			expected: "30 minutes ago",
+			expected: "30m ago",
 		},
 		{
-			name:     "2 days ago",
+			name:     "2d ago",
 			date:     now.Add(-48 * time.Hour).Format(jiraFormat),
-			expected: "2 days ago",
+			expected: "2d ago",
 		},
 		{
-			name:     "1 week ago",
+			name:     "1w ago",
 			date:     now.Add(-7 * 24 * time.Hour).Format(jiraFormat),
-			expected: "1 weeks ago",
+			expected: "1w ago",
 		},
 		{
 			name:     "over a year shows date format",

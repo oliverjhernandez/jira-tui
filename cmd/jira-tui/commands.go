@@ -875,9 +875,12 @@ func (m model) renderMetadataPanel(width int) string {
 		return ui.RenderPanelWithLabel("Metadata", "", width, m.focusedSection == metadataSection)
 	}
 
-	index := ui.DimTextStyle.Render(
-		fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
-	)
+	var index string
+	if m.sections != nil {
+		index = ui.DimTextStyle.Render(
+			fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
+		)
+	}
 
 	var parent string
 	if m.issueDetail.Parent != nil {
@@ -1101,7 +1104,7 @@ func (m model) renderIssueLink(l jira.IssueLink, width int, isSelected bool, isL
 		linkType := ui.DimTextStyle.Render(l.Type.Inward)
 		key := ui.KeyFieldStyle.Render(l.InwardIssue.Key)
 		content.WriteString(linkType + " " + key + "\n")
-	} else {
+	} else if l.OutwardIssue != nil {
 		linkType := ui.DimTextStyle.Render(l.Type.Outward)
 		key := ui.KeyFieldStyle.Render(l.OutwardIssue.Key)
 		content.WriteString(linkType + " " + key + "\n")
