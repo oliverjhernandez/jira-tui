@@ -9,7 +9,7 @@ import (
 func TestRenderMetadataPanel_NilIssueDetail(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Errorf("renderMetadataPanel panicked with nil issueDetail: %v", r)
+			t.Errorf("renderMetadataPanel panicked with nil activeIssue: %v", r)
 		}
 	}()
 
@@ -25,7 +25,7 @@ func TestRenderMetadataPanel_NilParent(t *testing.T) {
 	}()
 
 	m := model{
-		issueDetail: &jira.IssueDetail{
+		activeIssue: &jira.Issue{
 			Key:     "DEV-123",
 			Summary: "Test issue",
 			Status:  "In Progress",
@@ -43,7 +43,7 @@ func TestBuildDescriptionContent_NilDescription(t *testing.T) {
 	}()
 
 	m := model{
-		issueDetail: &jira.IssueDetail{},
+		activeIssue: &jira.Issue{},
 	}
 	m.buildDescriptionContent(80)
 }
@@ -56,7 +56,7 @@ func TestBuildCommentsContent_EmptyComments(t *testing.T) {
 	}()
 
 	m := model{
-		issueDetail: &jira.IssueDetail{
+		activeIssue: &jira.Issue{
 			Comments: nil,
 		},
 	}
@@ -71,7 +71,7 @@ func TestBuildWorklogsContent_NilWorklogs(t *testing.T) {
 	}()
 
 	m := model{
-		issueDetail: &jira.IssueDetail{},
+		activeIssue: &jira.Issue{},
 	}
 	m.buildWorklogsContent(80)
 }
@@ -84,7 +84,7 @@ func TestBuildIssueLinksContent_NilOutwardIssue(t *testing.T) {
 	}()
 
 	m := model{
-		issueDetail: &jira.IssueDetail{
+		activeIssue: &jira.Issue{
 			IssueLinks: []jira.IssueLink{
 				{
 					Type: jira.Link{Outward: "blocks"},
@@ -99,7 +99,7 @@ func TestBuildIssueLinksContent_NilOutwardIssue(t *testing.T) {
 func TestBuildSubTasksContent_NilIssueDetail(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Errorf("buildSubTasksContent panicked with nil issueDetail: %v", r)
+			t.Errorf("buildSubTasksContent panicked with nil activeIssue: %v", r)
 		}
 	}()
 

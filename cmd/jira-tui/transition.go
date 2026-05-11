@@ -180,15 +180,15 @@ func (m model) renderPostCancelReasonView() string {
 
 	var modalContent strings.Builder
 
-	if m.issueDetail != nil {
-		header := ui.DetailHeaderStyle.Render(m.issueDetail.Key) + " " + ui.RenderStatusBadge(m.issueDetail.Status)
+	if m.activeIssue != nil {
+		header := ui.DetailHeaderStyle.Render(m.activeIssue.Key) + " " + ui.RenderStatusBadge(m.activeIssue.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
 
 	styledModal := ui.RenderPanelWithLabel("Cancel Reason", modalContent.String(), modalWidth, modalHeight, true)
 

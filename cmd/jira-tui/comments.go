@@ -41,13 +41,13 @@ func (m model) updateCommentView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			comment := m.textArea.Value()
 			if m.editingComment {
-				cmd = m.updateCommentCmd(m.issueDetail.Key, m.issueDetail.Comments[m.commentsCursor].ID, comment)
+				cmd = m.updateCommentCmd(m.activeIssue.Key, m.activeIssue.Comments[m.commentsCursor].ID, comment)
 				m.editingComment = false
 				return m, cmd
 			} else if m.textArea.Value() != "" {
 				m.textArea.Reset()
 				m.mode = detailView
-				cmd = m.postCommentCmd(m.issueDetail.Key, comment)
+				cmd = m.postCommentCmd(m.activeIssue.Key, comment)
 				return m, cmd
 			}
 		}

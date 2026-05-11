@@ -191,7 +191,7 @@ func (m model) getCommentCursorLine() int {
 	width := m.detailLayout.leftColumnWidth
 
 	for i := 0; i < m.commentsCursor; i++ {
-		c := m.issueDetail.Comments[i]
+		c := m.activeIssue.Comments[i]
 
 		lines += 1
 

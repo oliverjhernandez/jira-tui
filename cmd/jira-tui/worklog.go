@@ -68,7 +68,7 @@ func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.worklogFormData.Form.State == huh.StateCompleted {
 		m.mode = detailView
 		worklogID := strconv.Itoa(m.worklogFormData.ID)
-		issueID := m.issueDetail.ID
+		issueID := m.activeIssue.ID
 		startDate := m.worklogFormData.StartDate
 		accountID := m.myself.ID
 		description := m.worklogFormData.Description

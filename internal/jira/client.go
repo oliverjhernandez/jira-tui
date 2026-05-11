@@ -23,7 +23,6 @@ type Client struct {
 	jiraEmail  string
 }
 
-// TODO: map to correct types
 type Issue struct {
 	ID               string
 	Key              string
@@ -37,23 +36,8 @@ type Issue struct {
 	Project          Project
 	Description      *ContentDoc
 	OriginalEstimate string
-}
-
-type IssueDetail struct {
-	ID               string
-	Key              string
-	Project          Project
-	Summary          string
-	Status           string
-	Type             string
-	Assignee         string
-	Priority         Priority
-	Description      *ContentDoc
-	Reporter         string
 	Comments         []Comment
-	Parent           *Parent
 	IssueLinks       []IssueLink
-	OriginalEstimate string
 	Created          string
 	Updated          string
 	SubTasks         []Issue
@@ -550,7 +534,7 @@ func (c *Client) GetIssueTypes(ctx context.Context) ([]IssueType, error) {
 	return issueTypes, err
 }
 
-func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDetail, error) {
+func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 	params := url.Values{}
 	params.Add("fields", "id,summary,description,project,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
@@ -566,7 +550,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 		http.StatusOK,
 	)
 
-	detail := &IssueDetail{
+	detail := &Issue{
 		ID:          issue.ID,
 		Key:         issue.Key,
 		Project:     issue.Fields.Project,
@@ -591,7 +575,9 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*IssueDet
 	}
 
 	if issue.Fields.Reporter != nil {
-		detail.Reporter = issue.Fields.Reporter.DisplayName
+		detail.Reporter = Reporter{
+			ID: issue.Fields.Reporter.ID,
+		}
 	}
 
 	if issue.Fields.Comment != nil {
@@ -887,37 +873,28 @@ func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {
 	return priorities, err
 }
 
-func (c *Client) GetStatuses(ctx context.Context, projects []Project) ([]Status, error) {
+func (c *Client) GetStatuses(ctx context.Context, p Project) ([]Status, error) {
 	statuses := []Status{}
-	seen := make(map[string]bool)
 
-	for _, p := range projects {
-		apiURL := fmt.Sprintf("/rest/api/3/project/%s/statuses", p.ID)
+	apiURL := fmt.Sprintf("/rest/api/3/project/%s/statuses", p.ID)
 
-		var result []struct {
-			Statuses []Status `json:"statuses"`
-		}
+	var result []struct {
+		Statuses []Status `json:"statuses"`
+	}
 
-		err := c.doJiraRequest(
-			ctx,
-			"GET",
-			apiURL,
-			nil,
-			nil,
-			&result,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get statuses for project %s: %w", p.Name, err)
-		}
-
-		for _, r := range result {
-			for _, s := range r.Statuses {
-				if !seen[s.ID] {
-					seen[s.ID] = true
-					statuses = append(statuses, s)
-				}
-			}
-		}
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		apiURL,
+		nil,
+		nil,
+		&result,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get statuses for project %s: %w", p.Name, err)
+	}
+	for _, r := range result {
+		statuses = append(statuses, r.Statuses...)
 	}
 
 	return statuses, nil

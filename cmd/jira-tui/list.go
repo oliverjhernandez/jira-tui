@@ -3,7 +3,6 @@ package main
 import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -117,7 +116,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "n":
 			i := &NewIssueFormData{}
-			m.issueDetail = nil
+			m.activeIssue = nil
 			m.newIssueData = m.NewIssueForm(i)
 			m.mode = newIssueView
 			return m, m.newIssueData.Form.Init()
@@ -262,6 +261,8 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 
 		case "enter":
+			var cmds []tea.Cmd
+
 			m.activeIssue = m.selectedIssue
 			sectionsToNavigate := m.sections
 
@@ -272,17 +273,14 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
-				m.issueDetail = nil
 				m.activeIssue = nil
-
-				var cmds []tea.Cmd
 
 				m.loadingCount++
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
 				m.mode = detailView
-				return m, tea.Batch(cmds...)
 			}
+			return m, tea.Batch(cmds...)
 
 		// Go to Parent
 		case "alt+enter":
@@ -295,20 +293,20 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
 				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				if m.selectedIssue.Parent != nil {
-					m.activeIssue = &jira.Issue{
-						ID:   m.selectedIssue.Parent.ID,
-						Key:  m.selectedIssue.Parent.Key,
-						Type: m.selectedIssue.Parent.Type,
-					}
-					m.issueDetail = nil
 					m.loadingCount++
-					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
+					detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 					m.statusMessage = statusMessage{
 						"Fetching parent...",
 						infoStatusBarMsg,
 					}
 					cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 					cmds = append(cmds, detailCmd)
+					m.mode = detailView
+				} else {
+					m.statusMessage = statusMessage{
+						"No parent found.",
+						errStatusBarMsg,
+					}
 				}
 			}
 			return m, tea.Batch(cmds...)

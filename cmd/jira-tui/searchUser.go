@@ -47,6 +47,7 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = m.previousMode
 			m.searchUserData = nil
+			m.userSelectionMode = 0
 			return m, nil
 		}
 	}
@@ -59,7 +60,6 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.searchUserData.Form.State == huh.StateCompleted {
-		log.Printf("Form completed, ID: %s", m.searchUserData.ID)
 		var user jira.User
 		for _, u := range m.usersCache {
 			if u.ID == m.searchUserData.ID {

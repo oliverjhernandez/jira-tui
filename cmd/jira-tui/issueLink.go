@@ -65,7 +65,7 @@ func (m model) updateIssueLinkView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		toIssueKey := m.issueLinkData.IssueKey
 
 		cmds = append(cmds, m.postLinkIssueCmd(
-			m.issueDetail.Key,
+			m.activeIssue.Key,
 			toIssueKey,
 			relation,
 		))

@@ -44,7 +44,7 @@ type myselfLoadedMsg struct {
 }
 
 type statusesLoadedMsg struct {
-	statuses []jira.Status
+	statuses map[string][]jira.Status
 }
 
 type prioritiesLoadedMsg struct {
@@ -60,7 +60,7 @@ type issueTypesLoadedMsg struct {
 }
 
 type issueDetailLoadedMsg struct {
-	detail *jira.IssueDetail
+	detail *jira.Issue
 }
 
 type transitionsLoadedMsg struct {
@@ -421,12 +421,17 @@ func (m model) fetchStatusesCmd(projects []jira.Project) tea.Cmd {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		statuses, err := m.client.GetStatuses(context.Background(), projects)
-		if err != nil {
-			return errMsg{err}
+		results := make(map[string][]jira.Status)
+		for _, p := range projects {
+			statuses, err := m.client.GetStatuses(context.Background(), p)
+			if err != nil {
+				return errMsg{err}
+			}
+
+			results[p.ID] = statuses
 		}
 
-		return statusesLoadedMsg{statuses}
+		return statusesLoadedMsg{results}
 	}
 }
 
@@ -658,26 +663,23 @@ func (m model) unlinkIssueCmd(linkID string) tea.Cmd {
 	}
 }
 
-func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Section {
+func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.Status) []Section {
 	sections := []Section{
 		{Name: "In Progress", CategoryKey: "indeterminate"},
 		{Name: "To Do", CategoryKey: "new"},
 		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
-
-	statusCategories := make(map[string]string)
-	for _, s := range statuses {
-		statusCategories[strings.ToLower(s.Name)] = s.StatusCategory.Key
-	}
-
 	for i := range issues {
 		issue := &issues[i]
+		projectStatuses := statuses[issue.Project.ID]
+		statusCategories := make(map[string]string)
+		for _, s := range projectStatuses {
+			statusCategories[strings.ToLower(s.Name)] = s.StatusCategory.Key
+		}
 		categoryKey := statusCategories[strings.ToLower(issue.Status)]
-
 		if strings.Contains(strings.ToLower(issue.Status), "validación") {
 			categoryKey = "done"
-		} // NOTE: probably should find a better way to show validación status
-
+		}
 		for idx := range sections {
 			if sections[idx].CategoryKey == categoryKey {
 				sections[idx].Issues = append(sections[idx].Issues, issue)
@@ -685,7 +687,6 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses []jira.Status) []Se
 			}
 		}
 	}
-
 	return sections
 }
 
@@ -854,7 +855,7 @@ func (m model) renderInfoPanel() string {
 }
 
 func (m model) renderMetadataPanel(width int, height int) string {
-	if m.issueDetail == nil {
+	if m.activeIssue == nil {
 		return ui.RenderPanelWithLabel("Metadata", "", width, height, m.focusedSection == metadataSection)
 	}
 
@@ -866,33 +867,34 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	}
 
 	var parent string
-	if m.issueDetail.Parent != nil {
-		parent = ui.RenderIssueType(m.issueDetail.Parent.Type, false) + " " +
-			ui.DimTextStyle.Render(m.issueDetail.Parent.Key+" / ")
+	if m.activeIssue.Parent != nil {
+		parent = ui.RenderIssueType(m.activeIssue.Parent.Type, false) + " " +
+			ui.DimTextStyle.Render(m.activeIssue.Parent.Key+" / ")
 	}
 
-	issueKey := ui.RenderIssueType(m.issueDetail.Type, false) + " " + ui.DetailHeaderStyle.Render(m.issueDetail.Key)
+	issueKey := ui.RenderIssueType(m.activeIssue.Type, false) + " " + ui.DetailHeaderStyle.Render(m.activeIssue.Key)
 	summaryMaxWidth := 50
-	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.issueDetail.Summary, summaryMaxWidth))
+	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.activeIssue.Summary, summaryMaxWidth))
 	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
-	status := ui.RenderStatusBadge(m.issueDetail.Status)
-	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.issueDetail.Assignee, " ")[0]))
+	status := ui.RenderStatusBadge(m.activeIssue.Status)
+	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.activeIssue.Assignee, " ")[0]))
 	logged := ""
-	if m.issueDetail.Worklogs != nil {
-		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.issueDetail.Worklogs))
+	if m.activeIssue.Worklogs != nil {
+		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
 	detailsHeaderLine2 := status + "  " + assignee + "  " + logged
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
 	colwidth := 30
-	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.issueDetail.Priority.Name, true), colwidth)
-	col2 := ui.RenderFieldStyled("Reporter", m.issueDetail.Reporter, colwidth)
-	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.issueDetail.Type, true), colwidth)
+	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.activeIssue.Priority.Name, true), colwidth)
+	// TODO: map reporter to name
+	col2 := ui.RenderFieldStyled("Reporter", m.activeIssue.Reporter.ID, colwidth)
+	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.activeIssue.Type, true), colwidth)
 	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
-	col4 := ui.RenderFieldStyled("Created", timeAgo(m.issueDetail.Created), colwidth)
-	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.issueDetail.Updated), colwidth)
+	col4 := ui.RenderFieldStyled("Created", timeAgo(m.activeIssue.Created), colwidth)
+	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.activeIssue.Updated), colwidth)
 	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
 
 	var detailsContent strings.Builder
@@ -934,8 +936,8 @@ func (m model) renderStatusBar() string {
 func (m model) buildDescriptionContent(width int) string {
 	var content strings.Builder
 
-	if m.issueDetail.Description != nil {
-		descText := jira.ExtractText(m.issueDetail.Description, width)
+	if m.activeIssue.Description != nil {
+		descText := jira.ExtractText(m.activeIssue.Description, width)
 		content.WriteString(descText + "\n\n")
 	} else {
 		content.WriteString(ui.StatusBarInfoStyle.Render("No description") + "\n\n")
@@ -950,7 +952,7 @@ func (m model) renderDescriptionPanel(width int, height int) string {
 
 func (m model) buildCommentsContent(width int) string {
 	var content strings.Builder
-	comments := m.issueDetail.Comments
+	comments := m.activeIssue.Comments
 	commentCount := len(comments)
 
 	if commentCount > 0 {
@@ -1003,10 +1005,10 @@ func (m model) renderCommentsPanel(width int, height int) string {
 
 func (m model) buildWorklogsContent(width int) string {
 	var content strings.Builder
-	wlCount := len(m.issueDetail.Worklogs)
+	wlCount := len(m.activeIssue.Worklogs)
 
 	if wlCount > 0 {
-		for i, w := range m.issueDetail.Worklogs {
+		for i, w := range m.activeIssue.Worklogs {
 			isSelected := m.worklogsCursor == i
 			isLast := i == wlCount-1
 
@@ -1055,10 +1057,10 @@ func (m model) renderWorklogsPanel(width int, height int) string {
 
 func (m model) buildIssueLinksContent(width int) string {
 	var content strings.Builder
-	ilCount := len(m.issueDetail.IssueLinks)
+	ilCount := len(m.activeIssue.IssueLinks)
 
 	if ilCount > 0 {
-		for i, l := range m.issueDetail.IssueLinks {
+		for i, l := range m.activeIssue.IssueLinks {
 			isSelected := m.IssueLinksCursor == i
 			isLast := i == ilCount-1
 
@@ -1116,12 +1118,12 @@ func (m model) renderIssueLink(l jira.IssueLink, width int, isSelected bool, isL
 
 func (m model) buildSubTasksContent(width int) string {
 	var content strings.Builder
-	if m.issueDetail != nil {
-		sortIssuesByStatus(m.issueDetail.SubTasks)
-		subTasksCount := len(m.issueDetail.SubTasks)
+	if m.activeIssue != nil {
+		sortIssuesByStatus(m.activeIssue.SubTasks)
+		subTasksCount := len(m.activeIssue.SubTasks)
 
 		if subTasksCount > 0 {
-			for i, c := range m.issueDetail.SubTasks {
+			for i, c := range m.activeIssue.SubTasks {
 				isSelected := m.subTasksCursor == i
 				isLast := i == subTasksCount-1
 

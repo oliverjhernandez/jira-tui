@@ -53,7 +53,7 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.editingDescription = false
 		description := m.descriptionData.Description
 		m.loadingCount++
-		cmds = append(cmds, m.updateDescriptionCmd(m.issueDetail.Key, description))
+		cmds = append(cmds, m.updateDescriptionCmd(m.activeIssue.Key, description))
 	}
 
 	return m, tea.Batch(cmds...)

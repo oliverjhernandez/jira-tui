@@ -64,7 +64,7 @@ func (m model) renderPostEstimateView() string {
 	modalContent.WriteString(m.estimateData.Form.View())
 
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.1)
 
 	styledModal := ui.RenderPanelWithLabel("Original Estimate", modalContent.String(), modalWidth, modalHeight, true)
 
