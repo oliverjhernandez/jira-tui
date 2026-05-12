@@ -27,7 +27,6 @@ func NewTransitionFormData(transitions []jira.Transition) *TransitionFormData {
 	t.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[int]().
-				Title("Select new status").
 				Options(options...).
 				Value(&t.SelectedIndex),
 		),
@@ -70,7 +69,6 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "esc":
 			m.mode = m.previousMode
-			m.transitions = nil
 			return m, nil
 		}
 	}
@@ -83,9 +81,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.transitionData.Form.State == huh.StateCompleted {
-			if len(m.transitions) > 0 {
-				transition := m.transitions[m.transitionData.SelectedIndex]
-				if m.activeIssue != nil && m.activeIssue.OriginalEstimate == "" {
+			if m.activeIssue != nil {
+				transition := m.transitions[m.activeIssue.Key][m.transitionData.SelectedIndex]
+				if m.activeIssue.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()
 					m.mode = estimateView
@@ -118,12 +116,12 @@ func (m model) renderTransitionView() string {
 
 	var modalContent strings.Builder
 
-	if m.transitions != nil {
+	if m.transitionData != nil {
 		modalContent.WriteString(m.transitionData.Form.View())
 	}
 
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
 
 	styledModal := ui.RenderPanelWithLabel("Transition "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
 

@@ -213,13 +213,41 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sectionCursor = 0
 			return m, textinput.Blink
 
+		// transition
 		case "t":
+			var cmds []tea.Cmd
 			m.activeIssue = m.selectedIssue
 			m.previousMode = m.mode
 			m.mode = transitionView
 			m.transitionCursor = 0
-			m.loadingCount++
-			return m, m.fetchTransitionsCmd(m.activeIssue.Key)
+
+			if m.activeIssue != nil {
+				if m.selectedIssue.Description == nil {
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing description",
+					}
+					return m, m.clearStatusAfter(clearMsgTimeout)
+				}
+
+				if m.activeIssue.OriginalEstimate == "" {
+					m.statusMessage = statusMessage{
+						msgType: errStatusBarMsg,
+						content: "Cannot transition, missing original estimate",
+					}
+					return m, m.clearStatusAfter(clearMsgTimeout)
+				}
+
+				if cached, ok := m.transitions[m.activeIssue.Key]; ok && len(cached) > 0 {
+					m.transitionData = NewTransitionFormData(cached)
+					cmds = append(cmds, m.transitionData.Form.Init())
+				} else {
+					m.loadingCount++
+					cmds = append(cmds, m.fetchTransitionsCmd(m.activeIssue.Key))
+				}
+			}
+
+			return m, tea.Batch(cmds...)
 
 		// assign
 		case "a":

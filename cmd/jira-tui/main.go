@@ -177,7 +177,7 @@ type model struct {
 	worklogTotals map[string]int
 
 	// Transitions
-	transitions       []jira.Transition
+	transitions       map[string][]jira.Transition
 	pendingTransition *jira.Transition
 
 	//  Selection
@@ -403,9 +403,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionsLoadedMsg:
 		m.loadingCount--
-		m.transitions = msg.transitions
-		m.transitionData = NewTransitionFormData(msg.transitions)
-		return m, tea.Batch(m.transitionData.Form.Init())
+		m.transitions[msg.key] = msg.transitions
+		if m.mode == transitionView {
+			m.transitionData = NewTransitionFormData(msg.transitions)
+			return m, m.transitionData.Form.Init()
+		}
+		return m, nil
 
 	case statusesLoadedMsg:
 		m.loadingCount--
@@ -789,6 +792,7 @@ func main() {
 		worklogTotals: make(map[string]int),
 		columnWidths:  ui.CalculateColumnWidths(80),
 		loadingCount:  6, // Init cmds
+		transitions:   make(map[string][]jira.Transition),
 	})
 
 	if _, err := p.Run(); err != nil {

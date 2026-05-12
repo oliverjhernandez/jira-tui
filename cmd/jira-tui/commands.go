@@ -64,6 +64,7 @@ type issueDetailLoadedMsg struct {
 }
 
 type transitionsLoadedMsg struct {
+	key         string
 	transitions []jira.Transition
 }
 
@@ -199,7 +200,7 @@ func (m model) fetchTransitionsCmd(issueKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return transitionsLoadedMsg{transitions}
+		return transitionsLoadedMsg{issueKey, transitions}
 	}
 }
 
