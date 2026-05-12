@@ -121,8 +121,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textArea = textarea.New()
 				m.textArea.Placeholder = "Add a comment..."
 				m.textArea.Focus()
-				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - ui.PanelOverheadWidth
+				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - (ui.PanelBorder * 2) - (ui.PanelPaddingH * 2)
+				textAreaHeight := ui.GetModalHeight(m.windowHeight, 0.3) - (ui.PanelBorder * 2) - (ui.PanelPaddingH * 2)
 				m.textArea.SetWidth(textAreaWidth)
+				m.textArea.SetHeight(textAreaHeight)
 				m.mode = commentView
 				return m, nil
 
