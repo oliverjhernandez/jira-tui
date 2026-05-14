@@ -131,7 +131,7 @@ type Section struct {
 	Name        string
 	CategoryKey string
 	Collapsed   bool
-	Issues      []*jira.Issue
+	Issues      []jira.Issue
 }
 
 type model struct {
@@ -164,7 +164,6 @@ type model struct {
 	activeProjects []jira.Project
 	issueTypes     []jira.IssueType
 	selectedIssue  *jira.Issue
-	// issueDetail    *jira.IssueDetail
 
 	// Issue Metadata
 	sections         []Section
@@ -417,7 +416,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 			m.listViewport.SetContent(m.buildListContent())
 		}
-		m.selectedIssue = m.sections[0].Issues[0]
+		m.selectedIssue = &m.sections[0].Issues[0]
 
 		return m, nil
 

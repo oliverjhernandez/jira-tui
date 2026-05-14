@@ -26,7 +26,7 @@ var (
 	ThemeBg          = CatBase
 	ThemeBgDark      = CatCrust
 	ThemeBgLight     = CatSurface0
-	ThemeBgHighlight = CatSurface1
+	ThemeBgHighlight = CatSurface0
 
 	// Foregrounds
 	ThemeFg      = CatText
@@ -111,6 +111,8 @@ var (
 	IconComment    = ""
 	IconAttachment = ""
 	IconTime       = ""
+	IconSeparator  = "·"
+	IconEnter      = "↳"
 
 	// Error
 	IconError = ""
@@ -192,6 +194,12 @@ var (
 				Foreground(ThemeFg).
 				Width(ColWidthSummary).
 				Align(lipgloss.Left)
+
+	SummaryFieldSelectedStyle = lipgloss.NewStyle().
+					Background(ThemeBgHighlight).
+					Foreground(ThemeFg).
+					Width(ColWidthSummary).
+					Align(lipgloss.Left)
 
 	AssigneeFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).

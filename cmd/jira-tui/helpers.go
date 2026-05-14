@@ -25,11 +25,15 @@ var priorityOrder = map[string]int{
 }
 
 var statusOrder = map[string]int{
-	"In Progress": 1,
-	"To Do":       2,
-	"Backlog":     3,
-	"Done":        4,
-	"Cancelada":   5,
+	"Trabajando":               1,
+	"Ready to Deploy":          2,
+	"To Do":                    3,
+	"Selected for Development": 4,
+	"Backlog":                  5,
+	"Done":                     6,
+	"Cancelada":                7,
+	"Validación":               8,
+	"🔴 BLOQUEADO":              9,
 }
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
@@ -48,9 +52,9 @@ func filterSections(sections []Section, filter string) []Section {
 	var filteredSections []Section
 
 	for _, s := range sections {
-		var filteredIssues []*jira.Issue
+		var filteredIssues []jira.Issue
 		for _, i := range s.Issues {
-			if issueMatchesFilter(*i, filter) {
+			if issueMatchesFilter(i, filter) {
 				filteredIssues = append(filteredIssues, i)
 			}
 		}
@@ -205,7 +209,7 @@ func (m model) getCommentCursorLine() int {
 	return lines
 }
 
-func sortSectionsByPriority(sections []Section) {
+func sortSectionsIssuesByPriority(sections []Section) {
 	for si := range sections {
 		sort.Slice(sections[si].Issues, func(i, j int) bool {
 			return priorityOrder[sections[si].Issues[i].Priority.Name] < priorityOrder[sections[si].Issues[j].Priority.Name]

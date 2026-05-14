@@ -133,13 +133,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if len(sectionsToNavigate[prevSection].Issues) > 0 {
 						m.sectionCursor = prevSection
 						m.cursor = len(sectionsToNavigate[prevSection].Issues) - 1
-						m.selectedIssue = sectionsToNavigate[prevSection].Issues[m.cursor]
+						m.selectedIssue = &sectionsToNavigate[prevSection].Issues[m.cursor]
 						break
 					}
 				}
 			} else {
 				m.cursor--
-				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
 			m.listViewport.SetContent(m.buildListContent())
@@ -168,13 +168,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if len(sectionsToNavigate[nextSection].Issues) > 0 {
 						m.sectionCursor = nextSection
 						m.cursor = 0
-						m.selectedIssue = sectionsToNavigate[nextSection].Issues[m.cursor]
+						m.selectedIssue = &sectionsToNavigate[nextSection].Issues[m.cursor]
 						break
 					}
 				}
 			} else {
 				m.cursor++
-				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 			}
 
 			m.listViewport.SetContent(m.buildListContent())
@@ -300,7 +300,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
-				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				m.activeIssue = nil
 
 				m.loadingCount++
@@ -319,7 +319,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
-				m.selectedIssue = sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
+				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				if m.selectedIssue.Parent != nil {
 					m.loadingCount++
 					detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)

@@ -671,7 +671,7 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
 	for i := range issues {
-		issue := &issues[i]
+		issue := issues[i]
 		projectStatuses := statuses[issue.Project.ID]
 		statusCategories := make(map[string]string)
 		for _, s := range projectStatuses {
@@ -740,7 +740,7 @@ func (m model) calculateListLayout() listLayout {
 func (m model) buildListContent() string {
 	var listContent strings.Builder
 
-	sortSectionsByPriority(m.sections)
+	sortSectionsIssuesByPriority(m.sections)
 	sectionsToRender := m.sections
 	if m.filteredSections != nil {
 		sectionsToRender = m.filteredSections
@@ -760,20 +760,30 @@ func (m model) buildListContent() string {
 			worklogSeconds := m.worklogTotals[issue.ID]
 			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
 
+			selected := m.sectionCursor == si && m.cursor == ii
+
 			var summary string
+			var summaryText string
 			if issue.Parent != nil {
-				summary = m.columnWidths.RenderSummary(truncateLongString(ui.DimTextStyle.Render("↳ "+issue.Parent.Key)+" "+issue.Summary, m.columnWidths.Summary))
+				parentPrefix := ui.IconEnter + " " + issue.Parent.Key + " " + ui.IconSeparator + " "
+				full := truncateLongString(parentPrefix+issue.Summary, m.columnWidths.Summary)
+				if selected {
+					summaryText = full
+				} else {
+					summaryText = ui.DimTextStyle.Render(parentPrefix) + strings.TrimPrefix(full, parentPrefix)
+				}
 			} else {
-				summary = m.columnWidths.RenderSummary(truncateLongString(issue.Summary, m.columnWidths.Summary))
+				summaryText = truncateLongString(issue.Summary, m.columnWidths.Summary)
 			}
+			summary = m.columnWidths.RenderSummary(summaryText, selected)
 
 			emptySpace := m.columnWidths.RenderEmptySpace()
 			line := issueType + emptySpace +
 				key +
+				statusBadge + emptySpace +
 				priority + emptySpace +
 				summary + emptySpace +
 				reporter + emptySpace +
-				statusBadge + emptySpace +
 				assignee + emptySpace +
 				timeSpent
 

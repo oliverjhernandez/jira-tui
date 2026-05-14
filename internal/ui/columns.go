@@ -66,7 +66,10 @@ func (c ColumnWidths) RenderKey(text string) string {
 	return KeyFieldStyle.Width(c.Key).Render(text)
 }
 
-func (c ColumnWidths) RenderSummary(text string) string {
+func (c ColumnWidths) RenderSummary(text string, selected bool) string {
+	if selected {
+		return SummaryFieldSelectedStyle.Width(c.Summary).Render(text)
+	}
 	return SummaryFieldStyle.Width(c.Summary).Render(text)
 }
 
