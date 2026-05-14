@@ -69,14 +69,6 @@ func filterSections(sections []Section, filter string) []Section {
 	return filteredSections
 }
 
-func truncateLongString(s string, max int) string {
-	runes := []rune(s)
-	if len(runes) > max {
-		return string(runes[:max-1]) + "…"
-	}
-	return s
-}
-
 func issueMatchesFilter(issue jira.Issue, filter string) bool {
 	filterLower := strings.ToLower(filter)
 	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||

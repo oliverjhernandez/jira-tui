@@ -59,7 +59,8 @@ type IssueTypeScope struct {
 }
 
 type Reporter struct {
-	ID string `json:"id"`
+	ID          string
+	DisplayName string
 }
 
 // NOTE: improve
@@ -240,7 +241,7 @@ type parentField struct {
 }
 
 type UserField struct {
-	ID          string `json:"id"`
+	ID          string `json:"accountId"`
 	DisplayName string `json:"displayName"`
 }
 
@@ -427,7 +428,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,timeoriginalestimate")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate")
 
 	var searchResp issuesSearchResponse
 
@@ -468,6 +469,13 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			}
 		}
 
+		if issue.Fields.Reporter != nil {
+			i.Reporter = Reporter{
+				ID:          issue.Fields.Reporter.ID,
+				DisplayName: issue.Fields.Reporter.DisplayName,
+			}
+		}
+
 		if issue.Fields.Parent != nil {
 			i.Parent = &Parent{
 				issue.Fields.Parent.ID,
@@ -492,7 +500,8 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
 	jql := "assignee = currentUser() AND resolution = Unresolved ORDER BY status DESC"
-	return c.SearchIssuesJql(ctx, jql)
+	issues, err := c.SearchIssuesJql(ctx, jql)
+	return issues, err
 }
 
 func (c *Client) GetSubTasks(ctx context.Context, parentKey string) ([]Issue, error) {

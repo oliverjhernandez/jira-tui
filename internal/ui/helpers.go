@@ -92,7 +92,7 @@ func RenderStatusBadge(status string) string {
 		return StatusSelectedStyle.Render(IconStatusSelected + " " + status)
 
 	default:
-		return StatusDefaultStyle.Render("● " + status)
+		return StatusDefaultStyle.Render(IconSeparator + " " + status)
 	}
 }
 
@@ -205,4 +205,12 @@ func RenderPanelWithLabel(label string, content string, width int, height int, a
 	}
 	bottom := boxStyle.Render(content)
 	return top + "\n" + bottom
+}
+
+func TruncateLongString(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) > max {
+		return string(runes[:max-1]) + "…"
+	}
+	return s
 }

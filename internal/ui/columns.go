@@ -74,11 +74,11 @@ func (c ColumnWidths) RenderSummary(text string, selected bool) string {
 }
 
 func (c ColumnWidths) RenderAssignee(text string) string {
-	return AssigneeFieldStyle.Width(c.Assignee).Render(text)
+	return AssigneeFieldStyle.Width(c.Assignee).Render(TruncateLongString(text, c.Assignee))
 }
 
 func (c ColumnWidths) RenderReporter(text string) string {
-	return AssigneeFieldStyle.Width(c.Assignee).Render(text)
+	return ReporterFieldStyle.Width(c.Reporter).Render(TruncateLongString(text, c.Reporter))
 }
 
 func (c ColumnWidths) RenderTimeSpent(text string) string {

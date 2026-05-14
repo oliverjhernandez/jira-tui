@@ -754,9 +754,9 @@ func (m model) buildListContent() string {
 			issueType := ui.RenderIssueType(issue.Type, false)
 			key := m.columnWidths.RenderKey(issue.Key)
 			priority := ui.RenderPriority(issue.Priority.Name, false)
-			reporter := m.columnWidths.RenderReporter("@" + truncateLongString(issue.Reporter.ID, m.columnWidths.Assignee))
+			reporter := m.columnWidths.RenderReporter("@" + issue.Reporter.DisplayName)
 			statusBadge := ui.RenderStatusBadge(issue.Status)
-			assignee := m.columnWidths.RenderAssignee("@" + truncateLongString(issue.Assignee, m.columnWidths.Assignee))
+			assignee := m.columnWidths.RenderAssignee("@" + issue.Assignee)
 			worklogSeconds := m.worklogTotals[issue.ID]
 			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
 
@@ -766,14 +766,14 @@ func (m model) buildListContent() string {
 			var summaryText string
 			if issue.Parent != nil {
 				parentPrefix := ui.IconEnter + " " + issue.Parent.Key + " " + ui.IconSeparator + " "
-				full := truncateLongString(parentPrefix+issue.Summary, m.columnWidths.Summary)
+				full := ui.TruncateLongString(parentPrefix+issue.Summary, m.columnWidths.Summary)
 				if selected {
 					summaryText = full
 				} else {
 					summaryText = ui.DimTextStyle.Render(parentPrefix) + strings.TrimPrefix(full, parentPrefix)
 				}
 			} else {
-				summaryText = truncateLongString(issue.Summary, m.columnWidths.Summary)
+				summaryText = ui.TruncateLongString(issue.Summary, m.columnWidths.Summary)
 			}
 			summary = m.columnWidths.RenderSummary(summaryText, selected)
 
@@ -885,7 +885,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 
 	issueKey := ui.RenderIssueType(m.activeIssue.Type, false) + " " + ui.DetailHeaderStyle.Render(m.activeIssue.Key)
 	summaryMaxWidth := 50
-	issueSummary := ui.DetailValueStyle.Render(truncateLongString(m.activeIssue.Summary, summaryMaxWidth))
+	issueSummary := ui.DetailValueStyle.Render(ui.TruncateLongString(m.activeIssue.Summary, summaryMaxWidth))
 	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
 
 	status := ui.RenderStatusBadge(m.activeIssue.Status)
@@ -1038,7 +1038,7 @@ func (m model) renderWorklog(w jira.Worklog, width int, isSelected bool, isLast 
 	loggedTime := ui.WorklogsAuthorStyle.Render(formatSecondsToString(w.Time))
 	author := ui.WorklogsAuthorStyle.Render(user)
 	timestamp := ui.WorklogsTimestampStyle.Render(" • " + timeAgo(w.UpdatedAt))
-	description := truncateLongString(ui.WorkLogsDescriptionStyle.Render(w.Description), width)
+	description := ui.TruncateLongString(ui.WorkLogsDescriptionStyle.Render(w.Description), width)
 
 	line1 := loggedTime + " " + author + " " + timestamp
 	line2 := description
@@ -1163,7 +1163,7 @@ func (m model) renderSubTask(i jira.Issue, width int, isSelected bool, isLast bo
 		content.WriteString(issue + " " + key + " " + priority + " " + status + " " + assignee + "\n")
 	}
 
-	summary := ui.CommentBodyStyle.Render(truncateLongString(i.Summary, width-5))
+	summary := ui.CommentBodyStyle.Render(ui.TruncateLongString(i.Summary, width-5))
 	content.WriteString(summary + "\n")
 
 	if !isLast {

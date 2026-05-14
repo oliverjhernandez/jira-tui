@@ -111,7 +111,7 @@ var (
 	IconComment    = ""
 	IconAttachment = ""
 	IconTime       = ""
-	IconSeparator  = "·"
+	IconSeparator  = "●"
 	IconEnter      = "↳"
 
 	// Error
@@ -203,12 +203,10 @@ var (
 
 	AssigneeFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
-				Width(ColWidthAssignee).
 				Align(lipgloss.Left)
 
 	ReporterFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
-				Width(ColWidthReporter).
 				Align(lipgloss.Left)
 
 	PriorityFieldStyle = lipgloss.NewStyle().
