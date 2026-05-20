@@ -22,7 +22,6 @@ func NewSearchIssueFormData() *SearchIssueFormData {
 	e.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("Search Issue").
 				Placeholder("DEV-123").
 				Value(&e.Query),
 		),
@@ -90,13 +89,16 @@ func (m model) renderSearchIssueView() string {
 	modalContent.WriteString("\n")
 
 	if m.searchIssueData.Err != nil {
-		modalContent.WriteString(ui.ErrorStyle.Render("Error: " + m.searchIssueData.Err.Error()))
+		m.statusMessage = statusMessage{
+			msgType: errStatusBarMsg,
+			content: m.searchIssueData.Err.Error(),
+		}
 	}
 
-	styledModal := ui.ModalStyle.Render(modalContent.String())
+	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
+	modalHeight := ui.GetModalHeight(m.windowHeight, 0.1)
 
-	modalWidth := lipgloss.Width(styledModal)
-	modalHeight := lipgloss.Height(styledModal)
+	styledModal := ui.RenderPanelWithLabel("Search Issue", modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

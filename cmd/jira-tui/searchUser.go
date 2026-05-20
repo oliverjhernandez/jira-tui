@@ -112,7 +112,7 @@ func (m model) renderSearchUserView() string {
 	if m.searchUserData.Err != nil {
 		m.statusMessage = statusMessage{
 			msgType: errStatusBarMsg,
-			content: m.searchIssueData.Err.Error(),
+			content: m.searchUserData.Err.Error(),
 		}
 	}
 
