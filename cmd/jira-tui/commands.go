@@ -64,7 +64,9 @@ type issueDetailLoadedMsg struct {
 }
 
 type transitionsLoadedMsg struct {
-	key         string
+	projectKey  string
+	status      string
+	issueKey    string
 	transitions []jira.Transition
 }
 
@@ -189,7 +191,7 @@ func (m model) fetchIssueTypesCmd() tea.Cmd {
 	}
 }
 
-func (m model) fetchTransitionsCmd(issueKey string) tea.Cmd {
+func (m model) fetchTransitionsCmd(issueKey, projectKey, status string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -200,7 +202,12 @@ func (m model) fetchTransitionsCmd(issueKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return transitionsLoadedMsg{issueKey, transitions}
+		return transitionsLoadedMsg{
+			projectKey,
+			status,
+			issueKey,
+			transitions,
+		}
 	}
 }
 

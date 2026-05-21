@@ -176,8 +176,9 @@ type model struct {
 	worklogTotals map[string]int
 
 	// Transitions
-	transitions       map[string][]jira.Transition
+	// transitions       map[string][]jira.Transition
 	pendingTransition *jira.Transition
+	transitionCache   map[string]map[string][]jira.Transition
 
 	//  Selection
 	usersCache         []jira.User
@@ -402,7 +403,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionsLoadedMsg:
 		m.loadingCount--
-		m.transitions[msg.key] = msg.transitions
+		if m.transitionCache[msg.projectKey] == nil {
+			m.transitionCache[msg.projectKey] = make(map[string][]jira.Transition)
+		}
+		m.transitionCache[msg.projectKey][msg.status] = msg.transitions
 		if m.mode == transitionView {
 			m.transitionData = NewTransitionFormData(msg.transitions)
 			return m, m.transitionData.Form.Init()
@@ -782,16 +786,16 @@ func main() {
 	spinner := spinner.New()
 
 	p := tea.NewProgram(model{
-		mode:          listView,
-		client:        client,
-		textInput:     textInput,
-		windowWidth:   80,
-		windowHeight:  24,
-		spinner:       spinner,
-		worklogTotals: make(map[string]int),
-		columnWidths:  ui.CalculateColumnWidths(80),
-		loadingCount:  6, // Init cmds
-		transitions:   make(map[string][]jira.Transition),
+		mode:            listView,
+		client:          client,
+		textInput:       textInput,
+		windowWidth:     80,
+		windowHeight:    24,
+		spinner:         spinner,
+		worklogTotals:   make(map[string]int),
+		columnWidths:    ui.CalculateColumnWidths(80),
+		loadingCount:    6, // Init cmds
+		transitionCache: make(map[string]map[string][]jira.Transition, 0),
 	})
 
 	if _, err := p.Run(); err != nil {

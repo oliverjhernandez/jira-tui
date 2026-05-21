@@ -80,8 +80,10 @@ type Comment struct {
 }
 
 type Transition struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID         string `json:"id"`
+	ProjectKey string
+	Status     string
+	Name       string `json:"name"`
 }
 
 type User struct {

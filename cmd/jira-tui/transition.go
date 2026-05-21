@@ -82,7 +82,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.transitionData.Form.State == huh.StateCompleted {
 			if m.activeIssue != nil {
-				transition := m.transitions[m.activeIssue.Key][m.transitionData.SelectedIndex]
+				transition := m.transitionCache[m.activeIssue.Project.Key][m.activeIssue.Status][m.transitionData.SelectedIndex]
 				if m.activeIssue.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()

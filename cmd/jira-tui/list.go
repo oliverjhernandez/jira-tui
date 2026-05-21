@@ -238,12 +238,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
-				if cached, ok := m.transitions[m.activeIssue.Key]; ok && len(cached) > 0 {
+				if cached, ok := m.transitionCache[m.activeIssue.Project.Key][m.activeIssue.Status]; ok && len(cached) > 0 {
 					m.transitionData = NewTransitionFormData(cached)
 					cmds = append(cmds, m.transitionData.Form.Init())
 				} else {
 					m.loadingCount++
-					cmds = append(cmds, m.fetchTransitionsCmd(m.activeIssue.Key))
+					cmds = append(cmds, m.fetchTransitionsCmd(m.activeIssue.Key, m.activeIssue.Project.Key, m.activeIssue.Status))
 				}
 			}
 
