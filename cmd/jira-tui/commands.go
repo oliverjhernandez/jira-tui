@@ -907,7 +907,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	colwidth := 30
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.activeIssue.Priority.Name, true), colwidth)
 	// TODO: map reporter to name
-	col2 := ui.RenderFieldStyled("Reporter", m.activeIssue.Reporter.ID, colwidth)
+	col2 := ui.RenderFieldStyled("Reporter", m.activeIssue.Reporter.DisplayName, colwidth)
 	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.activeIssue.Type, true), colwidth)
 	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 

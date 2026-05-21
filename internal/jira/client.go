@@ -587,7 +587,8 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, e
 
 	if issue.Fields.Reporter != nil {
 		detail.Reporter = Reporter{
-			ID: issue.Fields.Reporter.ID,
+			ID:          issue.Fields.Reporter.ID,
+			DisplayName: issue.Fields.Reporter.DisplayName,
 		}
 	}
 
