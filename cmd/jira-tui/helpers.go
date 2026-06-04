@@ -37,12 +37,15 @@ var statusOrder = map[string]int{
 	"Ready to Deploy":          9,
 }
 
-var closureStatuses = map[string]bool{
-	"Done":            true,
-	"Cancelada":       true,
+var intransitStatuses = map[string]bool{
+	"Ready to Deploy": true,
 	"Validación":      true,
 	"🔴 BLOQUEADO":     true,
-	"Ready to Deploy": true,
+}
+
+var closureStatuses = map[string]bool{
+	"Done":      true,
+	"Cancelada": true,
 }
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
