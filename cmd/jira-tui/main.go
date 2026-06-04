@@ -339,6 +339,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.activeIssue = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.previousMode = m.mode
+		m.mode = detailView
 
 		if !m.detailPolling {
 			m.detailPolling = true
