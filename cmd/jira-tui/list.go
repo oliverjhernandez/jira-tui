@@ -67,6 +67,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = 0
 			m.sectionCursor = 0
 			m.listViewport.GotoTop()
+			m.listViewport.SetContent(m.buildListContent())
 			return m, nil
 
 		case keyPressMsg.String() == "y" && m.lastKey == "":
@@ -196,6 +197,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = lenIssues
 			m.sectionCursor = lenSection
 			m.listViewport.GotoBottom()
+			m.listViewport.SetContent(m.buildListContent())
 			return m, nil
 
 		case "ctrl+s":
