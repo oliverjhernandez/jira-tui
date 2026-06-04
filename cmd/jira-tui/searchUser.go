@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -75,13 +74,13 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case assignUser:
-			cmds = append(cmds, m.postAssigneeCmd(m.activeIssue.Key, user.ID))
+			cmds = append(cmds, m.postAssigneeCmd(m.pendingIssue.Key, user.ID))
 			if m.focusedSection == metadataSection {
 				m.loadingCount++
-				cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+				cmds = append(cmds, m.fetchIssueDetailCmd(m.pendingIssue.Key))
 			} else if m.focusedSection == subTasksSection {
 				m.loadingCount++
-				cmds = append(cmds, m.fetchSubTasksCmd(m.activeIssue.Key))
+				cmds = append(cmds, m.fetchSubTasksCmd(m.pendingIssue.Key))
 			}
 			m.loadingCount++
 			cmds = append(cmds, m.fetchMyIssuesCmd())
@@ -96,7 +95,6 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchUserView() string {
-	log.Printf("Previeous Mode: %s", m.previousMode.String())
 	var bg *lipgloss.Layer
 	if m.previousMode == detailView {
 		bg = lipgloss.NewLayer(m.renderDetailView())
@@ -120,8 +118,8 @@ func (m model) renderSearchUserView() string {
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.1)
 
 	var label string
-	if m.userSelectionMode == assignUser && m.activeIssue != nil {
-		label = "Assign " + m.activeIssue.Key
+	if m.userSelectionMode == assignUser && m.pendingIssue != nil {
+		label = "Assign " + m.pendingIssue.Key
 	} else {
 		label = "Mention User"
 	}

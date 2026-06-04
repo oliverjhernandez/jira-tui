@@ -81,9 +81,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.transitionData.Form.State == huh.StateCompleted {
-			if m.activeIssue != nil {
-				transition := m.transitionCache[m.activeIssue.Project.Key][m.activeIssue.Status][m.transitionData.SelectedIndex]
-				if m.activeIssue.OriginalEstimate == "" {
+			if m.pendingIssue != nil {
+				transition := m.transitionCache[m.pendingIssue.Project.Key][m.pendingIssue.Status][m.transitionData.SelectedIndex]
+				if m.pendingIssue.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()
 					m.mode = estimateView
@@ -98,7 +98,7 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = detailView
 				m.loadingCount++
 				m.statusMessage.content = "Transitioning..."
-				cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
+				cmds = append(cmds, m.postTransitionCmd(m.pendingIssue.Key, transition.ID, transition.Name))
 			}
 		}
 	}
@@ -123,7 +123,7 @@ func (m model) renderTransitionView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
 
-	styledModal := ui.RenderPanelWithLabel("Transition "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	styledModal := ui.RenderPanelWithLabel("Transition "+m.pendingIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
@@ -160,8 +160,8 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
 			m.loadingCount++
-			m.statusMessage.content = "Transitioning " + m.activeIssue.Key
-			cmds = append(cmds, m.postTransitionWithReasonCmd(m.activeIssue.Key, transition.ID, reason))
+			m.statusMessage.content = "Transitioning " + m.pendingIssue.Key
+			cmds = append(cmds, m.postTransitionWithReasonCmd(m.pendingIssue.Key, transition.ID, reason))
 		}
 	}
 
@@ -178,8 +178,8 @@ func (m model) renderPostCancelReasonView() string {
 
 	var modalContent strings.Builder
 
-	if m.activeIssue != nil {
-		header := ui.DetailHeaderStyle.Render(m.activeIssue.Key) + " " + ui.RenderStatusBadge(m.activeIssue.Status)
+	if m.pendingIssue != nil {
+		header := ui.DetailHeaderStyle.Render(m.pendingIssue.Key) + " " + ui.RenderStatusBadge(m.pendingIssue.Status)
 		modalContent.WriteString(header + "\n\n")
 	}
 

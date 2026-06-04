@@ -237,7 +237,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "t":
 				if m.activeIssue != nil {
-					m.activeIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+					m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 				}
 
 				if m.activeIssue.SubTasks[m.subTasksCursor].Description == nil {
@@ -268,7 +268,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "a":
 				var cmds []tea.Cmd
-				m.activeIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 				m.previousMode = m.mode
 				m.mode = userSearchView
 

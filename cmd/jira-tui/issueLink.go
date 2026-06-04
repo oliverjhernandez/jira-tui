@@ -65,7 +65,7 @@ func (m model) updateIssueLinkView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		toIssueKey := m.issueLinkData.IssueKey
 
 		cmds = append(cmds, m.postLinkIssueCmd(
-			m.activeIssue.Key,
+			m.pendingIssue.Key,
 			toIssueKey,
 			relation,
 		))
@@ -87,7 +87,7 @@ func (m model) renderIssueLinkView() string {
 
 	modalContent.WriteString(m.issueLinkData.Form.View())
 
-	styledModal := ui.RenderPanelWithLabel("Link "+m.activeIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	styledModal := ui.RenderPanelWithLabel("Link "+m.pendingIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

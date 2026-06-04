@@ -160,6 +160,7 @@ type model struct {
 	// Issue Data
 	issues         []jira.Issue
 	activeIssue    *jira.Issue
+	pendingIssue   *jira.Issue
 	projects       []jira.Project
 	activeProjects []jira.Project
 	issueTypes     []jira.IssueType
