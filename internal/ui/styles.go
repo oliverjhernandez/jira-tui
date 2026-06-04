@@ -205,6 +205,14 @@ var (
 				Foreground(ThemeFgMuted).
 				Align(lipgloss.Left)
 
+	DueDateFieldStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgMuted).
+				Align(lipgloss.Left)
+
+	CreatedDateFieldStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgMuted).
+				Align(lipgloss.Left)
+
 	ReporterFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
 				Align(lipgloss.Left)

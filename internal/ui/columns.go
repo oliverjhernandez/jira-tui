@@ -5,16 +5,18 @@ import (
 )
 
 type ColumnWidths struct {
-	Type      int
-	Key       int
-	Summary   int
-	Reporter  int
-	Status    int
-	Assignee  int
-	Priority  int
-	Cursor    int
-	Empty     int
-	TimeSpent int
+	Type        int
+	Key         int
+	Summary     int
+	Reporter    int
+	Status      int
+	Assignee    int
+	DueDate     int
+	CreatedDate int
+	Priority    int
+	Cursor      int
+	Empty       int
+	TimeSpent   int
 }
 
 func CalculateColumnWidths(terminalWidth int) ColumnWidths {
@@ -32,6 +34,8 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 
 	statusWidth := 15
 	assigneeWidth := 20
+	dueDateWidth := 10
+	createdDateWidth := 10
 	reporterWidth := 20
 
 	if availableWidth < 100 {
@@ -42,12 +46,15 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 
 	fixedWidths.Status = statusWidth
 	fixedWidths.Assignee = assigneeWidth
+	fixedWidths.DueDate = dueDateWidth
+	fixedWidths.CreatedDate = createdDateWidth
 	fixedWidths.Reporter = reporterWidth
 
 	fixedTotal := fixedWidths.Cursor + fixedWidths.Type + fixedWidths.Empty +
 		fixedWidths.Key + fixedWidths.Priority + fixedWidths.Empty +
 		fixedWidths.Status + fixedWidths.Empty +
-		fixedWidths.Assignee + fixedWidths.Empty +
+		fixedWidths.DueDate + fixedWidths.Empty +
+		fixedWidths.CreatedDate + fixedWidths.Empty +
 		fixedWidths.TimeSpent + fixedWidths.Empty + fixedWidths.Reporter + fixedWidths.Empty
 
 	summaryWidth := max(availableWidth-fixedTotal, 50)
@@ -59,7 +66,7 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 
 func (c ColumnWidths) TotalWidth() int {
 	return c.Cursor + c.Type + c.Empty + c.Key + c.Priority + c.Empty +
-		c.Summary + c.Empty + c.Reporter + c.Empty + c.Status + c.Empty + c.Assignee + c.Empty + c.TimeSpent
+		c.Summary + c.Empty + c.Reporter + c.Empty + c.Status + c.Empty + c.DueDate + c.Empty + c.CreatedDate + c.Empty + c.TimeSpent
 }
 
 func (c ColumnWidths) RenderKey(text string) string {
@@ -76,8 +83,12 @@ func (c ColumnWidths) RenderSummary(text string, selected bool, dimmed bool) str
 	return SummaryFieldStyle.Width(c.Summary).Render(text)
 }
 
-func (c ColumnWidths) RenderAssignee(text string) string {
-	return AssigneeFieldStyle.Width(c.Assignee).Render(TruncateLongString(text, c.Assignee))
+func (c ColumnWidths) RenderDueDate(text string) string {
+	return DueDateFieldStyle.Width(c.DueDate).Render(TruncateLongString(text, c.DueDate))
+}
+
+func (c ColumnWidths) RenderCreatedDate(text string) string {
+	return CreatedDateFieldStyle.Width(c.CreatedDate).Render(TruncateLongString(text, c.CreatedDate))
 }
 
 func (c ColumnWidths) RenderReporter(text string) string {

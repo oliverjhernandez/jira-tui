@@ -763,7 +763,9 @@ func (m model) buildListContent() string {
 			priority := ui.RenderPriority(issue.Priority.Name, false)
 			reporter := m.columnWidths.RenderReporter("@" + issue.Reporter.DisplayName)
 			statusBadge := ui.RenderStatusBadge(issue.Status)
-			assignee := m.columnWidths.RenderAssignee("@" + issue.Assignee)
+			// assignee := m.columnWidths.RenderAssignee("@" + issue.Assignee)
+			dueDate := m.columnWidths.RenderDueDate(issue.DueDate)
+			createdDate := m.columnWidths.RenderCreatedDate(issue.Created)
 			worklogSeconds := m.worklogTotals[issue.ID]
 			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
 			selected := m.sectionCursor == si && m.cursor == ii
@@ -793,7 +795,8 @@ func (m model) buildListContent() string {
 				priority + emptySpace +
 				summary + emptySpace +
 				reporter + emptySpace +
-				assignee + emptySpace +
+				createdDate + emptySpace +
+				dueDate + emptySpace +
 				timeSpent
 
 			if m.sectionCursor == si && m.cursor == ii {

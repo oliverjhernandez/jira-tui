@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"time"
 )
 
 type Client struct {
@@ -40,6 +41,7 @@ type Issue struct {
 	IssueLinks       []IssueLink
 	Created          string
 	Updated          string
+	DueDate          string
 	SubTasks         []Issue
 	Worklogs         []Worklog
 }
@@ -153,6 +155,7 @@ type issueFields struct {
 	Parent           *parentField   `json:"parent"`
 	IssueLinks       []IssueLink    `json:"issueLinks"`
 	OriginalEstimate *int           `json:"timeoriginalestimate"`
+	DueDate          string         `json:"duedate"`
 	Created          string         `json:"created"`
 	Updated          string         `json:"updated"`
 }
@@ -420,7 +423,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate")
+	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate,duedate,created,updated")
 
 	var searchResp issuesSearchResponse
 
@@ -459,6 +462,16 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 				ID:   issue.Fields.Priority.ID,
 				Name: issue.Fields.Priority.Name,
 			}
+		}
+
+		d, err := time.Parse("2006-01-02", issue.Fields.DueDate)
+		if err == nil {
+			i.DueDate = d.Format("Jan 02")
+		}
+
+		c, err := time.Parse("2006-01-02T15:04:05.000-0700", issue.Fields.Created)
+		if err == nil {
+			i.Created = c.Format("Jan 02")
 		}
 
 		if issue.Fields.Reporter != nil {
