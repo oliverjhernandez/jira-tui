@@ -243,7 +243,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, m.transitionData.Form.Init())
 				} else {
 					m.loadingCount++
-					cmds = append(cmds, m.fetchTransitionsCmd(m.activeIssue.Key, m.activeIssue.Project.Key, m.activeIssue.Status))
+					cmds = append(cmds, m.fetchTransitionsCmd(m.selectedIssue.Key, m.selectedIssue.Project.Key, m.selectedIssue.Status))
 				}
 			}
 
