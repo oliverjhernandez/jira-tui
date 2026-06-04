@@ -747,7 +747,7 @@ func (m model) calculateListLayout() listLayout {
 func (m model) buildListContent() string {
 	var listContent strings.Builder
 
-	sortSectionsIssuesByPriority(m.sections)
+	sortSectionsIssues(m.sections)
 	sectionsToRender := m.sections
 	if m.filteredSections != nil {
 		sectionsToRender = m.filteredSections
@@ -756,7 +756,6 @@ func (m model) buildListContent() string {
 	for si, s := range sectionsToRender {
 		sectionHeader := ui.SectionTitleStyle.Render(fmt.Sprintf("%s (%d)", s.Name, len(s.Issues)))
 		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
-
 		for ii, issue := range s.Issues {
 			issueType := ui.RenderIssueType(issue.Type, false)
 			key := m.columnWidths.RenderKey(issue.Key)
@@ -766,8 +765,8 @@ func (m model) buildListContent() string {
 			assignee := m.columnWidths.RenderAssignee("@" + issue.Assignee)
 			worklogSeconds := m.worklogTotals[issue.ID]
 			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
-
 			selected := m.sectionCursor == si && m.cursor == ii
+			summaryDimmed := closureStatuses[issue.Status]
 
 			var summary string
 			var summaryText string
@@ -776,14 +775,16 @@ func (m model) buildListContent() string {
 				full := ui.TruncateLongString(parentPrefix+issue.Summary, m.columnWidths.Summary)
 				if selected {
 					summaryText = full
+				} else if summaryDimmed {
+					summaryText = ui.DimTextStyle.Render(full)
 				} else {
 					summaryText = ui.DimTextStyle.Render(parentPrefix) + strings.TrimPrefix(full, parentPrefix)
 				}
 			} else {
 				summaryText = ui.TruncateLongString(issue.Summary, m.columnWidths.Summary)
 			}
-			summary = m.columnWidths.RenderSummary(summaryText, selected)
 
+			summary = m.columnWidths.RenderSummary(summaryText, selected, summaryDimmed)
 			emptySpace := m.columnWidths.RenderEmptySpace()
 			line := issueType + emptySpace +
 				key +
@@ -803,7 +804,6 @@ func (m model) buildListContent() string {
 
 			listContent.WriteString(line + "\n")
 		}
-
 		listContent.WriteString("\n\n")
 	}
 

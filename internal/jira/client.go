@@ -284,16 +284,6 @@ type StatusCategory struct {
 	Name string `json:"name"`
 }
 
-var (
-	PriorityOrder = map[string]int{
-		"Highest": 0,
-		"High":    1,
-		"Medium":  2,
-		"Low":     3,
-		"Lowest":  4,
-	}
-)
-
 func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, queryParams url.Values, body any, result any, expectedStatus ...int) error {
 	apiURL := fmt.Sprintf("%s%s", c.jiraURL, endpoint)
 	if len(queryParams) > 0 {
