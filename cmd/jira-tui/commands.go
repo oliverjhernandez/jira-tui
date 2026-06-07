@@ -304,7 +304,7 @@ func (m model) postTransitionCmd(issueKey, transitionID, transitionName string) 
 		}
 
 		var workLogTime string
-		if (transitionName == "Done" || transitionName == "Validación") && m.activeIssue.Type == "Task" {
+		if (transitionName == "Done" || transitionName == "Validación") && m.pendingIssue.Type == "Task" {
 			workLogTime = "1m"
 		}
 

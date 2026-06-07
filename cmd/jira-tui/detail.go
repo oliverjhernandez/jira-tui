@@ -347,6 +347,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.previousMode = m.mode
 			m.mode = transitionView
 			m.transitionCursor = 0
+			m.pendingIssue = m.activeIssue
 
 			if m.activeIssue != nil {
 				if m.activeIssue.Description == nil {
