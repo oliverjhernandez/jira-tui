@@ -414,6 +414,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// link
 		case keyPressMsg.String() == "l":
 			m.issueLinkData = NewIssueLinkForm(40)
+			m.pendingIssue = m.activeIssue
 			m.mode = issueLinkView
 			return m, m.issueLinkData.Form.Init()
 

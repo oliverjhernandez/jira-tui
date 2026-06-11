@@ -82,8 +82,8 @@ func (m model) renderIssueLinkView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
-	m.textArea.SetHeight(modalHeight - ui.PanelOverheadHeight)
+	// m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
+	// m.textArea.SetHeight(modalHeight - ui.PanelOverheadHeight)
 
 	modalContent.WriteString(m.issueLinkData.Form.View())
 
