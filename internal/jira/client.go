@@ -121,6 +121,7 @@ func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (
 type issuesSearchResponse struct {
 	Issues        []jiraIssue `json:"issues"`
 	NextPageToken string      `json:"nextPageToken"`
+	IsLast        bool        `json:"isLast"`
 }
 
 type projectsSearchResponse struct {
@@ -423,11 +424,12 @@ func (c *Client) GetMySelf(ctx context.Context) (*User, error) {
 func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, error) {
 	result := make([]Issue, 0)
 	nextPageToken := ""
+	page := 0
 
 	for {
 		params := url.Values{}
 		params.Add("jql", jql)
-		params.Add("maxResults", "100")
+		params.Add("maxResults", "900")
 		params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate,duedate,created,updated")
 		if nextPageToken != "" {
 			params.Add("nextPageToken", nextPageToken)
@@ -446,6 +448,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 			return nil, err
 		}
 
+		page++
 		for _, issue := range searchResp.Issues {
 			var assignee string
 			if issue.Fields.Assignee == nil {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -678,24 +679,52 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 		{Name: "To Do", CategoryKey: "new"},
 		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
+
+	global := make(map[string]string)
+	for _, projStatuses := range statuses {
+		for _, s := range projStatuses {
+			global[strings.ToLower(strings.TrimSpace(s.Name))] = s.StatusCategory.Key
+		}
+	}
+
+	var unclassified []jira.Issue
+
 	for i := range issues {
 		issue := issues[i]
-		projectStatuses := statuses[issue.Project.ID]
-		statusCategories := make(map[string]string)
-		for _, s := range projectStatuses {
-			statusCategories[strings.ToLower(s.Name)] = s.StatusCategory.Key
-		}
-		categoryKey := statusCategories[strings.ToLower(issue.Status)]
-		if intransitStatuses[issue.Status] {
-			categoryKey = "transit"
-		}
-		for idx := range sections {
-			if sections[idx].CategoryKey == categoryKey {
-				sections[idx].Issues = append(sections[idx].Issues, issue)
+		key := strings.ToLower(strings.TrimSpace(issue.Status))
+
+		categoryKey := ""
+		for _, s := range statuses[issue.Project.ID] {
+			if strings.ToLower(strings.TrimSpace(s.Name)) == key {
+				categoryKey = s.StatusCategory.Key
 				break
 			}
 		}
+		if categoryKey == "" {
+			categoryKey = global[key]
+		}
+		if intransitStatuses[issue.Status] {
+			categoryKey = "transit"
+		}
+
+		placed := false
+		for idx := range sections {
+			if sections[idx].CategoryKey == categoryKey {
+				sections[idx].Issues = append(sections[idx].Issues, issue)
+				placed = true
+				break
+			}
+		}
+		if !placed {
+			unclassified = append(unclassified, issue)
+			log.Printf("unclassified: %s status=%q categoryKey=%q", issue.Key, issue.Status, categoryKey)
+		}
 	}
+
+	if len(unclassified) > 0 {
+		sections = append(sections, Section{Name: "Other", CategoryKey: "other", Issues: unclassified})
+	}
+
 	return sections
 }
 
