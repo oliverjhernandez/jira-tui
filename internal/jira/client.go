@@ -119,7 +119,8 @@ func NewClient(jiraBaseURL, email, jiraToken, tempoBaseURL, tempoToken string) (
 
 // Response structs for the v3 API
 type issuesSearchResponse struct {
-	Issues []jiraIssue `json:"issues"`
+	Issues        []jiraIssue `json:"issues"`
+	NextPageToken string      `json:"nextPageToken"`
 }
 
 type projectsSearchResponse struct {
@@ -420,87 +421,90 @@ func (c *Client) GetMySelf(ctx context.Context) (*User, error) {
 }
 
 func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, error) {
-	params := url.Values{}
-	params.Add("jql", jql)
-	params.Add("maxResults", "100")
-	params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate,duedate,created,updated")
+	result := make([]Issue, 0)
+	nextPageToken := ""
 
-	var searchResp issuesSearchResponse
-
-	err := c.doJiraRequest(
-		ctx,
-		"GET",
-		"/rest/api/3/search/jql",
-		params,
-		nil,
-		&searchResp,
-	)
-
-	result := make([]Issue, 0, len(searchResp.Issues))
-
-	for _, issue := range searchResp.Issues {
-		var assignee string
-
-		if issue.Fields.Assignee == nil {
-			assignee = "Unassigned"
-		} else {
-			assignee = issue.Fields.Assignee.DisplayName
+	for {
+		params := url.Values{}
+		params.Add("jql", jql)
+		params.Add("maxResults", "100")
+		params.Add("fields", "id,summary,description,status,issuetype,assignee,parent,priority,project,reporter,timeoriginalestimate,duedate,created,updated")
+		if nextPageToken != "" {
+			params.Add("nextPageToken", nextPageToken)
 		}
 
-		i := Issue{
-			ID:       issue.ID,
-			Key:      issue.Key,
-			Summary:  issue.Fields.Summary,
-			Status:   issue.Fields.Status.Name,
-			Type:     issue.Fields.Type.Name,
-			Assignee: assignee,
-			Project:  issue.Fields.Project,
+		var searchResp issuesSearchResponse
+		err := c.doJiraRequest(
+			ctx,
+			"GET",
+			"/rest/api/3/search/jql",
+			params,
+			nil,
+			&searchResp,
+		)
+		if err != nil {
+			return nil, err
 		}
 
-		if issue.Fields.Priority != nil {
-			i.Priority = Priority{
-				ID:   issue.Fields.Priority.ID,
-				Name: issue.Fields.Priority.Name,
+		for _, issue := range searchResp.Issues {
+			var assignee string
+			if issue.Fields.Assignee == nil {
+				assignee = "Unassigned"
+			} else {
+				assignee = issue.Fields.Assignee.DisplayName
 			}
-		}
-
-		d, err := time.Parse("2006-01-02", issue.Fields.DueDate)
-		if err == nil {
-			i.DueDate = d.Format("Jan 02")
-		}
-
-		c, err := time.Parse("2006-01-02T15:04:05.000-0700", issue.Fields.Created)
-		if err == nil {
-			i.Created = c.Format("Jan 02")
-		}
-
-		if issue.Fields.Reporter != nil {
-			i.Reporter = Reporter{
-				ID:          issue.Fields.Reporter.ID,
-				DisplayName: issue.Fields.Reporter.DisplayName,
+			i := Issue{
+				ID:       issue.ID,
+				Key:      issue.Key,
+				Summary:  issue.Fields.Summary,
+				Status:   issue.Fields.Status.Name,
+				Type:     issue.Fields.Type.Name,
+				Assignee: assignee,
+				Project:  issue.Fields.Project,
 			}
-		}
-
-		if issue.Fields.Parent != nil {
-			i.Parent = &Parent{
-				issue.Fields.Parent.ID,
-				issue.Fields.Parent.Key,
-				issue.Fields.Parent.ParentType,
+			if issue.Fields.Priority != nil {
+				i.Priority = Priority{
+					ID:   issue.Fields.Priority.ID,
+					Name: issue.Fields.Priority.Name,
+				}
 			}
+			d, err := time.Parse("2006-01-02", issue.Fields.DueDate)
+			if err == nil {
+				i.DueDate = d.Format("Jan 02")
+			}
+			cr, err := time.Parse("2006-01-02T15:04:05.000-0700", issue.Fields.Created)
+			if err == nil {
+				i.Created = cr.Format("Jan 02")
+			}
+			if issue.Fields.Reporter != nil {
+				i.Reporter = Reporter{
+					ID:          issue.Fields.Reporter.ID,
+					DisplayName: issue.Fields.Reporter.DisplayName,
+				}
+			}
+			if issue.Fields.Parent != nil {
+				i.Parent = &Parent{
+					issue.Fields.Parent.ID,
+					issue.Fields.Parent.Key,
+					issue.Fields.Parent.ParentType,
+				}
+			}
+			if issue.Fields.Description != nil {
+				i.Description = issue.Fields.Description
+			}
+			if issue.Fields.OriginalEstimate != nil {
+				i.OriginalEstimate = strconv.Itoa(*issue.Fields.OriginalEstimate)
+			}
+			result = append(result, i)
 		}
 
-		if issue.Fields.Description != nil {
-			i.Description = issue.Fields.Description
+		if searchResp.NextPageToken == "" {
+			break
 		}
-
-		if issue.Fields.OriginalEstimate != nil {
-			i.OriginalEstimate = strconv.Itoa(*issue.Fields.OriginalEstimate)
-		}
-
-		result = append(result, i)
+		nextPageToken = searchResp.NextPageToken
 	}
 
-	return result, err
+	return result, nil
 }
 
 func (c *Client) GetMyIssues(ctx context.Context) ([]Issue, error) {
