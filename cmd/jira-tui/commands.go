@@ -675,8 +675,8 @@ func (m model) unlinkIssueCmd(linkID string) tea.Cmd {
 func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.Status) []Section {
 	sections := []Section{
 		{Name: "In Progress", CategoryKey: "indeterminate"},
-		{Name: "In Transit", CategoryKey: "transit"},
 		{Name: "To Do", CategoryKey: "new"},
+		{Name: "In Transit", CategoryKey: "transit"},
 		{Name: "Done", CategoryKey: "done", Collapsed: true},
 	}
 
