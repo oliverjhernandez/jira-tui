@@ -431,7 +431,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// estimate
 		case keyPressMsg.String() == "e":
 			var cmds []tea.Cmd
-			if m.activeIssue != nil {
+			m.pendingIssue = m.activeIssue
+			if m.pendingIssue != nil {
 				m.mode = estimateView
 				m.estimateData = NewEstimateFormData()
 				cmds = append(cmds, m.estimateData.Form.Init())
