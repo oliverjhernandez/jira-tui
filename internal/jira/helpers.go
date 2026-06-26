@@ -33,7 +33,7 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 	case "bulletList":
 		return formatBulletList(node, 0, panelWidth)
 	case "orderedList":
-		return formatOrderedList(node)
+		return formatOrderedList(node, 0, panelWidth)
 	case "table":
 		return formatTable(node, panelWidth)
 	case "mediaSingle":
@@ -121,13 +121,17 @@ func formatCodeBlock(node ContentNode, panelWidth int) string {
 	return ui.CodeBlockStyle.Render(wrapped)
 }
 
-func formatOrderedList(node ContentNode) string {
+func formatOrderedList(node ContentNode, indent int, width int) string {
 	var items strings.Builder
-	for i, item := range node.Content {
-		if item.Type == "listItem" {
-			itemText := extractListItemText(item)
-			fmt.Fprintf(&items, "  %d. %s\n", i+1, itemText)
+	num := 1
+	for _, item := range node.Content {
+		if item.Type != "listItem" {
+			continue
 		}
+		marker := fmt.Sprintf("%d. ", num)
+		itemText := formatListItem(item, indent, width-lipgloss.Width(marker))
+		items.WriteString(strings.Repeat("  ", indent) + marker + itemText + "\n")
+		num++
 	}
 	return items.String()
 }
@@ -163,18 +167,8 @@ func formatListItem(node ContentNode, indent int, width int) string {
 			text.WriteString(formatParagraph(child, width))
 		case "bulletList":
 			text.WriteString(formatBulletList(child, indent+1, width))
-		}
-	}
-	return text.String()
-}
-
-func extractListItemText(item ContentNode) string {
-	var text strings.Builder
-	for _, child := range item.Content {
-		if child.Type == "paragraph" {
-			for _, node := range child.Content {
-				text.WriteString(extractInlineText(node))
-			}
+		case "orderedList":
+			text.WriteString(formatOrderedList(child, indent+1, width))
 		}
 	}
 	return text.String()
