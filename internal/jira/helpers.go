@@ -80,6 +80,16 @@ func extractInlineText(node ContentNode) string {
 			userName = node.Attrs.ID
 		}
 		return ui.MentionStyle.Render(userName)
+	} else if node.Type == "inlineCard" {
+		url := ""
+		if node.Attrs != nil {
+			url = node.Attrs.URL
+		}
+		text := ui.LinkStyle.Render(url)
+		if url != "" {
+			text = ui.Osc8(url, text)
+		}
+		return text
 	} else if node.Type == "hardBreak" {
 		return "\n"
 	}
@@ -94,6 +104,11 @@ func extractInlineText(node ContentNode) string {
 			text = ui.ItalicStyle.Render(text)
 		case "code":
 			text = ui.InlineCodeStyle.Render(text)
+		case "link":
+			text = ui.LinkStyle.Render(text)
+			// if mark.Attrs != nil && mark.Attrs.Href != "" {
+			// 	text = ui.Osc8(mark.Attrs.Href, text)
+			// }
 		}
 	}
 

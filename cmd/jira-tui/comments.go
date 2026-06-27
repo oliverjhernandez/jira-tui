@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -69,8 +68,6 @@ func (m model) renderCommentView() string {
 
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
-	log.Printf("Modal Height: %d", modalHeight)
-	log.Printf("Modal Width: %d", modalWidth)
 
 	styledModal := ui.RenderPanelWithLabel("New Comment", modalContent.String(), modalWidth, modalHeight, true)
 

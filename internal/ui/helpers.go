@@ -214,3 +214,7 @@ func TruncateLongString(s string, max int) string {
 	}
 	return s
 }
+
+func Osc8(url, s string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + s + "\x1b]8;;\x1b\\"
+}

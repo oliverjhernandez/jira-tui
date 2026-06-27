@@ -473,4 +473,7 @@ var (
 			Padding(0, 1).
 			MarginTop(1).
 			MarginBottom(1)
+	LinkStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Underline(true)
 )

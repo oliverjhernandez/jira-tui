@@ -219,13 +219,19 @@ type ContentNode struct {
 }
 
 type mark struct {
-	Type string `json:"type"`
+	Type  string     `json:"type"`
+	Attrs *markAttrs `json:"attrs,omitempty"`
+}
+
+type markAttrs struct {
+	Href string `json:"href,omitempty"`
 }
 
 type contentAttrs struct {
 	Text string `json:"text,omitempty"`
 	ID   string `json:"id,omitempty"`
 	Alt  string `json:"alt"`
+	URL  string `json:"url,omitempty"`
 }
 
 type statusField struct {
