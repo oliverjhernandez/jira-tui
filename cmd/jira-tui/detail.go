@@ -281,6 +281,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
+				m.previousMode = m.mode
 				m.mode = transitionView
 				m.transitionCursor = 0
 				m.loadingCount++

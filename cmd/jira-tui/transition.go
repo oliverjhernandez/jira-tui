@@ -145,9 +145,9 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderTransitionView() string {
 	var bg *lipgloss.Layer
-	if m.previousMode == detailView {
+	if m.activeIssue != nil {
 		bg = lipgloss.NewLayer(m.renderDetailView())
-	} else if m.previousMode == listView {
+	} else {
 		bg = lipgloss.NewLayer(m.renderListView())
 	}
 
@@ -211,7 +211,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderPostCancelReasonView() string {
 	var bg *lipgloss.Layer
-	if m.mode == detailView {
+	if m.activeIssue != nil {
 		bg = lipgloss.NewLayer(m.renderDetailView())
 	} else {
 		bg = lipgloss.NewLayer(m.renderListView())
@@ -276,7 +276,7 @@ func (m model) updateBlockReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) renderBlockReasonView() string {
 	var bg *lipgloss.Layer
-	if m.mode == detailView {
+	if m.activeIssue != nil {
 		bg = lipgloss.NewLayer(m.renderDetailView())
 	} else {
 		bg = lipgloss.NewLayer(m.renderListView())
