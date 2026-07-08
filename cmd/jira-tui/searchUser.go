@@ -74,6 +74,11 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case assignUser:
+			if m.pendingIssue == nil {
+				m.mode = m.previousMode
+				m.searchUserData = nil
+				return m, nil
+			}
 			cmds = append(cmds, m.postAssigneeCmd(m.pendingIssue.Key, user.ID))
 			if m.focusedSection == metadataSection {
 				m.loadingCount++

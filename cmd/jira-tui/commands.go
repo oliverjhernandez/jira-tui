@@ -257,7 +257,7 @@ func (m model) postNewIssueCmd(data *NewIssueFormData) tea.Cmd {
 		summary := data.Summary
 
 		var assigneeID string
-		if data.AssigneeName == m.myself.Name {
+		if m.myself != nil && data.AssigneeName == m.myself.Name {
 			assigneeID = m.myself.ID
 		}
 
@@ -911,7 +911,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	}
 
 	var index string
-	if m.sections != nil {
+	if m.sectionCursor >= 0 && m.sectionCursor < len(m.sections) {
 		index = ui.DimTextStyle.Render(
 			fmt.Sprintf("[%d/%d]", m.cursor+1, len(m.sections[m.sectionCursor].Issues)),
 		)

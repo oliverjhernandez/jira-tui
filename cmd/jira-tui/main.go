@@ -422,7 +422,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sections = m.classifyIssues(m.issues, m.statuses)
 			m.listViewport.SetContent(m.buildListContent())
 		}
-		m.selectedIssue = &m.sections[0].Issues[0]
+
+		m.selectedIssue = nil
+		for si := range m.sections {
+			if len(m.sections[si].Issues) > 0 {
+				m.sectionCursor = si
+				m.cursor = 0
+				m.selectedIssue = &m.sections[si].Issues[0]
+				break
+			}
+		}
 
 		return m, nil
 

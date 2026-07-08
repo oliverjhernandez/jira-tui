@@ -3,8 +3,24 @@ package main
 import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
+
+func (m model) currentIssue() (*jira.Issue, bool) {
+	secs := m.sections
+	if m.filteredSections != nil {
+		secs = m.filteredSections
+	}
+	if m.sectionCursor < 0 || m.sectionCursor >= len(secs) {
+		return nil, false
+	}
+	issues := secs[m.sectionCursor].Issues
+	if m.cursor < 0 || m.cursor >= len(issues) {
+		return nil, false
+	}
+	return &issues[m.cursor], true
+}
 
 func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
@@ -77,7 +93,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case keyPressMsg.String() == "k" && m.lastKey == "y":
 			var cmds []tea.Cmd
 			m.lastKey = ""
-			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Key
+			issue, ok := m.currentIssue()
+			if !ok {
+				return m, nil
+			}
+			textToCopy := issue.Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = statusMessage{
 				msgType: infoStatusBarMsg,
@@ -89,7 +109,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case keyPressMsg.String() == "K" && m.lastKey == "y":
 			var cmds []tea.Cmd
 			m.lastKey = ""
-			textToCopy := "https://layer7.atlassian.net/browse/" + m.sections[m.sectionCursor].Issues[m.cursor].Key
+			issue, ok := m.currentIssue()
+			if !ok {
+				return m, nil
+			}
+			textToCopy := "https://layer7.atlassian.net/browse/" + issue.Key
 			yankToClipboard(textToCopy)
 			m.statusMessage = statusMessage{
 				msgType: infoStatusBarMsg,
@@ -101,7 +125,11 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case keyPressMsg.String() == "s" && m.lastKey == "y":
 			var cmds []tea.Cmd
 			m.lastKey = ""
-			textToCopy := m.sections[m.sectionCursor].Issues[m.cursor].Summary
+			issue, ok := m.currentIssue()
+			if !ok {
+				return m, nil
+			}
+			textToCopy := issue.Summary
 			yankToClipboard(textToCopy)
 			m.statusMessage = statusMessage{
 				msgType: infoStatusBarMsg,
@@ -192,10 +220,13 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "G":
-			lenSection := len(m.sections) - 1
-			lenIssues := len(m.sections[lenSection].Issues) - 1
-			m.cursor = lenIssues
-			m.sectionCursor = lenSection
+			for s := len(m.sections) - 1; s >= 0; s-- {
+				if len(m.sections[s].Issues) > 0 {
+					m.sectionCursor = s
+					m.cursor = len(m.sections[s].Issues) - 1
+					break
+				}
+			}
 			m.listViewport.GotoBottom()
 			m.listViewport.SetContent(m.buildListContent())
 			return m, nil

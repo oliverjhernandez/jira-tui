@@ -55,8 +55,10 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.priorityData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		priority := m.priorityData.SelectedPriority
-		cmds = append(cmds, m.postPriorityCmd(m.pendingIssue.Key, priority))
+		if m.pendingIssue != nil {
+			priority := m.priorityData.SelectedPriority
+			cmds = append(cmds, m.postPriorityCmd(m.pendingIssue.Key, priority))
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -76,7 +78,11 @@ func (m model) renderEditPriorityView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
 
-	styledModal := ui.RenderPanelWithLabel("Priority "+m.pendingIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	label := "Priority"
+	if m.pendingIssue != nil {
+		label += " " + m.pendingIssue.Key
+	}
+	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

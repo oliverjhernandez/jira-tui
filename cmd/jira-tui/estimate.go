@@ -50,7 +50,9 @@ func (m model) updatePostEstimateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.estimateData.Form.State == huh.StateCompleted {
 		m.mode = detailView
-		cmds = append(cmds, m.postEstimateCmd(m.pendingIssue.Key, m.estimateData.Estimate))
+		if m.pendingIssue != nil {
+			cmds = append(cmds, m.postEstimateCmd(m.pendingIssue.Key, m.estimateData.Estimate))
+		}
 	}
 
 	return m, tea.Batch(cmds...)
