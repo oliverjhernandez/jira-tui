@@ -12,6 +12,7 @@ import (
 
 type TransitionFormData struct {
 	SelectedIndex int
+	Transitions   []jira.Transition
 	Form          *huh.Form
 }
 
@@ -23,6 +24,7 @@ func NewTransitionFormData(transitions []jira.Transition) *TransitionFormData {
 
 	t := &TransitionFormData{
 		SelectedIndex: 0,
+		Transitions:   transitions,
 	}
 	t.Form = huh.NewForm(
 		huh.NewGroup(
@@ -82,7 +84,12 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.transitionData.Form.State == huh.StateCompleted {
 			if m.pendingIssue != nil {
-				transition := m.transitionCache[m.pendingIssue.Project.Key][m.pendingIssue.Status][m.transitionData.SelectedIndex]
+				idx := m.transitionData.SelectedIndex
+				if idx < 0 || idx >= len(m.transitionData.Transitions) {
+					m.mode = m.previousMode
+					return m, tea.Batch(cmds...)
+				}
+				transition := m.transitionData.Transitions[idx]
 				if m.pendingIssue.OriginalEstimate == "" {
 					m.pendingTransition = &transition
 					m.estimateData = NewEstimateFormData()
@@ -123,7 +130,11 @@ func (m model) renderTransitionView() string {
 	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
 	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
 
-	styledModal := ui.RenderPanelWithLabel("Transition "+m.pendingIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	label := "Transition"
+	if m.pendingIssue != nil {
+		label += " " + m.pendingIssue.Key
+	}
+	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2
@@ -156,7 +167,7 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.cancelReasonData.Form.State == huh.StateCompleted {
 		m.mode = detailView
 		reason := m.cancelReasonData.Reason
-		if m.pendingTransition != nil {
+		if m.pendingTransition != nil && m.pendingIssue != nil {
 			transition := m.pendingTransition
 			m.pendingTransition = nil
 			m.loadingCount++

@@ -26,6 +26,18 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyPressMsg, ok := msg.(tea.KeyPressMsg); ok {
 		m.statusMessage = statusMessage{}
 
+		if m.activeIssue == nil {
+			switch keyPressMsg.String() {
+			case "q", "ctrl+c":
+				return m, tea.Quit
+			case "esc":
+				m.mode = listView
+				m.detailPolling = false
+				return m, nil
+			}
+			return m, nil
+		}
+
 		switch m.focusedSection {
 		case descriptionSection:
 			switch {
@@ -83,6 +95,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case keyPressMsg.String() == "y" && m.lastKey == "y":
 				var cmds []tea.Cmd
 				m.lastKey = ""
+				if m.commentsCursor < 0 || m.commentsCursor >= len(m.activeIssue.Comments) {
+					return m, nil
+				}
 				textToCopy := jira.ExtractText(m.activeIssue.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
 				m.statusMessage = statusMessage{
@@ -133,7 +148,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - ui.PanelOverheadWidth
 				m.textArea.SetWidth(textAreaWidth)
 				var comment string
-				if m.activeIssue.Comments != nil {
+				if m.commentsCursor >= 0 && m.commentsCursor < len(m.activeIssue.Comments) {
 					comment = jira.ExtractText(m.activeIssue.Comments[m.commentsCursor].Body, textAreaWidth)
 				}
 				m.textArea.SetValue(comment)
@@ -143,6 +158,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyPressMsg.String() == "d":
+				if m.commentsCursor < 0 || m.commentsCursor >= len(m.activeIssue.Comments) {
+					return m, nil
+				}
 				m.loadingCount++
 				cmd := m.deleteCommentCmd(m.activeIssue.Key, m.activeIssue.Comments[m.commentsCursor].ID)
 				return m, cmd
@@ -176,6 +194,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyPressMsg.String() == "e":
+				if m.worklogsCursor < 0 || m.worklogsCursor >= len(m.activeIssue.Worklogs) {
+					return m, nil
+				}
 				m.editingWorklog = true
 				m.worklogFormData = m.NewWorklogForm(&m.activeIssue.Worklogs[m.worklogsCursor], 40)
 				m.mode = worklogView
@@ -183,6 +204,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.worklogFormData.Form.Init()
 
 			case keyPressMsg.String() == "d":
+				if m.worklogsCursor < 0 || m.worklogsCursor >= len(m.activeIssue.Worklogs) {
+					return m, nil
+				}
 				m.loadingCount++
 				cmd := m.deleteWorkLogCmd(strconv.Itoa(m.activeIssue.Worklogs[m.worklogsCursor].ID))
 				return m, cmd
@@ -218,7 +242,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case keyPressMsg.String() == "enter":
 				var cmds []tea.Cmd
 
-				if m.activeIssue.SubTasks != nil {
+				if m.subTasksCursor >= 0 && m.subTasksCursor < len(m.activeIssue.SubTasks) {
 					m.loadingCount++
 					m.activeIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
@@ -236,9 +260,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.newIssueData.Form.Init()
 
 			case keyPressMsg.String() == "t":
-				if m.activeIssue != nil {
-					m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+				if m.subTasksCursor < 0 || m.subTasksCursor >= len(m.activeIssue.SubTasks) {
+					return m, nil
 				}
+				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 
 				if m.activeIssue.SubTasks[m.subTasksCursor].Description == nil {
 					m.statusMessage = statusMessage{
@@ -267,6 +292,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.estimateData.Form.Init()
 
 			case keyPressMsg.String() == "a":
+				if m.subTasksCursor < 0 || m.subTasksCursor >= len(m.activeIssue.SubTasks) {
+					return m, nil
+				}
 				var cmds []tea.Cmd
 				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 				m.previousMode = m.mode

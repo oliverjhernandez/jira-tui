@@ -59,10 +59,12 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				content: "Searching...",
 			}
 		case linkIssue:
-			cmds = append(cmds, m.postLinkIssueCmd(m.pendingIssue.Key, m.issueLinkData.IssueKey, m.issueLinkData.Relation))
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Linking...",
+			if m.pendingIssue != nil && m.issueLinkData != nil {
+				cmds = append(cmds, m.postLinkIssueCmd(m.pendingIssue.Key, m.issueLinkData.IssueKey, m.issueLinkData.Relation))
+				m.statusMessage = statusMessage{
+					msgType: infoStatusBarMsg,
+					content: "Linking...",
+				}
 			}
 		}
 	}

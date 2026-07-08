@@ -208,6 +208,9 @@ func RenderPanelWithLabel(label string, content string, width int, height int, a
 }
 
 func TruncateLongString(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
 	runes := []rune(s)
 	if len(runes) > max {
 		return string(runes[:max-1]) + "…"

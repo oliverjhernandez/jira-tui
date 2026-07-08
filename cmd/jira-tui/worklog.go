@@ -67,6 +67,13 @@ func (m model) updateWorklogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.worklogFormData.Form.State == huh.StateCompleted {
 		m.mode = detailView
+		if m.activeIssue == nil || m.myself == nil {
+			m.statusMessage = statusMessage{
+				msgType: errStatusBarMsg,
+				content: "Cannot save worklog: missing issue or user",
+			}
+			return m, m.clearStatusAfter(clearMsgTimeout)
+		}
 		worklogID := strconv.Itoa(m.worklogFormData.ID)
 		issueID := m.activeIssue.ID
 		startDate := m.worklogFormData.StartDate

@@ -61,14 +61,16 @@ func (m model) updateIssueLinkView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.issueLinkData.Form.State == huh.StateCompleted {
 		m.mode = detailView
 
-		relation := m.issueLinkData.Relation
-		toIssueKey := m.issueLinkData.IssueKey
+		if m.pendingIssue != nil {
+			relation := m.issueLinkData.Relation
+			toIssueKey := m.issueLinkData.IssueKey
 
-		cmds = append(cmds, m.postLinkIssueCmd(
-			m.pendingIssue.Key,
-			toIssueKey,
-			relation,
-		))
+			cmds = append(cmds, m.postLinkIssueCmd(
+				m.pendingIssue.Key,
+				toIssueKey,
+				relation,
+			))
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -87,7 +89,11 @@ func (m model) renderIssueLinkView() string {
 
 	modalContent.WriteString(m.issueLinkData.Form.View())
 
-	styledModal := ui.RenderPanelWithLabel("Link "+m.pendingIssue.Key, modalContent.String(), modalWidth, modalHeight, true)
+	label := "Link"
+	if m.pendingIssue != nil {
+		label += " " + m.pendingIssue.Key
+	}
+	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
 	y := (m.windowHeight - modalHeight) / 2
 	x := (m.windowWidth - modalWidth) / 2

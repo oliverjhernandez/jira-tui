@@ -51,6 +51,9 @@ func extractBlockText(node ContentNode, panelWidth int) string {
 }
 
 func hardWrap(s string, width int) string {
+	if width <= 0 {
+		return s
+	}
 	lines := strings.Split(s, "\n")
 	var result []string
 	for _, line := range lines {
@@ -75,6 +78,9 @@ func formatParagraph(node ContentNode, panelWidth int) string {
 
 func extractInlineText(node ContentNode) string {
 	if node.Type == "mention" {
+		if node.Attrs == nil {
+			return ""
+		}
 		userName := node.Attrs.Text
 		if userName == "" {
 			userName = node.Attrs.ID
@@ -166,7 +172,7 @@ func formatBulletList(node ContentNode, indent int, width int) string {
 func formatMediaSingle(node ContentNode) string {
 	var content strings.Builder
 	for _, item := range node.Content {
-		if item.Type == "media" {
+		if item.Type == "media" && item.Attrs != nil {
 			content.WriteString("[📎 " + item.Attrs.Alt + "]\n")
 		}
 	}
@@ -211,6 +217,9 @@ func formatTable(node ContentNode, panelWidth int) string {
 	for _, row := range allRows {
 		var cells []string
 		for i, cell := range row {
+			if i >= len(colWidths) {
+				break
+			}
 			cellStyle := lipgloss.NewStyle().Width(colWidths[i])
 			cells = append(cells, cellStyle.Render(hardWrap(cell, colWidths[i])))
 		}

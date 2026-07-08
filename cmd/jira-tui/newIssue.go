@@ -46,9 +46,13 @@ func (m model) NewIssueForm(issue *NewIssueFormData) *NewIssueFormData {
 		issueTypes = append(issueTypes, huh.NewOption(t, t))
 	}
 
+	var meName string
+	if m.myself != nil {
+		meName = m.myself.Name
+	}
 	var assigneeOptions []huh.Option[string]
 	assigneeOptions = append(assigneeOptions,
-		huh.NewOption("Me ("+m.myself.Name+")", m.myself.Name),
+		huh.NewOption("Me ("+meName+")", meName),
 		huh.NewOption("Unassigned", ""),
 	)
 
