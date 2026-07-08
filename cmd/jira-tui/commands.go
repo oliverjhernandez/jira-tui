@@ -317,6 +317,34 @@ func (m model) postTransitionCmd(issueKey, transitionID, transitionName string) 
 	}
 }
 
+const (
+	flaggedFieldID     = "customfield_10021"
+	flaggedFieldValue  = "Impediment"
+	blockReasonFieldID = "customfield_10485"
+)
+
+func (m model) postBlockedTransitionCmd(issueKey, transitionID, reason string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		fields := map[string]any{
+			flaggedFieldID: []map[string]string{
+				{"value": flaggedFieldValue},
+			},
+			blockReasonFieldID: reason,
+		}
+
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, fields, "", "")
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return transitionPostedMsg{}
+	}
+}
+
 func (m model) postTransitionWithReasonCmd(issueKey, transitionID, reason string) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {

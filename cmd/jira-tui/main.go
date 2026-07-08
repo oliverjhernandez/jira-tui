@@ -39,6 +39,7 @@ const (
 	issueLinkView
 	estimateView
 	cancelReasonView
+	blockReasonView
 	issueSearchView
 )
 
@@ -68,6 +69,8 @@ func (v viewMode) String() string {
 		return "estimateView"
 	case cancelReasonView:
 		return "cancelReasonView"
+	case blockReasonView:
+		return "blockReasonView"
 	case issueSearchView:
 		return "issueSearchView"
 	default:
@@ -218,6 +221,7 @@ type model struct {
 	priorityData     *PriorityFormData
 	transitionData   *TransitionFormData
 	cancelReasonData *CancelReasonFormData
+	blockReasonData  *BlockReasonFormData
 	searchUserData   *SearchUserFormData
 
 	// UI Elements
@@ -584,6 +588,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = cancelReasonView
 				return m, m.cancelReasonData.Form.Init()
 			}
+			if isBlockedTransition(*transition) {
+				m.blockReasonData = NewBlockReasonFormData()
+				m.mode = blockReasonView
+				return m, m.blockReasonData.Form.Init()
+			}
 			m.pendingTransition = nil
 			cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
 			return m, tea.Batch(cmds...)
@@ -722,6 +731,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updatePostEstimateView(msg)
 	case cancelReasonView:
 		tmpModel, viewCmd = m.updatePostCancelReasonView(msg)
+	case blockReasonView:
+		tmpModel, viewCmd = m.updateBlockReasonView(msg)
 	case issueSearchView:
 		tmpModel, viewCmd = m.updateSearchIssueView(msg)
 	}
@@ -762,6 +773,8 @@ func (m model) View() tea.View {
 		content = m.renderPostEstimateView()
 	case cancelReasonView:
 		content = m.renderPostCancelReasonView()
+	case blockReasonView:
+		content = m.renderBlockReasonView()
 	case issueSearchView:
 		content = m.renderSearchIssueView()
 	default:
