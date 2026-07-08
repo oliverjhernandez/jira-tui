@@ -156,6 +156,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				sectionsToNavigate = m.filteredSections
 			}
 
+			if m.sectionCursor < 0 || m.sectionCursor >= len(sectionsToNavigate) {
+				return m, nil
+			}
+
 			sectionIssues := sectionsToNavigate[m.sectionCursor].Issues
 			if m.cursor == 0 || len(sectionIssues) == 0 {
 				for prevSection := m.sectionCursor - 1; prevSection >= 0; prevSection-- {
@@ -189,6 +193,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			sectionsToNavigate := m.sections
 			if m.filteredSections != nil {
 				sectionsToNavigate = m.filteredSections
+			}
+
+			if m.sectionCursor < 0 || m.sectionCursor >= len(sectionsToNavigate) {
+				return m, nil
 			}
 
 			sectionIssues := sectionsToNavigate[m.sectionCursor].Issues
