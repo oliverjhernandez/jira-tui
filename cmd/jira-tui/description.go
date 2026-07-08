@@ -1,12 +1,8 @@
 package main
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type DescriptionFormData struct {
@@ -60,23 +56,5 @@ func (m model) updateEditDescriptionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderEditDescriptionView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
-
-	var modalContent strings.Builder
-
-	modalContent.WriteString(m.descriptionData.Form.View())
-
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
-
-	styledModal := ui.RenderPanelWithLabel("Description", modalContent.String(), modalWidth, modalHeight, true)
-
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal("Description", m.descriptionData.Form.View(), 0.3, 0.3)
 }

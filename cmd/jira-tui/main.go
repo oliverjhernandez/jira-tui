@@ -78,6 +78,17 @@ func (v viewMode) String() string {
 	}
 }
 
+// isModal reports whether a view is drawn as an overlay on top of a base
+// (full-screen) view rather than being a base view itself.
+func (v viewMode) isModal() bool {
+	switch v {
+	case listView, detailView:
+		return false
+	default:
+		return true
+	}
+}
+
 type userSelectionMode int
 
 const (
@@ -142,6 +153,7 @@ type model struct {
 	client       *jira.Client
 	mode         viewMode
 	previousMode viewMode
+	baseView     viewMode
 	err          error
 
 	windowWidth int
@@ -253,6 +265,17 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	next, cmd := m.update(msg)
+	nm := next.(model)
+	// Record the last full-screen view so modal overlays always composite over
+	// whatever base view the user was on, without each modal inferring it.
+	if !nm.mode.isModal() {
+		nm.baseView = nm.mode
+	}
+	return nm, cmd
+}
+
+func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case myselfLoadedMsg:
 		m.loadingCount--
@@ -811,6 +834,7 @@ func main() {
 
 	p := tea.NewProgram(model{
 		mode:            listView,
+		baseView:        listView,
 		client:          client,
 		textInput:       textInput,
 		windowWidth:     80,

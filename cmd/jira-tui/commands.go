@@ -1258,6 +1258,33 @@ func (m model) renderSimpleBackground() string {
 	return bg
 }
 
+// renderBackground renders the base (full-screen) view a modal is drawn over.
+func (m model) renderBackground() string {
+	switch m.baseView {
+	case detailView:
+		return m.renderDetailView()
+	default:
+		return m.renderListView()
+	}
+}
+
+// renderModal composites a centered, labeled panel over the current base view.
+// wScale and hScale are fractions of the window width/height.
+func (m model) renderModal(label, content string, wScale, hScale float64) string {
+	modalWidth := ui.GetModalWidth(m.windowWidth, wScale)
+	modalHeight := ui.GetModalHeight(m.windowHeight, hScale)
+
+	styledModal := ui.RenderPanelWithLabel(label, content, modalWidth, modalHeight, true)
+
+	x := (m.windowWidth - modalWidth) / 2
+	y := (m.windowHeight - modalHeight) / 2
+
+	bg := lipgloss.NewLayer(m.renderBackground())
+	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
+
+	return lipgloss.NewCompositor(bg, fg).Render()
+}
+
 func (m model) clearStatusAfter(d time.Duration) tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(d)

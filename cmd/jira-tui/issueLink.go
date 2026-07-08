@@ -1,13 +1,9 @@
 package main
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
-	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type IssueLinkFormData struct {
@@ -77,30 +73,10 @@ func (m model) updateIssueLinkView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderIssueLinkView() string {
-	bg := lipgloss.NewLayer(m.renderDetailView())
-
-	var modalContent strings.Builder
-
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.3)
-
-	// m.textArea.SetWidth(modalWidth - ui.PanelOverheadWidth)
-	// m.textArea.SetHeight(modalHeight - ui.PanelOverheadHeight)
-
-	modalContent.WriteString(m.issueLinkData.Form.View())
-
 	label := "Link"
 	if m.pendingIssue != nil {
 		label += " " + m.pendingIssue.Key
 	}
-	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal(label, m.issueLinkData.Form.View(), 0.2, 0.3)
 }

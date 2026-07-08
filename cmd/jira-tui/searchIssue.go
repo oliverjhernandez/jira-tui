@@ -5,8 +5,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 type SearchIssueFormData struct {
@@ -75,16 +73,6 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderSearchIssueView() string {
-	var bgContent string
-	// FIX: Shouldnt be based on mode
-	if m.issueSelectionMode == linkIssue {
-		bgContent = m.renderDetailView()
-	} else {
-		bgContent = m.renderListView()
-	}
-
-	bg := lipgloss.NewLayer(bgContent)
-
 	var modalContent strings.Builder
 
 	modalContent.WriteString(m.searchIssueData.Form.View())
@@ -97,17 +85,5 @@ func (m model) renderSearchIssueView() string {
 		}
 	}
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.1)
-
-	styledModal := ui.RenderPanelWithLabel("Search Issue", modalContent.String(), modalWidth, modalHeight, true)
-
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal("Search Issue", modalContent.String(), 0.2, 0.1)
 }
