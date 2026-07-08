@@ -5,7 +5,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -144,36 +143,18 @@ func (m model) updateTransitionView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderTransitionView() string {
-	var bg *lipgloss.Layer
-	if m.activeIssue != nil {
-		bg = lipgloss.NewLayer(m.renderDetailView())
-	} else {
-		bg = lipgloss.NewLayer(m.renderListView())
-	}
-
 	var modalContent strings.Builder
 
 	if m.transitionData != nil {
 		modalContent.WriteString(m.transitionData.Form.View())
 	}
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.2)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
-
 	label := "Transition"
 	if m.pendingIssue != nil {
 		label += " " + m.pendingIssue.Key
 	}
-	styledModal := ui.RenderPanelWithLabel(label, modalContent.String(), modalWidth, modalHeight, true)
 
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal(label, modalContent.String(), 0.2, 0.2)
 }
 
 func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -210,13 +191,6 @@ func (m model) updatePostCancelReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderPostCancelReasonView() string {
-	var bg *lipgloss.Layer
-	if m.activeIssue != nil {
-		bg = lipgloss.NewLayer(m.renderDetailView())
-	} else {
-		bg = lipgloss.NewLayer(m.renderListView())
-	}
-
 	var modalContent strings.Builder
 
 	if m.pendingIssue != nil {
@@ -226,19 +200,7 @@ func (m model) renderPostCancelReasonView() string {
 
 	modalContent.WriteString(m.cancelReasonData.Form.View())
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
-
-	styledModal := ui.RenderPanelWithLabel("Cancel Reason", modalContent.String(), modalWidth, modalHeight, true)
-
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal("Cancel Reason", modalContent.String(), 0.3, 0.2)
 }
 
 func (m model) updateBlockReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -275,13 +237,6 @@ func (m model) updateBlockReasonView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) renderBlockReasonView() string {
-	var bg *lipgloss.Layer
-	if m.activeIssue != nil {
-		bg = lipgloss.NewLayer(m.renderDetailView())
-	} else {
-		bg = lipgloss.NewLayer(m.renderListView())
-	}
-
 	var modalContent strings.Builder
 
 	if m.pendingIssue != nil {
@@ -291,17 +246,5 @@ func (m model) renderBlockReasonView() string {
 
 	modalContent.WriteString(m.blockReasonData.Form.View())
 
-	modalWidth := ui.GetModalWidth(m.windowWidth, 0.3)
-	modalHeight := ui.GetModalHeight(m.windowHeight, 0.2)
-
-	styledModal := ui.RenderPanelWithLabel("Block Reason", modalContent.String(), modalWidth, modalHeight, true)
-
-	y := (m.windowHeight - modalHeight) / 2
-	x := (m.windowWidth - modalWidth) / 2
-
-	fg := lipgloss.NewLayer(styledModal).X(x).Y(y).Z(1)
-
-	comp := lipgloss.NewCompositor(bg, fg)
-
-	return comp.Render()
+	return m.renderModal("Block Reason", modalContent.String(), 0.3, 0.2)
 }
