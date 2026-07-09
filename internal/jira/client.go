@@ -65,7 +65,7 @@ type Reporter struct {
 	DisplayName string
 }
 
-// NOTE: improve
+// Project is a Jira project.
 type Project struct {
 	ID   string
 	Name string

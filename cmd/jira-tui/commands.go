@@ -237,8 +237,6 @@ func (m model) postNewIssueCmd(data *NewIssueFormData) tea.Cmd {
 		var issueTypeID string
 		for _, it := range m.issueTypes {
 			if it.Name == data.IssueTypeName {
-				if it.Scope != nil {
-				}
 				if it.Scope != nil && it.Scope.Project.ID == projectID {
 					issueTypeID = it.ID
 					break
@@ -886,11 +884,6 @@ func (m model) buildListContent() string {
 }
 
 func (m model) renderInfoPanel() string {
-	m.statusMessage = statusMessage{
-		msgType: infoStatusBarMsg,
-		content: "Loading...",
-	}
-
 	var userName string
 	if m.myself != nil {
 		userName = "@" + m.myself.Name

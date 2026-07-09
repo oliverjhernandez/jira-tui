@@ -864,7 +864,21 @@ func (m model) View() tea.View {
 	return tea.NewView(content)
 }
 
+// Build metadata, overridden via -ldflags at release time (see .goreleaser.yaml).
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--version", "-v", "version":
+			fmt.Printf("jira-tui %s (%s, %s)\n", version, commit, date)
+			return
+		}
+	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
