@@ -34,10 +34,12 @@ type listLayout struct {
 // bubbletea messages from commands
 type issuesLoadedMsg struct {
 	issues []jira.Issue
+	tabID  int
 }
 
 type subTasksLoadedMsg struct {
 	subTasks []jira.Issue
+	tabID    int
 }
 
 type myselfLoadedMsg struct {
@@ -46,6 +48,7 @@ type myselfLoadedMsg struct {
 
 type statusesLoadedMsg struct {
 	statuses map[string][]jira.Status
+	tabID    int
 }
 
 type prioritiesLoadedMsg struct {
@@ -62,6 +65,7 @@ type issueTypesLoadedMsg struct {
 
 type issueDetailLoadedMsg struct {
 	detail *jira.Issue
+	tabID  int
 }
 
 type transitionsLoadedMsg struct {
@@ -77,10 +81,12 @@ type usersLoadedMsg struct {
 
 type workLogsLoadedMsg struct {
 	workLogs []jira.Worklog
+	tabID    int
 }
 
 type worklogTotalsLoadedMsg struct {
 	totals map[string]int // issue ID -> total seconds
+	tabID  int
 }
 
 type transitionPostedMsg struct{}
@@ -147,7 +153,7 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return issueDetailLoadedMsg{detail}
+		return issueDetailLoadedMsg{detail: detail, tabID: m.activeTabID()}
 	}
 }
 
@@ -407,18 +413,26 @@ func (m model) postPriorityCmd(issueKey, priorityName string) tea.Cmd {
 	}
 }
 
+// fetchMyIssuesCmd fetches the active tab's board (its JQL), tagging the result
+// with the active tab's id.
 func (m model) fetchMyIssuesCmd() tea.Cmd {
+	return m.fetchBoardIssuesCmd(m.activeBoardJQL(), m.activeTabID())
+}
+
+// fetchBoardIssuesCmd fetches issues for an arbitrary board JQL and tags the
+// result with the given tab id, so it can be routed to the right tab.
+func (m model) fetchBoardIssuesCmd(jql string, tabID int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		issues, err := m.client.GetMyIssues(context.Background())
+		issues, err := m.client.SearchIssuesJql(context.Background(), jql)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return issuesLoadedMsg{issues}
+		return issuesLoadedMsg{issues: issues, tabID: tabID}
 	}
 }
 
@@ -433,7 +447,7 @@ func (m model) fetchSubTasksCmd(parentKey string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return subTasksLoadedMsg{subTasks}
+		return subTasksLoadedMsg{subTasks: subTasks, tabID: m.activeTabID()}
 	}
 }
 
@@ -452,7 +466,7 @@ func (m model) fetchPrioritiesCmd() tea.Cmd {
 	}
 }
 
-func (m model) fetchStatusesCmd(projects []jira.Project) tea.Cmd {
+func (m model) fetchStatusesCmd(projects []jira.Project, tabID int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -468,7 +482,7 @@ func (m model) fetchStatusesCmd(projects []jira.Project) tea.Cmd {
 			results[p.ID] = statuses
 		}
 
-		return statusesLoadedMsg{results}
+		return statusesLoadedMsg{statuses: results, tabID: tabID}
 	}
 }
 
@@ -553,11 +567,11 @@ func (m model) fetchWorkLogsCmd(issueID string) tea.Cmd {
 			return errMsg{err}
 		}
 
-		return workLogsLoadedMsg{wls}
+		return workLogsLoadedMsg{workLogs: wls, tabID: m.activeTabID()}
 	}
 }
 
-func (m model) fetchAllWorklogsTotalCmd(issues []jira.Issue) tea.Cmd {
+func (m model) fetchAllWorklogsTotalCmd(issues []jira.Issue, tabID int) tea.Cmd {
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
@@ -599,7 +613,7 @@ func (m model) fetchAllWorklogsTotalCmd(issues []jira.Issue) tea.Cmd {
 			}
 		}
 
-		return worklogTotalsLoadedMsg{totals}
+		return worklogTotalsLoadedMsg{totals: totals, tabID: tabID}
 	}
 }
 
@@ -764,8 +778,8 @@ func (m model) calculateDetailLayout() detailLayout {
 	metadataHeight := 7
 	statusBarHeight := 1
 
-	leftFixedHeight := metadataHeight + statusBarHeight + (ui.PanelOverheadHeight * 2)
-	rightFixedHeight := statusBarHeight + (ui.PanelOverheadHeight * 3)
+	leftFixedHeight := metadataHeight + statusBarHeight + tabBarHeight + (ui.PanelOverheadHeight * 2)
+	rightFixedHeight := statusBarHeight + tabBarHeight + (ui.PanelOverheadHeight * 3)
 	leftColumnFreeHeight := m.windowHeight - leftFixedHeight
 	rightColumnFreeHeight := m.windowHeight - rightFixedHeight
 
@@ -791,7 +805,7 @@ func (m model) calculateDetailLayout() detailLayout {
 func (m model) calculateListLayout() listLayout {
 	infoHeight := 5
 	statusBarHeight := 1
-	listHeight := m.windowHeight - infoHeight - statusBarHeight - ui.PanelOverheadHeight
+	listHeight := m.windowHeight - infoHeight - statusBarHeight - tabBarHeight - ui.PanelOverheadHeight
 	panelWidth := m.windowWidth - ui.PanelOverheadWidth
 
 	return listLayout{

@@ -35,9 +35,11 @@ func TestUpdateTracksBaseView(t *testing.T) {
 		baseView:     listView,
 		windowWidth:  100,
 		windowHeight: 40,
+		activeTab:    0,
+		tabs:         []Tab{{id: 0, title: "My Issues", baseView: listView}},
 	}
 
-	next, _ := m.Update(issueDetailLoadedMsg{detail: &jira.Issue{Key: "DEV-1"}})
+	next, _ := m.Update(issueDetailLoadedMsg{detail: &jira.Issue{Key: "DEV-1"}, tabID: 0})
 	nm := next.(model)
 
 	if nm.mode != detailView {

@@ -41,6 +41,7 @@ const (
 	cancelReasonView
 	blockReasonView
 	issueSearchView
+	savedBoardPickerView
 )
 
 func (v viewMode) String() string {
@@ -73,6 +74,8 @@ func (v viewMode) String() string {
 		return "blockReasonView"
 	case issueSearchView:
 		return "issueSearchView"
+	case savedBoardPickerView:
+		return "savedBoardPickerView"
 	default:
 		return "unknown"
 	}
@@ -156,6 +159,11 @@ type model struct {
 	baseView     viewMode
 	err          error
 
+	// Tabs
+	tabs      []Tab
+	activeTab int
+	nextTabID int
+
 	windowWidth int
 	// Window & Layout
 	windowHeight       int
@@ -235,6 +243,7 @@ type model struct {
 	cancelReasonData *CancelReasonFormData
 	blockReasonData  *BlockReasonFormData
 	searchUserData   *SearchUserFormData
+	savedBoardData   *SavedBoardFormData
 
 	// UI Elements
 	spinner       spinner.Model
@@ -251,6 +260,12 @@ func (m model) Init() tea.Cmd {
 
 	cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
 		return myIssuesPollMsg{}
+	}))
+
+	// Single perpetual detail-poll chain: it refreshes whatever detail is active
+	// (see issueDetailPollMsg). Started once here so exactly one chain exists.
+	cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+		return issueDetailPollMsg{}
 	}))
 
 	cmds = append(cmds, m.spinner.Tick)
@@ -276,6 +291,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Tab management keys, intercepted globally in base views (not in modals or
+	// while filtering, where these characters are legitimate input).
+	if keyMsg, ok := msg.(tea.KeyPressMsg); ok && !m.mode.isModal() && !m.filtering {
+		switch keyMsg.String() {
+		case "]":
+			return m.switchTab(+1)
+		case "[":
+			return m.switchTab(-1)
+		case "b":
+			return m.openEpicBoardTab()
+		case "x":
+			return m.closeActiveTab()
+		case "B":
+			return m.openSavedBoardPicker()
+		}
+	}
+
 	switch msg := msg.(type) {
 	case myselfLoadedMsg:
 		m.loadingCount--
@@ -284,43 +316,50 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case issuesLoadedMsg:
 		m.loadingCount--
-		m.issues = msg.issues
+		idx, ok := m.tabIndexByID(msg.tabID)
+		if !ok {
+			return m, nil // tab was closed; drop
+		}
+
+		aps := activeProjectsFor(msg.issues, m.projects)
+		if idx == m.activeTab {
+			m.issues = msg.issues
+			m.activeProjects = aps
+		} else {
+			m.tabs[idx].board.issues = msg.issues
+			m.tabs[idx].board.activeProjects = aps
+		}
 
 		var cmds []tea.Cmd
-
-		if len(m.projects) > 0 && len(m.issues) > 0 {
-			seen := make(map[string]bool, 0)
-			for _, p := range m.issues {
-				seen[p.Project.ID] = true
-			}
-
-			m.activeProjects = nil
-			for _, p := range m.projects {
-				if seen[p.ID] {
-					m.activeProjects = append(m.activeProjects, p)
-				}
-			}
+		if len(m.projects) > 0 {
+			m.loadingCount++
+			cmds = append(cmds, m.fetchStatusesCmd(aps, msg.tabID))
 
 			m.loadingCount++
-			cmds = append(cmds, m.fetchStatusesCmd(m.activeProjects))
-
-			m.loadingCount++
-			cmds = append(cmds, m.fetchAllWorklogsTotalCmd(msg.issues))
+			cmds = append(cmds, m.fetchAllWorklogsTotalCmd(msg.issues, msg.tabID))
 		}
 
 		return m, tea.Batch(cmds...)
 
 	case subTasksLoadedMsg:
 		m.loadingCount--
-		m.searchIssueData = NewSearchIssueFormData()
-		if m.activeIssue != nil {
-			m.activeIssue.SubTasks = msg.subTasks
+		idx, ok := m.tabIndexByID(msg.tabID)
+		if !ok {
+			return m, nil
 		}
+		if idx == m.activeTab {
+			m.searchIssueData = NewSearchIssueFormData()
+			if m.activeIssue != nil {
+				m.activeIssue.SubTasks = msg.subTasks
 
-		subTasksContent := m.buildSubTasksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
-		m.subTasksViewport.SetWidth(m.detailLayout.rightColumnWidth)
-		m.subTasksViewport.SetHeight(m.detailLayout.subTasksHeight)
-		m.subTasksViewport.SetContent(subTasksContent)
+				subTasksContent := m.buildSubTasksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+				m.subTasksViewport.SetWidth(m.detailLayout.rightColumnWidth)
+				m.subTasksViewport.SetHeight(m.detailLayout.subTasksHeight)
+				m.subTasksViewport.SetContent(subTasksContent)
+			}
+		} else if m.tabs[idx].detail.activeIssue != nil {
+			m.tabs[idx].detail.activeIssue.SubTasks = msg.subTasks
+		}
 
 		return m, nil
 
@@ -329,8 +368,10 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.worklogTotals == nil {
 			m.worklogTotals = make(map[string]int)
 		}
-		maps.Copy(m.worklogTotals, msg.totals)
-		m.listViewport.SetContent(m.buildListContent())
+		maps.Copy(m.worklogTotals, msg.totals) // shared cache, always merge
+		if idx, ok := m.tabIndexByID(msg.tabID); ok && idx == m.activeTab {
+			m.listViewport.SetContent(m.buildListContent())
+		}
 		return m, nil
 
 	case prioritiesLoadedMsg:
@@ -344,37 +385,34 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		if len(m.projects) > 0 && len(m.issues) > 0 {
-			seen := make(map[string]bool, 0)
-			for _, p := range m.issues {
-				seen[p.Project.ID] = true
-			}
-
-			for _, p := range m.projects {
-				if seen[p.ID] {
-					m.activeProjects = append(m.activeProjects, p)
-				}
-			}
-
+			m.activeProjects = activeProjectsFor(m.issues, m.projects)
 			m.loadingCount++
-			cmds = append(cmds, m.fetchStatusesCmd(m.activeProjects))
+			cmds = append(cmds, m.fetchStatusesCmd(m.activeProjects, m.activeTabID()))
 		}
 
 		return m, tea.Batch(cmds...)
 
 	case issueDetailLoadedMsg:
-		var cmds []tea.Cmd
 		m.loadingCount--
+		idx, ok := m.tabIndexByID(msg.tabID)
+		if !ok {
+			return m, nil
+		}
+
+		if idx != m.activeTab {
+			// Detail finished loading for a backgrounded tab: stash it. Its
+			// worklogs/subtasks are fetched when the user switches to it
+			// (loadActiveTab).
+			m.tabs[idx].detail.activeIssue = msg.detail
+			m.tabs[idx].baseView = detailView
+			return m, nil
+		}
+
+		var cmds []tea.Cmd
 		m.activeIssue = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.previousMode = m.mode
 		m.mode = detailView
-
-		if !m.detailPolling {
-			m.detailPolling = true
-			cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
-				return issueDetailPollMsg{}
-			}))
-		}
 
 		if m.activeIssue != nil {
 			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
@@ -406,21 +444,32 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case workLogsLoadedMsg:
 		m.loadingCount--
-		if m.activeIssue != nil {
-			m.activeIssue.Worklogs = msg.workLogs
-			var total int
-			for _, wl := range m.activeIssue.Worklogs {
-				total += wl.Time
-			}
-			if m.worklogTotals == nil {
-				m.worklogTotals = make(map[string]int)
-			}
-			m.worklogTotals[m.activeIssue.ID] = total
+		idx, ok := m.tabIndexByID(msg.tabID)
+		if !ok {
+			return m, nil
+		}
 
-			worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
-			m.worklogsViewport.SetWidth(m.detailLayout.rightColumnWidth)
-			m.worklogsViewport.SetHeight(m.detailLayout.worklogsHeight)
-			m.worklogsViewport.SetContent(worklogsContent)
+		var total int
+		for _, wl := range msg.workLogs {
+			total += wl.Time
+		}
+		if m.worklogTotals == nil {
+			m.worklogTotals = make(map[string]int)
+		}
+
+		if idx == m.activeTab {
+			if m.activeIssue != nil {
+				m.activeIssue.Worklogs = msg.workLogs
+				m.worklogTotals[m.activeIssue.ID] = total
+
+				worklogsContent := m.buildWorklogsContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
+				m.worklogsViewport.SetWidth(m.detailLayout.rightColumnWidth)
+				m.worklogsViewport.SetHeight(m.detailLayout.worklogsHeight)
+				m.worklogsViewport.SetContent(worklogsContent)
+			}
+		} else if m.tabs[idx].detail.activeIssue != nil {
+			m.tabs[idx].detail.activeIssue.Worklogs = msg.workLogs
+			m.worklogTotals[m.tabs[idx].detail.activeIssue.ID] = total
 		}
 
 		return m, nil
@@ -444,11 +493,19 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case statusesLoadedMsg:
 		m.loadingCount--
-		m.statuses = msg.statuses
-		if len(m.statuses) > 0 {
-			m.sections = m.classifyIssues(m.issues, m.statuses)
-			m.listViewport.SetContent(m.buildListContent())
+		if m.statuses == nil {
+			m.statuses = make(map[string][]jira.Status)
 		}
+		maps.Copy(m.statuses, msg.statuses) // shared cache across boards
+
+		idx, ok := m.tabIndexByID(msg.tabID)
+		if !ok || idx != m.activeTab {
+			// Inactive tab: classification is deferred to loadActiveTab.
+			return m, nil
+		}
+
+		m.sections = m.classifyIssues(m.issues, m.statuses)
+		m.listViewport.SetContent(m.buildListContent())
 
 		m.selectedIssue = nil
 		for si := range m.sections {
@@ -648,25 +705,21 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case issueDetailPollMsg:
 		var cmds []tea.Cmd
 
-		if m.mode != detailView {
-			return m, nil
-		}
-		if m.activeIssue == nil {
-			return m, nil
-		}
-
-		m.loadingCount++
-		detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
-		cmds = append(cmds, detailCmd)
+		// Perpetual single chain: always reschedule, refresh whichever detail
+		// is currently active.
 		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
 			return issueDetailPollMsg{}
 		}))
 
-		m.statusMessage = statusMessage{
-			"Fetching issue details...",
-			infoStatusBarMsg,
+		if m.mode == detailView && m.activeIssue != nil {
+			m.loadingCount++
+			cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+			m.statusMessage = statusMessage{
+				"Fetching issue details...",
+				infoStatusBarMsg,
+			}
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		}
-		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		return m, tea.Batch(cmds...)
 
@@ -758,6 +811,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateBlockReasonView(msg)
 	case issueSearchView:
 		tmpModel, viewCmd = m.updateSearchIssueView(msg)
+	case savedBoardPickerView:
+		tmpModel, viewCmd = m.updateSavedBoardPickerView(msg)
 	}
 
 	m = tmpModel.(model)
@@ -800,6 +855,8 @@ func (m model) View() tea.View {
 		content = m.renderBlockReasonView()
 	case issueSearchView:
 		content = m.renderSearchIssueView()
+	case savedBoardPickerView:
+		content = m.renderSavedBoardPickerView()
 	default:
 		content = "Unknown view\n"
 	}
@@ -844,6 +901,15 @@ func main() {
 		columnWidths:    ui.CalculateColumnWidths(80),
 		loadingCount:    6, // Init cmds
 		transitionCache: make(map[string]map[string][]jira.Transition, 0),
+		activeTab:       0,
+		nextTabID:       1,
+		tabs: []Tab{{
+			id:       0,
+			title:    "My Issues",
+			kind:     tabMyIssues,
+			baseView: listView,
+			board:    boardState{jql: myIssuesJQL},
+		}},
 	})
 
 	if _, err := p.Run(); err != nil {

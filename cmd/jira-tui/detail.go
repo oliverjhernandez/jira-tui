@@ -524,5 +524,5 @@ func (m model) renderDetailView() string {
 
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, rightColumn)
 
-	return columns + "\n" + statusBar
+	return m.renderTabBar() + "\n" + columns + "\n" + statusBar
 }

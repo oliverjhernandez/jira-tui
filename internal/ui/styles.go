@@ -477,3 +477,20 @@ var (
 			Foreground(lipgloss.Color("39")).
 			Underline(true)
 )
+
+// ============================================================================
+// TAB BAR STYLES
+// ============================================================================
+
+var (
+	TabBarStyle = lipgloss.NewStyle().
+			Foreground(ThemeFgMuted)
+
+	TabActiveStyle = lipgloss.NewStyle().
+			Foreground(ThemeAccent).
+			Bold(true).
+			Underline(true)
+
+	TabInactiveStyle = lipgloss.NewStyle().
+				Foreground(ThemeFgDim)
+)
