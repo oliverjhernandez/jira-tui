@@ -3,7 +3,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"maps"
 	"os"
 	"time"
@@ -116,18 +116,6 @@ const (
 	issueLinksSection
 	subTasksSection
 )
-
-type messageType int
-
-const (
-	infoStatusBarMsg = iota
-	errStatusBarMsg
-)
-
-type statusMessage struct {
-	content string
-	msgType messageType
-}
 
 func (f focusedSection) String() string {
 	switch f {
@@ -521,7 +509,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionPostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Issue transitioned"
+		m.setSuccess("Issue transitioned")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -538,7 +526,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case assigneePostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "User assigned successfully"
+		m.setSuccess("User assigned successfully")
 		return m, nil
 
 	case newIssuePostedMsg:
@@ -553,14 +541,14 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loadingCount++
 			cmds = append(cmds, m.fetchMyIssuesCmd())
 		}
-		m.statusMessage.content = "New issue created successfully"
+		m.setSuccess("New issue created successfully")
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		return m, tea.Batch(cmds...)
 
 	case issueLinkPostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Issue liked successfully"
+		m.setSuccess("Issue linked successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -571,7 +559,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updatedDescriptionMsg:
 		m.loadingCount--
 		var cmds []tea.Cmd
-		m.statusMessage.content = "Description edited successfully"
+		m.setSuccess("Description edited successfully")
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -580,9 +568,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case priorityPostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Priority posted successfully"
+		m.setSuccess("Priority posted successfully")
 		var cmds []tea.Cmd
-		m.statusMessage.content = "Priority posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -591,9 +578,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case commentPostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Comment posted successfully"
+		m.setSuccess("Comment posted successfully")
 		var cmds []tea.Cmd
-		m.statusMessage.content = "Comment posted successfully"
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
 		m.loadingCount++
@@ -602,7 +588,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case commentUpdatedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Comment edited successfully"
+		m.setSuccess("Comment edited successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -612,7 +598,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case commentDeletedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Comment deleted successfully"
+		m.setSuccess("Comment deleted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -622,7 +608,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case workLogPostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Worklog posted successfully"
+		m.setSuccess("Worklog posted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -634,7 +620,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case workLogUpdatedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Worklog edited successfully"
+		m.setSuccess("Worklog edited successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -646,6 +632,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case workLogDeletedMsg:
 		m.loadingCount--
+		m.setSuccess("Worklog deleted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		m.mode = detailView
@@ -657,7 +644,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case estimatePostedMsg:
 		m.loadingCount--
-		m.statusMessage.content = "Estimate posted successfully"
+		m.setSuccess("Estimate posted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
@@ -694,10 +681,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, tea.Tick(time.Minute, func(t time.Time) tea.Msg {
 			return myIssuesPollMsg{}
 		}))
-		m.statusMessage = statusMessage{
-			"Fetching my issues...",
-			infoStatusBarMsg,
-		}
+		m.setInfo("Fetching my issues...")
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		return m, tea.Batch(cmds...)
@@ -714,10 +698,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.mode == detailView && m.activeIssue != nil {
 			m.loadingCount++
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
-			m.statusMessage = statusMessage{
-				"Fetching issue details...",
-				infoStatusBarMsg,
-			}
+			m.setInfo("Fetching issue details...")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 		}
 
@@ -767,9 +748,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 
 		m.loadingCount--
-		log.Printf("ERROR: %s", msg.err)
-
-		m.statusMessage.content = msg.err.Error()
+		m.setError("request failed", msg.err)
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		if m.mode == issueSearchView && m.searchIssueData != nil {
@@ -896,7 +875,9 @@ func main() {
 			fmt.Printf("error: %s", err)
 		}
 	}()
-	log.SetOutput(logFile)
+	slog.SetDefault(slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})))
 
 	textInput := textinput.New()
 	textInput.CharLimit = 50

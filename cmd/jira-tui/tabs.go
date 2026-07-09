@@ -250,7 +250,7 @@ func (m model) switchTab(dir int) (tea.Model, tea.Cmd) {
 
 func (m model) closeActiveTab() (tea.Model, tea.Cmd) {
 	if len(m.tabs) <= 1 {
-		m.statusMessage = statusMessage{msgType: infoStatusBarMsg, content: "Can't close the last tab"}
+		m.setInfo("Can't close the last tab")
 		return m, m.clearStatusAfter(clearMsgTimeout)
 	}
 	i := m.activeTab
@@ -331,7 +331,7 @@ func (m model) openEpicBoardTab() (tea.Model, tea.Cmd) {
 
 	title, jql, err := deriveEpicBoard(src)
 	if err != nil {
-		m.statusMessage = statusMessage{msgType: errStatusBarMsg, content: err.Error()}
+		m.setError("opening epic board", err)
 		return m, m.clearStatusAfter(clearMsgTimeout)
 	}
 

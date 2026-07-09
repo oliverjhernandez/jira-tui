@@ -403,6 +403,10 @@ var (
 	StatusBarErrorStyle = lipgloss.NewStyle().
 				Foreground(CatRed).
 				Bold(true)
+
+	StatusBarSuccessStyle = lipgloss.NewStyle().
+				Foreground(ThemeSuccess).
+				Bold(true)
 )
 
 var (

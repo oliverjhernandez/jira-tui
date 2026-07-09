@@ -99,10 +99,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			textToCopy := issue.Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Key Yanked to clipboard",
-			}
+			m.setInfo("Key yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -115,10 +112,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			textToCopy := "https://layer7.atlassian.net/browse/" + issue.Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "URL yanked to clipboard",
-			}
+			m.setInfo("URL yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -131,10 +125,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			textToCopy := issue.Summary
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Summary yanked to clipboard",
-			}
+			m.setInfo("Summary yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 		}
@@ -264,18 +255,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.activeIssue != nil {
 				if m.selectedIssue.Description == nil {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing description",
-					}
+					m.setErrorMsg("Cannot transition, missing description")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				if m.activeIssue.OriginalEstimate == "" {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing original estimate",
-					}
+					m.setErrorMsg("Cannot transition, missing original estimate")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
@@ -318,10 +303,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.loadingCount > 0 {
 				return m, nil
 			}
-			m.statusMessage = statusMessage{
-				"Refreshing...",
-				infoStatusBarMsg,
-			}
+			m.setInfo("Refreshing...")
 
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			m.loadingCount++
@@ -364,18 +346,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.selectedIssue.Parent != nil {
 					m.loadingCount++
 					detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
-					m.statusMessage = statusMessage{
-						"Fetching parent...",
-						infoStatusBarMsg,
-					}
+					m.setInfo("Fetching parent...")
 					cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 					cmds = append(cmds, detailCmd)
 					m.mode = detailView
 				} else {
-					m.statusMessage = statusMessage{
-						"No parent found.",
-						errStatusBarMsg,
-					}
+					m.setErrorMsg("No parent found")
 				}
 			}
 			return m, tea.Batch(cmds...)
