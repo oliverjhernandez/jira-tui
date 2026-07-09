@@ -61,3 +61,6 @@ homebrew_casks:
 
 release:
   prerelease: auto
+  # Overwrite assets if the release already exists, so a re-run of a tag
+  # (e.g. after a later step failed) doesn't 422 on duplicate uploads.
+  replace_existing_artifacts: true
