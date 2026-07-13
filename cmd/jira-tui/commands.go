@@ -308,15 +308,26 @@ func (m model) postTransitionCmd(issueKey, transitionID, transitionName string) 
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		var workLogTime string
-		if (transitionName == "Done" || transitionName == "Validación") && m.pendingIssue.Type == "Task" {
-			workLogTime = "1m"
-		}
-
-		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, "", workLogTime)
-		if err != nil {
+		if err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, ""); err != nil {
 			return errMsg{err}
 		}
+
+		// Some Task workflows require logged time before closing. The worklog
+		// field isn't on the transition screen, so log a minimal entry through
+		// Tempo (the path the rest of the app uses) after the transition.
+		autoLog := (transitionName == "Done" || transitionName == "Validación") &&
+			m.pendingIssue != nil && m.pendingIssue.Type == "Task"
+		if autoLog {
+			if m.myself == nil {
+				return errMsg{fmt.Errorf("issue transitioned but time not logged: current user unknown")}
+			}
+			startDate := time.Now().Format("2006-01-02")
+			description := "Auto-logged on transition to " + transitionName
+			if err := m.client.PostWorkLog(context.Background(), m.pendingIssue.ID, startDate, m.myself.ID, description, 60); err != nil {
+				return errMsg{fmt.Errorf("issue transitioned but logging time failed: %w", err)}
+			}
+		}
+
 		return transitionPostedMsg{}
 	}
 }
@@ -340,7 +351,7 @@ func (m model) postBlockedTransitionCmd(issueKey, transitionID, reason string) t
 			blockReasonFieldID: reason,
 		}
 
-		err := m.client.PostTransition(context.Background(), issueKey, transitionID, fields, "", "")
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, fields, "")
 		if err != nil {
 			return errMsg{err}
 		}
@@ -357,7 +368,7 @@ func (m model) postTransitionWithReasonCmd(issueKey, transitionID, reason string
 
 		comment := "Motivo de cancelación: " + reason
 
-		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, comment, "")
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, comment)
 		if err != nil {
 			return errMsg{err}
 		}

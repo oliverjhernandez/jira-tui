@@ -724,7 +724,7 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 	return err
 }
 
-func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment, worklogTime string) error {
+func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment string) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/transitions", issueKey)
 
 	body := map[string]any{
@@ -758,16 +758,6 @@ func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID stri
 							},
 						},
 					},
-				},
-			},
-		}
-	}
-
-	if worklogTime != "" {
-		update["worklog"] = []map[string]any{
-			{
-				"add": map[string]any{
-					"timeSpent": worklogTime,
 				},
 			},
 		}
