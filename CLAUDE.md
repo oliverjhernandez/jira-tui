@@ -1,83 +1,64 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-jira-tui is a terminal user interface for Jira built with Go using the Bubble Tea framework. It integrates with both the Jira REST API v3 and Tempo API for time tracking.
+<!-- One paragraph: what this service/tool does and who consumes it. -->
 
-## Build and Run
+## Commands
 
 ```bash
-# Build the binary
-go build -o bin/jira-tui ./cmd/jira-tui
-
-# Run the application
-./bin/jira-tui
-
-# Run directly without building
-go run ./cmd/jira-tui
+make build          # or: go build ./...
+make test           # or: go test ./...
+make lint           # golangci-lint run
+go test -run TestName ./path/to/pkg   # single test
+go vet ./...
 ```
-
-## Required Environment Variables
-
-The application requires these environment variables (typically in `.env`):
-
-- `JIRA_URL` - Jira instance base URL
-- `JIRA_EMAIL` - User email for authentication
-- `JIRA_TOKEN` - Jira API token
-- `TEMPO_URL` - Tempo API base URL
-- `TEMPO_TOKEN` - Tempo API token
 
 ## Architecture
 
-### Bubble Tea Pattern
+<!-- Adjust to actual layout -->
 
-The app follows the Elm architecture via Bubble Tea:
+- `cmd/` — entrypoints (one subdir per binary)
+- `internal/` — private application code
+- `pkg/` — public reusable packages (only if intentionally exported)
+- `api/` — protobuf / OpenAPI definitions
+- `configs/` — configuration files
 
-- **Model** (`cmd/jira-tui/main.go`): Central state struct holding all application state including current view mode, issues, cursors, and UI components
-- **Update**: Handles messages and returns new state + commands. View-specific update handlers are in separate files (e.g., `list.go`, `detail.go`)
-- **View**: Renders current state to string. Each view mode has its own render function
+## Conventions
 
-### View Modes
+- Go version: 1.22+ (match `go.mod`; do not change it without asking)
+- Formatting: `gofmt` / `goimports` — never hand-format
+- Errors: wrap with `fmt.Errorf("context: %w", err)`; no `panic` outside `main` or init paths
+- Errors are values: check every error; don't discard with `_` unless justified with a comment
+- Naming: idiomatic Go (short receiver names, `MixedCaps`, no `Get` prefixes)
+- Context: `context.Context` is always the first parameter of functions that do I/O
+- Concurrency: prefer channels/errgroup over raw goroutines; every goroutine must have a clear exit path
+- Logging: use the project logger (`log/slog` by default); no `fmt.Println` in non-test code
 
-The app uses `viewMode` enum to track current screen (`cmd/jira-tui/commands.go:12-22`):
+## Testing
 
-- `listView` - Main issue list grouped by status category
-- `detailView` - Single issue detail with comments
-- `transitionView` - Status transition picker
-- `assignUsersSearchView` - User search for assignment
-- `editDescriptionView`, `editPriorityView`, `postCommentView`, `postWorklogView`, `postEstimateView` - Edit forms
+- Table-driven tests preferred
+- Use `t.Parallel()` where safe
+- Mocks: prefer small interfaces defined at the consumer; avoid heavy mocking frameworks
+- Run `go test -race ./...` before considering work done
 
-### Key Packages
+## Dependencies
 
-- `cmd/jira-tui/` - Main application, Bubble Tea model, view handlers
-- `internal/jira/` - Jira and Tempo API client (`client.go`)
-- `internal/config/` - Environment config loading
-- `internal/ui/` - Lipgloss styles and rendering helpers using Catppuccin theme
+- Standard library first; justify any new dependency
+- Run `go mod tidy` after changing imports
+- Do not upgrade major versions of dependencies without asking
 
-### Command Pattern
+## Git workflow
 
-Async operations use Bubble Tea commands that return messages:
+- Every new feature goes on its own branch off `main`, named `feature/<short-name>`.
+- One feature per branch: a feature branch must contain exactly one feature — never bundle
+  multiple features, or mix a feature with unrelated fixes/refactors. Unrelated fixes and
+  chores get their own branch too (`fix/<name>`, `chore/<name>`).
+- Never commit a new feature directly to `main`; open the feature branch first.
 
-- Commands are defined in `commands.go` (e.g., `fetchMyIssues()`, `fetchIssueDetail()`)
-- Each command returns a `tea.Cmd` that performs API calls and returns a message type
-- Messages are handled in `Update()` to update state
+## What NOT to do
 
-### Issue Classification
-
-Issues are grouped into sections by status category (`classifyIssues()` in `commands.go:291`):
-
-- "In Progress" (`indeterminate`)
-- "To Do" (`new`)
-- "Done" (`done`)
-
-The `Projects` variable in `main.go:18` defines which Jira projects to fetch statuses from.
-
-## Debug Logging
-
-The app writes debug logs to `debug.log` in the current directory.
-
-## Coding Style
-
-- Do not add comments to code
+- Don't create new top-level packages without asking
+- Don't add global state (`init()` with side effects, package-level mutable vars)
+- Don't commit generated files unless the repo already does
+- Don't refactor unrelated code while fixing a bug
