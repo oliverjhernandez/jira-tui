@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // FormatTimeSpent formats seconds into a human readable string like "3h" or "2h 30m"
@@ -205,6 +206,24 @@ func RenderPanelWithLabel(label string, content string, width int, height int, a
 	}
 	bottom := boxStyle.Render(content)
 	return top + "\n" + bottom
+}
+
+// PadCell fits an already-styled string to an exact display width: it pads with
+// trailing spaces when short and truncates (ANSI-aware, with an ellipsis) when
+// long. Used to lock every list column to a fixed width so headers and rows align.
+func PadCell(s string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	w := lipgloss.Width(s)
+	switch {
+	case w > width:
+		return ansi.Truncate(s, width, "…")
+	case w < width:
+		return s + strings.Repeat(" ", width-w)
+	default:
+		return s
+	}
 }
 
 func TruncateLongString(s string, max int) string {

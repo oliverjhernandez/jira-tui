@@ -1,9 +1,5 @@
 package ui
 
-import (
-	"charm.land/lipgloss/v2"
-)
-
 type ColumnWidths struct {
 	Type        int
 	Key         int
@@ -26,37 +22,38 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 	fixedWidths := ColumnWidths{
 		Type:      4,
 		Key:       12,
-		Priority:  1,
+		Priority:  3, // wide enough for the "PRI" header label
 		Cursor:    2,
 		Empty:     1,
 		TimeSpent: 8,
+		// Status renders via RenderStatusBadge, which pads to the static
+		// ColWidthStatus; reserve the same here so the layout math is honest.
+		Status: ColWidthStatus,
 	}
 
-	statusWidth := 15
 	assigneeWidth := 20
 	dueDateWidth := 10
 	createdDateWidth := 10
 	reporterWidth := 20
 
 	if availableWidth < 100 {
-		statusWidth = 10
 		assigneeWidth = 15
 		reporterWidth = 15
 	}
 
-	fixedWidths.Status = statusWidth
 	fixedWidths.Assignee = assigneeWidth
 	fixedWidths.DueDate = dueDateWidth
 	fixedWidths.CreatedDate = createdDateWidth
 	fixedWidths.Reporter = reporterWidth
 
-	fixedTotal := fixedWidths.Cursor + fixedWidths.Type + fixedWidths.Empty +
-		fixedWidths.Key + fixedWidths.Priority + fixedWidths.Empty +
-		fixedWidths.Status + fixedWidths.Empty +
-		fixedWidths.DueDate + fixedWidths.Empty +
-		fixedWidths.CreatedDate + fixedWidths.Empty +
-		fixedWidths.TimeSpent + fixedWidths.Empty + fixedWidths.Reporter + fixedWidths.Empty +
-		fixedWidths.Assignee + fixedWidths.Empty
+	// The list row is: cursor prefix + 10 columns joined by single-space gaps
+	// (9 gaps). Summary takes whatever is left.
+	const gaps = 9
+	fixedTotal := fixedWidths.Cursor +
+		fixedWidths.Type + fixedWidths.Key + fixedWidths.Status + fixedWidths.Priority +
+		fixedWidths.Reporter + fixedWidths.Assignee + fixedWidths.CreatedDate +
+		fixedWidths.DueDate + fixedWidths.TimeSpent +
+		fixedWidths.Empty*gaps
 
 	summaryWidth := max(availableWidth-fixedTotal, 50)
 
@@ -65,9 +62,14 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 	return fixedWidths
 }
 
+// TotalWidth is the full rendered row width: the cursor prefix, all ten
+// columns, and the nine single-space gaps between them.
 func (c ColumnWidths) TotalWidth() int {
-	return c.Cursor + c.Type + c.Empty + c.Key + c.Priority + c.Empty +
-		c.Summary + c.Empty + c.Reporter + c.Empty + c.Assignee + c.Empty + c.Status + c.Empty + c.DueDate + c.Empty + c.CreatedDate + c.Empty + c.TimeSpent
+	const gaps = 9
+	return c.Cursor +
+		c.Type + c.Key + c.Status + c.Priority + c.Summary +
+		c.Reporter + c.Assignee + c.CreatedDate + c.DueDate + c.TimeSpent +
+		c.Empty*gaps
 }
 
 func (c ColumnWidths) RenderKey(text string) string {
@@ -102,8 +104,4 @@ func (c ColumnWidths) RenderAssignee(text string) string {
 
 func (c ColumnWidths) RenderTimeSpent(text string) string {
 	return TimeSpentFieldStyle.Width(c.TimeSpent).Render(text)
-}
-
-func (c ColumnWidths) RenderEmptySpace() string {
-	return lipgloss.NewStyle().Width(c.Empty).Render("")
 }

@@ -815,7 +815,7 @@ func (m model) calculateDetailLayout() detailLayout {
 func (m model) calculateListLayout() listLayout {
 	infoHeight := 5
 	statusBarHeight := 1
-	listHeight := m.windowHeight - infoHeight - statusBarHeight - tabBarHeight - ui.PanelOverheadHeight
+	listHeight := m.windowHeight - infoHeight - statusBarHeight - tabBarHeight - ui.PanelOverheadHeight - listHeaderHeight
 	panelWidth := m.windowWidth - ui.PanelOverheadWidth
 
 	return listLayout{
@@ -839,60 +839,9 @@ func (m model) buildListContent() string {
 		sectionHeader := ui.SectionTitleStyle.Render(fmt.Sprintf("%s (%d)", s.Name, len(s.Issues)))
 		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
 		for ii, issue := range s.Issues {
-			issueType := ui.RenderIssueType(issue.Type, false)
-			key := m.columnWidths.RenderKey(issue.Key)
-			priority := ui.RenderPriority(issue.Priority.Name, false)
-			reporter := m.columnWidths.RenderReporter("@" + issue.Reporter.DisplayName)
-			statusBadge := ui.RenderStatusBadge(issue.Status)
-			assigneeText := issue.Assignee
-			if assigneeText != "" && assigneeText != "Unassigned" {
-				assigneeText = "@" + assigneeText
-			}
-			assignee := m.columnWidths.RenderAssignee(assigneeText)
-			dueDate := m.columnWidths.RenderDueDate(issue.DueDate)
-			createdDate := m.columnWidths.RenderCreatedDate(issue.Created)
-			worklogSeconds := m.worklogTotals[issue.ID]
-			timeSpent := m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(worklogSeconds))
 			selected := m.sectionCursor == si && m.cursor == ii
-			summaryDimmed := closureStatuses[issue.Status]
-
-			var summary string
-			var summaryText string
-			if issue.Parent != nil {
-				parentPrefix := ui.IconEnter + " " + issue.Parent.Key + " " + ui.IconSeparator + " "
-				full := ui.TruncateLongString(parentPrefix+issue.Summary, m.columnWidths.Summary)
-				if selected {
-					summaryText = full
-				} else if summaryDimmed {
-					summaryText = ui.DimTextStyle.Render(full)
-				} else {
-					summaryText = ui.DimTextStyle.Render(parentPrefix) + strings.TrimPrefix(full, parentPrefix)
-				}
-			} else {
-				summaryText = ui.TruncateLongString(issue.Summary, m.columnWidths.Summary)
-			}
-
-			summary = m.columnWidths.RenderSummary(summaryText, selected, summaryDimmed)
-			emptySpace := m.columnWidths.RenderEmptySpace()
-			line := issueType + emptySpace +
-				key +
-				statusBadge + emptySpace +
-				priority + emptySpace +
-				summary + emptySpace +
-				reporter + emptySpace +
-				assignee + emptySpace +
-				createdDate + emptySpace +
-				dueDate + emptySpace +
-				timeSpent
-
-			if m.sectionCursor == si && m.cursor == ii {
-				cursor := ui.IconCursor
-				line = cursor + ui.SelectedRowStyle.Render(line)
-			} else {
-				line = "  " + ui.NormalRowStyle.Render(line)
-			}
-
-			listContent.WriteString(line + "\n")
+			dimmed := closureStatuses[issue.Status]
+			listContent.WriteString(m.renderIssueRow(issue, selected, dimmed) + "\n")
 		}
 		listContent.WriteString("\n\n")
 	}
