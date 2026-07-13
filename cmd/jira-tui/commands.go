@@ -844,7 +844,11 @@ func (m model) buildListContent() string {
 			priority := ui.RenderPriority(issue.Priority.Name, false)
 			reporter := m.columnWidths.RenderReporter("@" + issue.Reporter.DisplayName)
 			statusBadge := ui.RenderStatusBadge(issue.Status)
-			// assignee := m.columnWidths.RenderAssignee("@" + issue.Assignee)
+			assigneeText := issue.Assignee
+			if assigneeText != "" && assigneeText != "Unassigned" {
+				assigneeText = "@" + assigneeText
+			}
+			assignee := m.columnWidths.RenderAssignee(assigneeText)
 			dueDate := m.columnWidths.RenderDueDate(issue.DueDate)
 			createdDate := m.columnWidths.RenderCreatedDate(issue.Created)
 			worklogSeconds := m.worklogTotals[issue.ID]
@@ -876,6 +880,7 @@ func (m model) buildListContent() string {
 				priority + emptySpace +
 				summary + emptySpace +
 				reporter + emptySpace +
+				assignee + emptySpace +
 				createdDate + emptySpace +
 				dueDate + emptySpace +
 				timeSpent

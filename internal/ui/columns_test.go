@@ -48,10 +48,10 @@ func TestTotalWidthSumsComponents(t *testing.T) {
 		Assignee: 6, DueDate: 7, CreatedDate: 8, Priority: 9,
 		Cursor: 10, Empty: 1, TimeSpent: 11,
 	}
-	// TotalWidth adds Empty (=1) seven times plus the listed non-empty columns
-	// (Assignee is intentionally not part of the total).
+	// TotalWidth adds Empty (=1) eight times plus every rendered column,
+	// including Assignee.
 	want := cw.Cursor + cw.Type + cw.Key + cw.Priority + cw.Summary +
-		cw.Reporter + cw.Status + cw.DueDate + cw.CreatedDate + cw.TimeSpent + (cw.Empty * 7)
+		cw.Reporter + cw.Assignee + cw.Status + cw.DueDate + cw.CreatedDate + cw.TimeSpent + (cw.Empty * 8)
 	if got := cw.TotalWidth(); got != want {
 		t.Errorf("TotalWidth() = %d, want %d", got, want)
 	}

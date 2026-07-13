@@ -55,7 +55,8 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		fixedWidths.Status + fixedWidths.Empty +
 		fixedWidths.DueDate + fixedWidths.Empty +
 		fixedWidths.CreatedDate + fixedWidths.Empty +
-		fixedWidths.TimeSpent + fixedWidths.Empty + fixedWidths.Reporter + fixedWidths.Empty
+		fixedWidths.TimeSpent + fixedWidths.Empty + fixedWidths.Reporter + fixedWidths.Empty +
+		fixedWidths.Assignee + fixedWidths.Empty
 
 	summaryWidth := max(availableWidth-fixedTotal, 50)
 
@@ -66,7 +67,7 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 
 func (c ColumnWidths) TotalWidth() int {
 	return c.Cursor + c.Type + c.Empty + c.Key + c.Priority + c.Empty +
-		c.Summary + c.Empty + c.Reporter + c.Empty + c.Status + c.Empty + c.DueDate + c.Empty + c.CreatedDate + c.Empty + c.TimeSpent
+		c.Summary + c.Empty + c.Reporter + c.Empty + c.Assignee + c.Empty + c.Status + c.Empty + c.DueDate + c.Empty + c.CreatedDate + c.Empty + c.TimeSpent
 }
 
 func (c ColumnWidths) RenderKey(text string) string {
@@ -93,6 +94,10 @@ func (c ColumnWidths) RenderCreatedDate(text string) string {
 
 func (c ColumnWidths) RenderReporter(text string) string {
 	return ReporterFieldStyle.Width(c.Reporter).Render(TruncateLongString(text, c.Reporter))
+}
+
+func (c ColumnWidths) RenderAssignee(text string) string {
+	return AssigneeFieldStyle.Width(c.Assignee).Render(TruncateLongString(text, c.Assignee))
 }
 
 func (c ColumnWidths) RenderTimeSpent(text string) string {
