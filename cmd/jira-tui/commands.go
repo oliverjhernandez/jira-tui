@@ -283,7 +283,7 @@ func (m model) postNewIssueCmd(data *NewIssueFormData) tea.Cmd {
 			dueDate = data.DueDate
 		}
 
-		description := buildSimpleDescriptionContent(data.Description)
+		description := jira.MarkdownToADF(data.Description)
 
 		err := m.client.PostNewIssue(
 			context.Background(),

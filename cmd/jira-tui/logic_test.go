@@ -79,10 +79,10 @@ func TestFindIndex(t *testing.T) {
 	}
 }
 
-func TestBuildSimpleDescriptionContent(t *testing.T) {
-	doc := buildSimpleDescriptionContent("hello")
+func TestPlainDescriptionToADF(t *testing.T) {
+	doc := jira.MarkdownToADF("hello")
 	if doc == nil {
-		t.Fatal("buildSimpleDescriptionContent returned nil")
+		t.Fatal("MarkdownToADF returned nil")
 	}
 	if doc.Type != "doc" || doc.Version != 1 {
 		t.Errorf("unexpected doc envelope: %+v", doc)

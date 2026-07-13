@@ -9,6 +9,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.2
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/x/ansi v0.11.6
+	github.com/yuin/goldmark v1.8.4
 )
 
 require (

@@ -17,7 +17,7 @@ func NewDescriptionFormData(initialValue string) *DescriptionFormData {
 	d.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewText().
-				Title("Description").
+				Title("Description (Markdown supported)").
 				Value(&d.Description).
 				Lines(15),
 		),

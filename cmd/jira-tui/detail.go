@@ -72,11 +72,16 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case keyPressMsg.String() == "e":
-				descText := jira.ExtractText(m.activeIssue.Description, m.detailLayout.leftColumnWidth)
+				descText := jira.ADFToMarkdown(m.activeIssue.Description)
 				m.descriptionData = NewDescriptionFormData(descText)
 				m.mode = descriptionView
 				m.editingDescription = true
-				return m, m.descriptionData.Form.Init()
+				var cmd tea.Cmd
+				if jira.ADFHasUnsupported(m.activeIssue.Description) {
+					m.setInfo("Note: some rich content can't be edited as Markdown and may be dropped on save")
+					cmd = m.clearStatusAfter(clearMsgTimeout)
+				}
+				return m, tea.Batch(m.descriptionData.Form.Init(), cmd)
 
 			case keyPressMsg.String() == "G":
 				m.descViewport.GotoBottom()
@@ -128,7 +133,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case keyPressMsg.String() == "c":
 				m.textArea = textarea.New()
-				m.textArea.Placeholder = "Add a comment..."
+				m.textArea.Placeholder = "Add a comment (Markdown supported)..."
 				m.textArea.Focus()
 				textAreaWidth := ui.GetModalWidth(m.windowWidth, 0.3) - (ui.PanelBorder * 2) - (ui.PanelPaddingH * 2)
 				textAreaHeight := ui.GetModalHeight(m.windowHeight, 0.3) - (ui.PanelBorder * 2) - (ui.PanelPaddingH * 2)
@@ -143,7 +148,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textArea.SetWidth(textAreaWidth)
 				var comment string
 				if m.commentsCursor >= 0 && m.commentsCursor < len(m.activeIssue.Comments) {
-					comment = jira.ExtractText(m.activeIssue.Comments[m.commentsCursor].Body, textAreaWidth)
+					comment = jira.ADFToMarkdown(m.activeIssue.Comments[m.commentsCursor].Body)
 				}
 				m.textArea.SetValue(comment)
 				m.textArea.Focus()

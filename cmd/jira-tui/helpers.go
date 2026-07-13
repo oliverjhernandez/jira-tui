@@ -247,26 +247,6 @@ func findIndex(section focusedSection, order []focusedSection) int {
 	return 0
 }
 
-func buildSimpleDescriptionContent(text string) *jira.ContentDoc {
-	contentDoc := jira.ContentDoc{
-		Type:    "doc",
-		Version: 1,
-		Content: []jira.ContentNode{
-			{
-				Type: "paragraph",
-				Content: []jira.ContentNode{
-					{
-						Type: "text",
-						Text: text,
-					},
-				},
-			},
-		},
-	}
-
-	return &contentDoc
-}
-
 func yankToClipboard(text string) {
 	err := clipboard.WriteAll(text)
 	if err != nil {
