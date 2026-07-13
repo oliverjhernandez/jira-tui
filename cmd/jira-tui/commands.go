@@ -100,6 +100,8 @@ type issueLinkPostedMsg struct{}
 
 type updatedDescriptionMsg struct{}
 
+type updatedSummaryMsg struct{}
+
 type priorityPostedMsg struct{}
 
 type commentPostedMsg struct{}
@@ -405,6 +407,21 @@ func (m model) updateDescriptionCmd(issueKey, description string) tea.Cmd {
 		}
 
 		return updatedDescriptionMsg{}
+	}
+}
+
+func (m model) updateSummaryCmd(issueKey, summary string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.UpdateSummary(context.Background(), issueKey, summary)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return updatedSummaryMsg{}
 	}
 }
 

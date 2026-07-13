@@ -402,6 +402,16 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = priorityView
 			return m, m.priorityData.Form.Init()
 
+		// rename (edit summary)
+		case keyPressMsg.String() == "r":
+			if m.activeIssue == nil {
+				return m, nil
+			}
+			m.summaryData = NewSummaryFormData(m.activeIssue.Summary)
+			m.previousMode = m.mode
+			m.mode = summaryView
+			return m, m.summaryData.Form.Init()
+
 		// tab
 		case keyPressMsg.String() == "tab":
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
