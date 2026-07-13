@@ -58,10 +58,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastKey = ""
 				textToCopy := jira.ExtractText(m.activeIssue.Description, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "Description yanked to clipboard",
-				}
+				m.setInfo("Description yanked to clipboard")
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -100,10 +97,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				textToCopy := jira.ExtractText(m.activeIssue.Comments[m.commentsCursor].Body, m.detailLayout.leftColumnWidth)
 				yankToClipboard(textToCopy)
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "Comment yanked to clipboard",
-				}
+				m.setInfo("Comment yanked to clipboard")
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 				return m, tea.Batch(cmds...)
 
@@ -266,18 +260,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
 
 				if m.activeIssue.SubTasks[m.subTasksCursor].Description == nil {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing description",
-					}
+					m.setErrorMsg("Cannot transition, missing description")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				if m.activeIssue.SubTasks[m.subTasksCursor].OriginalEstimate == "" {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing original estimate",
-					}
+					m.setErrorMsg("Cannot transition, missing original estimate")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
@@ -321,10 +309,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.activeIssue.Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Key Yanked to clipboard",
-			}
+			m.setInfo("Key yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -333,10 +318,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := jiraURL + m.activeIssue.Key
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "URL Yanked to clipboard",
-			}
+			m.setInfo("URL yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -345,10 +327,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = ""
 			textToCopy := m.activeIssue.Summary
 			yankToClipboard(textToCopy)
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Summary yanked to clipboard",
-			}
+			m.setInfo("Summary yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
@@ -380,18 +359,12 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.activeIssue != nil {
 				if m.activeIssue.Description == nil {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing description",
-					}
+					m.setErrorMsg("Cannot transition, missing description")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
 				if m.activeIssue.OriginalEstimate == "" {
-					m.statusMessage = statusMessage{
-						msgType: errStatusBarMsg,
-						content: "Cannot transition, missing original estimate",
-					}
+					m.setErrorMsg("Cannot transition, missing original estimate")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
@@ -466,10 +439,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.estimateData = NewEstimateFormData()
 				cmds = append(cmds, m.estimateData.Form.Init())
 			} else {
-				m.statusMessage = statusMessage{
-					msgType: errStatusBarMsg,
-					content: "No active issue selected. Cant open Estimate view",
-				}
+				m.setErrorMsg("No active issue selected, can't open Estimate view")
 				cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			}
 			return m, tea.Batch(cmds...)

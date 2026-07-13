@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -22,6 +22,21 @@ type Client struct {
 	tempoURL   string
 	tempoToken string
 	jiraEmail  string
+}
+
+// APIError is returned when a Jira or Tempo request completes with an
+// unexpected HTTP status. It carries the full detail (including the raw
+// response body) for logging, while callers can format a concise,
+// user-facing message from StatusCode alone.
+type APIError struct {
+	Method     string
+	Endpoint   string
+	StatusCode int
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("%s %s: request failed with status %d: %s", e.Method, e.Endpoint, e.StatusCode, e.Body)
 }
 
 type Issue struct {
@@ -327,7 +342,7 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			log.Printf("failed to close response body: %v", closeErr)
+			slog.Warn("failed to close response body", "err", closeErr)
 		}
 	}()
 
@@ -339,7 +354,12 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 
 	if !statusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		return &APIError{
+			Method:     method,
+			Endpoint:   endpoint,
+			StatusCode: resp.StatusCode,
+			Body:       string(bodyBytes),
+		}
 	}
 
 	if result != nil {
@@ -389,7 +409,7 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			log.Printf("failed to close response body: %v", closeErr)
+			slog.Warn("failed to close response body", "err", closeErr)
 		}
 	}()
 
@@ -401,7 +421,12 @@ func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, qu
 
 	if !statusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+		return &APIError{
+			Method:     method,
+			Endpoint:   endpoint,
+			StatusCode: resp.StatusCode,
+			Body:       string(bodyBytes),
+		}
 	}
 
 	if result != nil {

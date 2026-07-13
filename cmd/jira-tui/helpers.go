@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"slices"
 	"sort"
 	"strconv"
@@ -105,7 +105,7 @@ func timeAgo(date string) string {
 		}
 	}
 	if err != nil {
-		log.Printf("error parsing comment date: %s ", err.Error())
+		slog.Warn("parsing comment date", "err", err)
 		return defaultDatetime
 	}
 
@@ -270,7 +270,7 @@ func buildSimpleDescriptionContent(text string) *jira.ContentDoc {
 func yankToClipboard(text string) {
 	err := clipboard.WriteAll(text)
 	if err != nil {
-		log.Printf("ERROR: %s", err.Error())
+		slog.Error("copying to clipboard", "err", err)
 	}
 }
 

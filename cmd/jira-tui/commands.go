@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -757,7 +758,7 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 		}
 		if !placed {
 			unclassified = append(unclassified, issue)
-			log.Printf("unclassified: %s status=%q categoryKey=%q", issue.Key, issue.Status, categoryKey)
+			slog.Warn("unclassified issue", "key", issue.Key, "status", issue.Status, "categoryKey", categoryKey)
 		}
 	}
 
@@ -991,32 +992,47 @@ func (m model) renderMetadataPanel(width int, height int) string {
 }
 
 func (m model) renderStatusBar() string {
-	var statusBar strings.Builder
-	var style lipgloss.Style
+	if m.filtering {
+		return ui.StatusBarInfoStyle.Render("  Filter: " + m.textInput.Value())
+	}
 
+	var style lipgloss.Style
 	switch m.statusMessage.msgType {
-	case infoStatusBarMsg:
-		style = ui.StatusBarInfoStyle
 	case errStatusBarMsg:
 		style = ui.StatusBarErrorStyle
+	case successStatusBarMsg:
+		style = ui.StatusBarSuccessStyle
+	default:
+		style = ui.StatusBarInfoStyle
 	}
 
-	if m.filtering {
-		statusBar.WriteString("  Filter: " + m.textInput.Value())
-		return ui.StatusBarInfoStyle.Render(statusBar.String())
-	}
-
-	if m.loadingCount > 0 {
-		if m.statusMessage.content != "" {
-			statusBar.WriteString("  " + m.spinner.View() + "  " + m.statusMessage.content)
-		} else {
-			statusBar.WriteString("  " + m.spinner.View() + "  Loading...")
+	// Prefix an icon so severity reads at a glance.
+	content := m.statusMessage.content
+	if content != "" {
+		switch m.statusMessage.msgType {
+		case errStatusBarMsg:
+			content = "✗ " + content
+		case successStatusBarMsg:
+			content = "✓ " + content
 		}
-	} else {
-		statusBar.WriteString("  " + m.statusMessage.content)
 	}
 
-	return style.Render(statusBar.String())
+	var text string
+	switch {
+	case m.loadingCount > 0 && content != "":
+		text = "  " + m.spinner.View() + "  " + content
+	case m.loadingCount > 0:
+		text = "  " + m.spinner.View() + "  Loading..."
+	default:
+		text = "  " + content
+	}
+
+	// Truncate to the terminal width so long messages never overflow the bar.
+	if m.windowWidth > 0 {
+		text = ansi.Truncate(text, m.windowWidth, "…")
+	}
+
+	return style.Render(text)
 }
 
 func (m model) buildDescriptionContent(width int) string {

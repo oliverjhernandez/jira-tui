@@ -104,9 +104,11 @@ func (m model) renderSearchUserView() string {
 	modalContent.WriteString(m.searchUserData.Form.View())
 
 	if m.searchUserData.Err != nil {
+		// Render-time: the error was already logged where it occurred, so only
+		// format it for display here (avoid logging on every frame).
 		m.statusMessage = statusMessage{
+			content: humanizeError(m.searchUserData.Err),
 			msgType: errStatusBarMsg,
-			content: m.searchUserData.Err.Error(),
 		}
 	}
 

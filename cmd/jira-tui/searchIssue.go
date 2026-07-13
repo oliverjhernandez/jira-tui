@@ -52,17 +52,11 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case standardIssueSearch:
 			m.loadingCount++
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchIssueData.Query))
-			m.statusMessage = statusMessage{
-				msgType: infoStatusBarMsg,
-				content: "Searching...",
-			}
+			m.setInfo("Searching...")
 		case linkIssue:
 			if m.pendingIssue != nil && m.issueLinkData != nil {
 				cmds = append(cmds, m.postLinkIssueCmd(m.pendingIssue.Key, m.issueLinkData.IssueKey, m.issueLinkData.Relation))
-				m.statusMessage = statusMessage{
-					msgType: infoStatusBarMsg,
-					content: "Linking...",
-				}
+				m.setInfo("Linking...")
 			}
 		}
 	}
@@ -79,9 +73,11 @@ func (m model) renderSearchIssueView() string {
 	modalContent.WriteString("\n")
 
 	if m.searchIssueData.Err != nil {
+		// Render-time: the error was already logged where it occurred, so only
+		// format it for display here (avoid logging on every frame).
 		m.statusMessage = statusMessage{
+			content: humanizeError(m.searchIssueData.Err),
 			msgType: errStatusBarMsg,
-			content: m.searchIssueData.Err.Error(),
 		}
 	}
 
