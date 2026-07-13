@@ -42,6 +42,7 @@ const (
 	blockReasonView
 	issueSearchView
 	savedBoardPickerView
+	summaryView
 )
 
 func (v viewMode) String() string {
@@ -76,6 +77,8 @@ func (v viewMode) String() string {
 		return "issueSearchView"
 	case savedBoardPickerView:
 		return "savedBoardPickerView"
+	case summaryView:
+		return "summaryView"
 	default:
 		return "unknown"
 	}
@@ -226,6 +229,7 @@ type model struct {
 	issueLinkData    *IssueLinkFormData
 	commentData      *CommentFormData
 	descriptionData  *DescriptionFormData
+	summaryData      *SummaryFormData
 	priorityData     *PriorityFormData
 	transitionData   *TransitionFormData
 	cancelReasonData *CancelReasonFormData
@@ -566,6 +570,16 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
 		return m, tea.Batch(cmds...)
 
+	case updatedSummaryMsg:
+		m.loadingCount--
+		var cmds []tea.Cmd
+		m.setSuccess("Summary edited successfully")
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+		m.mode = detailView
+		m.loadingCount++
+		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		return m, tea.Batch(cmds...)
+
 	case priorityPostedMsg:
 		m.loadingCount--
 		m.setSuccess("Priority posted successfully")
@@ -770,6 +784,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateDetailView(msg)
 	case descriptionView:
 		tmpModel, viewCmd = m.updateEditDescriptionView(msg)
+	case summaryView:
+		tmpModel, viewCmd = m.updateEditSummaryView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -816,6 +832,8 @@ func (m model) View() tea.View {
 		content = m.renderTransitionView()
 	case descriptionView:
 		content = m.renderEditDescriptionView()
+	case summaryView:
+		content = m.renderEditSummaryView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:

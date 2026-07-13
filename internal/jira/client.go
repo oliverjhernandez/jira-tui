@@ -841,6 +841,28 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 	return err
 }
 
+func (c *Client) UpdateSummary(ctx context.Context, issueKey string, summary string) error {
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
+
+	body := map[string]any{
+		"fields": map[string]any{
+			"summary": summary,
+		},
+	}
+
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		body,
+		nil,
+		http.StatusNoContent,
+	)
+
+	return err
+}
+
 func (c *Client) UpdatePriority(ctx context.Context, issueKey string, priority string) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
 
