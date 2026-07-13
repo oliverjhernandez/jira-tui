@@ -34,11 +34,16 @@ func TestCalculateColumnWidthsNarrowShrinksColumns(t *testing.T) {
 	narrow := CalculateColumnWidths(90) // availableWidth < 100 branch
 	wide := CalculateColumnWidths(200)
 
-	if narrow.Status >= wide.Status {
-		t.Errorf("narrow Status (%d) should be smaller than wide Status (%d)", narrow.Status, wide.Status)
-	}
 	if narrow.Reporter >= wide.Reporter {
 		t.Errorf("narrow Reporter (%d) should be smaller than wide Reporter (%d)", narrow.Reporter, wide.Reporter)
+	}
+	if narrow.Assignee >= wide.Assignee {
+		t.Errorf("narrow Assignee (%d) should be smaller than wide Assignee (%d)", narrow.Assignee, wide.Assignee)
+	}
+	// Status can't shrink: the badge pads to the static ColWidthStatus, so the
+	// reserved width is fixed regardless of terminal size.
+	if narrow.Status != ColWidthStatus || wide.Status != ColWidthStatus {
+		t.Errorf("Status width should be constant %d, got narrow=%d wide=%d", ColWidthStatus, narrow.Status, wide.Status)
 	}
 }
 
@@ -48,10 +53,9 @@ func TestTotalWidthSumsComponents(t *testing.T) {
 		Assignee: 6, DueDate: 7, CreatedDate: 8, Priority: 9,
 		Cursor: 10, Empty: 1, TimeSpent: 11,
 	}
-	// TotalWidth adds Empty (=1) eight times plus every rendered column,
-	// including Assignee.
-	want := cw.Cursor + cw.Type + cw.Key + cw.Priority + cw.Summary +
-		cw.Reporter + cw.Assignee + cw.Status + cw.DueDate + cw.CreatedDate + cw.TimeSpent + (cw.Empty * 8)
+	// TotalWidth = cursor prefix + all ten columns + nine single-space gaps.
+	want := cw.Cursor + cw.Type + cw.Key + cw.Status + cw.Priority + cw.Summary +
+		cw.Reporter + cw.Assignee + cw.CreatedDate + cw.DueDate + cw.TimeSpent + (cw.Empty * 9)
 	if got := cw.TotalWidth(); got != want {
 		t.Errorf("TotalWidth() = %d, want %d", got, want)
 	}

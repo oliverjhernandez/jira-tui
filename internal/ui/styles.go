@@ -162,6 +162,9 @@ var (
 				Foreground(ThemeFgDim).
 				Bold(true)
 
+	ColumnHeaderRuleStyle = lipgloss.NewStyle().
+				Foreground(ThemeBorder)
+
 	SelectedRowStyle = lipgloss.NewStyle().
 				Background(ThemeBgHighlight).
 				Foreground(ThemeFg).
@@ -407,17 +410,6 @@ var (
 	StatusBarSuccessStyle = lipgloss.NewStyle().
 				Foreground(ThemeSuccess).
 				Bold(true)
-)
-
-var (
-	EmptyHeaderSpace = lipgloss.NewStyle().Width(ColWidthEmpty).Render("")
-	TypeHeader       = lipgloss.NewStyle().Width(ColWidthType).MarginLeft(ColWidthCursor).Render("TYPE")
-	KeyHeader        = lipgloss.NewStyle().Width(ColWidthKey).Render("KEY")
-	PriorityHeader   = lipgloss.NewStyle().Width(ColWidthPriority).Render("")
-	SummaryHeader    = lipgloss.NewStyle().Width(ColWidthSummary).Render("SUMMARY")
-	ReporterHeader   = lipgloss.NewStyle().Width(ColWidthReporter).Render("REPORTER")
-	StatusHeader     = lipgloss.NewStyle().Width(ColWidthStatus - ColWidthEmpty).Render("STATUS")
-	AssigneeHeader   = lipgloss.NewStyle().Width(ColWidthAssignee).Render("ASSIGNEE")
 )
 
 // ============================================================================

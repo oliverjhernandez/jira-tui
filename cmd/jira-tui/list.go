@@ -372,5 +372,7 @@ func (m model) renderListView() string {
 	statusBar := m.renderStatusBar()
 	infoPanel := m.renderInfoPanel()
 
-	return m.renderTabBar() + "\n" + infoPanel + "\n" + ui.PanelActiveStyle.Render(m.listViewport.View()) + "\n" + statusBar
+	body := m.renderListColumnsHeader() + "\n" + m.listViewport.View()
+
+	return m.renderTabBar() + "\n" + infoPanel + "\n" + ui.PanelActiveStyle.Render(body) + "\n" + statusBar
 }

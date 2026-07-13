@@ -225,9 +225,9 @@ func TestLayoutHeightReservation(t *testing.T) {
 	m := model{windowWidth: 120, windowHeight: 40}
 
 	list := m.calculateListLayout()
-	wantList := 40 - 5 - 1 - tabBarHeight - ui.PanelOverheadHeight
+	wantList := 40 - 5 - 1 - tabBarHeight - ui.PanelOverheadHeight - listHeaderHeight
 	if list.listHeight != wantList {
-		t.Errorf("listHeight = %d, want %d (tab bar reserved)", list.listHeight, wantList)
+		t.Errorf("listHeight = %d, want %d (tab bar + column header reserved)", list.listHeight, wantList)
 	}
 
 	detail := m.calculateDetailLayout()
