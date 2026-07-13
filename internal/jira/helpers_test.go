@@ -143,53 +143,36 @@ func TestHardWrap(t *testing.T) {
 	}
 }
 
-func TestParseCommentContentNoMention(t *testing.T) {
-	content, err := parseCommentContent("just a plain comment", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestCommentToADFNoMention(t *testing.T) {
+	doc := CommentToADF("just a plain comment", nil)
+	if txt := findNode(doc.Content, "text"); txt == nil || txt.Text != "just a plain comment" {
+		t.Errorf("unexpected text node: %+v", txt)
 	}
-	if len(content) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(content))
-	}
-	if content[0]["type"] != "text" || content[0]["text"] != "just a plain comment" {
-		t.Errorf("unexpected node: %+v", content[0])
+	if findNode(doc.Content, "mention") != nil {
+		t.Error("did not expect a mention node")
 	}
 }
 
-func TestParseCommentContentWithKnownMention(t *testing.T) {
+func TestCommentToADFWithKnownMention(t *testing.T) {
 	users := []User{{ID: "acc-1", Name: "Jane Doe"}}
-	content, err := parseCommentContent("hi @[Jane Doe] bye", users)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	doc := CommentToADF("hi @[Jane Doe] bye", users)
 
-	var sawMention bool
-	for _, node := range content {
-		if node["type"] == "mention" {
-			sawMention = true
-			attrs, ok := node["attrs"].(map[string]string)
-			if !ok {
-				t.Fatalf("mention attrs wrong type: %T", node["attrs"])
-			}
-			if attrs["id"] != "acc-1" {
-				t.Errorf("mention id = %q, want acc-1", attrs["id"])
-			}
-		}
+	m := findNode(doc.Content, "mention")
+	if m == nil {
+		t.Fatalf("expected a mention node, got %+v", doc.Content)
 	}
-	if !sawMention {
-		t.Errorf("expected a mention node, got %+v", content)
+	if m.Attrs == nil || m.Attrs.ID != "acc-1" {
+		t.Errorf("mention id = %+v, want acc-1", m.Attrs)
+	}
+	if m.Attrs != nil && m.Attrs.Text != "@Jane Doe" {
+		t.Errorf("mention text = %q, want @Jane Doe", m.Attrs.Text)
 	}
 }
 
-func TestParseCommentContentUnknownMentionStaysText(t *testing.T) {
-	content, err := parseCommentContent("hi @[Nobody Here]", []User{{ID: "x", Name: "Someone Else"}})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	for _, node := range content {
-		if node["type"] == "mention" {
-			t.Errorf("did not expect a mention node for an unknown user: %+v", content)
-		}
+func TestCommentToADFUnknownStaysText(t *testing.T) {
+	doc := CommentToADF("hi @[Nobody Here]", []User{{ID: "x", Name: "Someone Else"}})
+	if findNode(doc.Content, "mention") != nil {
+		t.Errorf("did not expect a mention node for an unknown user: %+v", doc.Content)
 	}
 }
 

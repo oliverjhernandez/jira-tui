@@ -98,7 +98,7 @@ func (m model) NewIssueForm(issue *NewIssueFormData) *NewIssueFormData {
 				Value(&issue.DueDate),
 
 			huh.NewText().
-				Title("Description").
+				Title("Description (Markdown supported)").
 				Placeholder("Improve something...").
 				Value(&issue.Description),
 		),

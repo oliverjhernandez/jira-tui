@@ -243,10 +243,11 @@ type markAttrs struct {
 }
 
 type contentAttrs struct {
-	Text string `json:"text,omitempty"`
-	ID   string `json:"id,omitempty"`
-	Alt  string `json:"alt"`
-	URL  string `json:"url,omitempty"`
+	Text  string `json:"text,omitempty"`
+	ID    string `json:"id,omitempty"`
+	Alt   string `json:"alt,omitempty"`
+	URL   string `json:"url,omitempty"`
+	Level int    `json:"level,omitempty"`
 }
 
 type statusField struct {
@@ -810,21 +811,7 @@ func (c *Client) UpdateDescription(ctx context.Context, issueKey string, descrip
 
 	body := map[string]any{
 		"fields": map[string]any{
-			"description": map[string]any{
-				"type":    "doc",
-				"version": 1,
-				"content": []map[string]any{
-					{
-						"type": "paragraph",
-						"content": []map[string]any{
-							{
-								"type": "text",
-								"text": description,
-							},
-						},
-					},
-				},
-			},
+			"description": MarkdownToADF(description),
 		},
 	}
 
@@ -968,25 +955,11 @@ func (c *Client) GetStatuses(ctx context.Context, p Project) ([]Status, error) {
 func (c *Client) PostComment(ctx context.Context, issueKey string, comment string, usersCache []User) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/comment", issueKey)
 
-	content, err := parseCommentContent(comment, usersCache)
-	if err != nil {
-		return fmt.Errorf("failed to parse comment.: %w", err)
-	}
-
 	body := map[string]any{
-		"body": map[string]any{
-			"type":    "doc",
-			"version": 1,
-			"content": []map[string]any{
-				{
-					"content": content,
-					"type":    "paragraph",
-				},
-			},
-		},
+		"body": CommentToADF(comment, usersCache),
 	}
 
-	err = c.doJiraRequest(
+	err := c.doJiraRequest(
 		ctx,
 		"POST",
 		apiURL,
@@ -1001,25 +974,11 @@ func (c *Client) PostComment(ctx context.Context, issueKey string, comment strin
 func (c *Client) PutComment(ctx context.Context, issueKey, commentID, comment string, usersCache []User) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/comment/%s", issueKey, commentID)
 
-	content, err := parseCommentContent(comment, usersCache)
-	if err != nil {
-		return fmt.Errorf("failed to parse comment.: %w", err)
-	}
-
 	body := map[string]any{
-		"body": map[string]any{
-			"type":    "doc",
-			"version": 1,
-			"content": []map[string]any{
-				{
-					"content": content,
-					"type":    "paragraph",
-				},
-			},
-		},
+		"body": CommentToADF(comment, usersCache),
 	}
 
-	err = c.doJiraRequest(
+	err := c.doJiraRequest(
 		ctx,
 		"PUT",
 		apiURL,
