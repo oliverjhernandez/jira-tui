@@ -193,7 +193,11 @@ type model struct {
 	// Transitions
 	// transitions       map[string][]jira.Transition
 	pendingTransition *jira.Transition
-	transitionCache   map[string]map[string][]jira.Transition
+	// transitionCache is keyed issueKey -> status -> transitions. Transitions are
+	// issue-specific (they depend on the issue's workflow), so this must never be
+	// keyed by project: a transition id valid for one issue can be invalid for
+	// another in the same project/status.
+	transitionCache map[string]map[string][]jira.Transition
 
 	//  Selection
 	usersCache         []jira.User
@@ -473,10 +477,10 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case transitionsLoadedMsg:
 		m.loadingCount--
-		if m.transitionCache[msg.projectKey] == nil {
-			m.transitionCache[msg.projectKey] = make(map[string][]jira.Transition)
+		if m.transitionCache[msg.issueKey] == nil {
+			m.transitionCache[msg.issueKey] = make(map[string][]jira.Transition)
 		}
-		m.transitionCache[msg.projectKey][msg.status] = msg.transitions
+		m.transitionCache[msg.issueKey][msg.status] = msg.transitions
 		if m.mode == transitionView {
 			m.transitionData = NewTransitionFormData(msg.transitions)
 			return m, m.transitionData.Form.Init()
