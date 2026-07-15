@@ -253,23 +253,23 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = transitionView
 			m.transitionCursor = 0
 
-			if m.activeIssue != nil {
+			if m.selectedIssue != nil {
 				if m.selectedIssue.Description == nil {
 					m.setErrorMsg("Cannot transition, missing description")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
-				if m.activeIssue.OriginalEstimate == "" {
+				if m.selectedIssue.OriginalEstimate == "" {
 					m.setErrorMsg("Cannot transition, missing original estimate")
 					return m, m.clearStatusAfter(clearMsgTimeout)
 				}
 
-				if cached, ok := m.transitionCache[m.activeIssue.Project.Key][m.activeIssue.Status]; ok && len(cached) > 0 {
+				if cached, ok := m.transitionCache[m.selectedIssue.Key][m.selectedIssue.Status]; ok && len(cached) > 0 {
 					m.transitionData = NewTransitionFormData(cached)
 					cmds = append(cmds, m.transitionData.Form.Init())
 				} else {
 					m.loadingCount++
-					cmds = append(cmds, m.fetchTransitionsCmd(m.selectedIssue.Key, m.selectedIssue.Project.Key, m.selectedIssue.Status))
+					cmds = append(cmds, m.fetchTransitionsCmd(m.selectedIssue.Key, m.selectedIssue.Status))
 				}
 			}
 
