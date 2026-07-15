@@ -43,6 +43,7 @@ const (
 	issueSearchView
 	savedBoardPickerView
 	summaryView
+	transitionWorklogView
 )
 
 func (v viewMode) String() string {
@@ -79,6 +80,8 @@ func (v viewMode) String() string {
 		return "savedBoardPickerView"
 	case summaryView:
 		return "summaryView"
+	case transitionWorklogView:
+		return "transitionWorklogView"
 	default:
 		return "unknown"
 	}
@@ -226,20 +229,21 @@ type model struct {
 	editingWorklog     bool
 
 	// Form Data
-	worklogFormData  *WorklogFormData
-	newIssueData     *NewIssueFormData
-	estimateData     *EstimateFormData
-	searchIssueData  *SearchIssueFormData
-	issueLinkData    *IssueLinkFormData
-	commentData      *CommentFormData
-	descriptionData  *DescriptionFormData
-	summaryData      *SummaryFormData
-	priorityData     *PriorityFormData
-	transitionData   *TransitionFormData
-	cancelReasonData *CancelReasonFormData
-	blockReasonData  *BlockReasonFormData
-	searchUserData   *SearchUserFormData
-	savedBoardData   *SavedBoardFormData
+	worklogFormData       *WorklogFormData
+	newIssueData          *NewIssueFormData
+	estimateData          *EstimateFormData
+	searchIssueData       *SearchIssueFormData
+	issueLinkData         *IssueLinkFormData
+	commentData           *CommentFormData
+	descriptionData       *DescriptionFormData
+	summaryData           *SummaryFormData
+	transitionWorklogData *TransitionWorklogFormData
+	priorityData          *PriorityFormData
+	transitionData        *TransitionFormData
+	cancelReasonData      *CancelReasonFormData
+	blockReasonData       *BlockReasonFormData
+	searchUserData        *SearchUserFormData
+	savedBoardData        *SavedBoardFormData
 
 	// UI Elements
 	spinner       spinner.Model
@@ -667,20 +671,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 
 		if m.pendingTransition != nil {
-			transition := m.pendingTransition
-			if isCancelTransition(*transition) {
-				m.cancelReasonData = NewCancelReasonFormData()
-				m.mode = cancelReasonView
-				return m, m.cancelReasonData.Form.Init()
-			}
-			if isBlockedTransition(*transition) {
-				m.blockReasonData = NewBlockReasonFormData()
-				m.mode = blockReasonView
-				return m, m.blockReasonData.Form.Init()
-			}
-			m.pendingTransition = nil
-			cmds = append(cmds, m.postTransitionCmd(m.activeIssue.Key, transition.ID, transition.Name))
-			return m, tea.Batch(cmds...)
+			return m.routeTransition(*m.pendingTransition)
 		}
 		m.mode = detailView
 		m.loadingCount++
@@ -790,6 +781,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateEditDescriptionView(msg)
 	case summaryView:
 		tmpModel, viewCmd = m.updateEditSummaryView(msg)
+	case transitionWorklogView:
+		tmpModel, viewCmd = m.updateTransitionWorklogView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -838,6 +831,8 @@ func (m model) View() tea.View {
 		content = m.renderEditDescriptionView()
 	case summaryView:
 		content = m.renderEditSummaryView()
+	case transitionWorklogView:
+		content = m.renderTransitionWorklogView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:

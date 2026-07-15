@@ -101,6 +101,10 @@ type Transition struct {
 	ProjectKey string
 	Status     string
 	Name       string `json:"name"`
+	// RequiresWorklog is true when this transition's screen has the native
+	// "Log Work"/Time Spent (worklog) field, so a worklog must be sent with the
+	// transition to satisfy the workflow validator.
+	RequiresWorklog bool
 }
 
 type User struct {
@@ -669,6 +673,10 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, e
 func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transition, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/transitions", issueKey)
 
+	// expand=transitions.fields returns the fields on each transition's screen so
+	// we can tell whether a worklog (Time Spent) field must be filled.
+	queryParams := url.Values{"expand": {"transitions.fields"}}
+
 	var result struct {
 		Transitions []struct {
 			ID   string `json:"id"`
@@ -676,6 +684,7 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 			To   struct {
 				Name string `json:"name"`
 			} `json:"to"`
+			Fields map[string]json.RawMessage `json:"fields"`
 		} `json:"transitions"`
 	}
 
@@ -683,7 +692,7 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 		ctx,
 		"GET",
 		apiURL,
-		nil,
+		queryParams,
 		nil,
 		&result,
 		http.StatusOK,
@@ -691,9 +700,11 @@ func (c *Client) GetTransitions(ctx context.Context, issueKey string) ([]Transit
 
 	transitions := make([]Transition, 0, len(result.Transitions))
 	for _, t := range result.Transitions {
+		_, hasWorklog := t.Fields["worklog"]
 		transitions = append(transitions, Transition{
-			ID:   t.ID,
-			Name: t.To.Name,
+			ID:              t.ID,
+			Name:            t.To.Name,
+			RequiresWorklog: hasWorklog,
 		})
 	}
 
@@ -750,7 +761,7 @@ func (c *Client) PostAssignee(ctx context.Context, issueKey, assigneeID string) 
 	return err
 }
 
-func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment string) error {
+func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID string, fields map[string]any, comment, worklogTime string) error {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s/transitions", issueKey)
 
 	body := map[string]any{
@@ -786,6 +797,12 @@ func (c *Client) PostTransition(ctx context.Context, issueKey, transitionID stri
 					},
 				},
 			},
+		}
+	}
+
+	if worklogTime != "" {
+		update["worklog"] = []map[string]any{
+			{"add": map[string]any{"timeSpent": worklogTime}},
 		}
 	}
 
