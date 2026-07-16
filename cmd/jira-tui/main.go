@@ -45,7 +45,6 @@ const (
 	summaryView
 	transitionWorklogView
 	searchView
-	searchResultsView
 )
 
 func (v viewMode) String() string {
@@ -86,8 +85,6 @@ func (v viewMode) String() string {
 		return "transitionWorklogView"
 	case searchView:
 		return "searchView"
-	case searchResultsView:
-		return "searchResultsView"
 	default:
 		return "unknown"
 	}
@@ -263,12 +260,13 @@ type model struct {
 	// Pollers
 	detailPolling bool
 
-	// Search
+	// Search — a single modal: input on top, then results (after a search) or
+	// recent searches. searchCursor is -1 for the input, 0..n-1 for a row.
 	searchInput           textinput.Model
-	searchCursor          int // -1 = typed query; 0..n-1 = recent search index
+	searchCursor          int
 	recentSearches        []string
+	searched              bool
 	searchResults         []searchResult
-	searchResultsCursor   int
 	searchResultsViewport viewport.Model
 	searchQuery           string
 }
@@ -706,7 +704,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingCount--
 		m.searchQuery = msg.query
 		m.searchResults = msg.results
-		m.searchResultsCursor = 0
+		m.searched = true
+		m.searchCursor = -1
 		m.searchResultsViewport.SetYOffset(0)
 		m.refreshSearchResultsViewport()
 		if len(msg.results) == 0 {
@@ -818,8 +817,6 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateTransitionWorklogView(msg)
 	case searchView:
 		tmpModel, viewCmd = m.updateSearchView(msg)
-	case searchResultsView:
-		tmpModel, viewCmd = m.updateSearchResultsView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -872,8 +869,6 @@ func (m model) View() tea.View {
 		content = m.renderTransitionWorklogView()
 	case searchView:
 		content = m.renderSearchView()
-	case searchResultsView:
-		content = m.renderSearchResultsView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:
