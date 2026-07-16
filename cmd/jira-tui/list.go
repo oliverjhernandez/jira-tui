@@ -231,7 +231,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "ctrl+s":
-			return m.openSearchView("")
+			return m.openSearchView()
 
 		case "/":
 			m.filtering = true

@@ -8,11 +8,18 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 const maxRecentSearches = 10
+
+// Modal size for the search view (fraction of the terminal).
+const (
+	searchModalWScale = 0.8
+	searchModalHScale = 0.7
+)
 
 // issueKeyPattern matches a full Jira issue key like "DEV-123". JQL only allows
 // exact key matching, so we add a key clause to the search only when the query
@@ -121,21 +128,29 @@ func pushRecentSearch(recents []string, query string) []string {
 	return out
 }
 
-// openSearchView enters the search form, pre-filling the input with initial
-// (empty for a fresh search, the last query when refining from results).
-func (m model) openSearchView(initial string) (tea.Model, tea.Cmd) {
+// openSearchView enters a fresh search modal (empty input, showing recents).
+func (m model) openSearchView() (tea.Model, tea.Cmd) {
 	ti := textinput.New()
 	ti.Placeholder = "Search key, summary or description..."
 	ti.CharLimit = 100
-	ti.SetValue(initial)
 	ti.Focus()
 	m.searchInput = ti
 	m.searchCursor = -1
-	if m.mode != searchResultsView {
-		m.previousMode = m.mode
-	}
+	m.searched = false
+	m.searchResults = nil
+	m.searchQuery = ""
+	m.previousMode = m.mode
 	m.mode = searchView
 	return m, textinput.Blink
+}
+
+// searchListLen is the number of navigable rows below the input: results after a
+// search has run, otherwise recent searches.
+func (m model) searchListLen() int {
+	if m.searched {
+		return len(m.searchResults)
+	}
+	return len(m.recentSearches)
 }
 
 func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -144,33 +159,20 @@ func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = m.previousMode
 			return m, nil
-		case "up":
+		case "up", "ctrl+k":
 			if m.searchCursor > -1 {
 				m.searchCursor--
+				m.refreshSearchResultsViewport()
 			}
 			return m, nil
-		case "down":
-			if m.searchCursor < len(m.recentSearches)-1 {
+		case "down", "ctrl+j":
+			if m.searchCursor < m.searchListLen()-1 {
 				m.searchCursor++
+				m.refreshSearchResultsViewport()
 			}
 			return m, nil
 		case "enter":
-			query := m.searchInput.Value()
-			if m.searchCursor >= 0 && m.searchCursor < len(m.recentSearches) {
-				query = m.recentSearches[m.searchCursor]
-			}
-			query = strings.TrimSpace(query)
-			if query == "" {
-				return m, nil
-			}
-			m.recentSearches = pushRecentSearch(m.recentSearches, query)
-			m.searchQuery = query
-			m.searchResults = nil
-			m.searchResultsCursor = 0
-			m.mode = searchResultsView
-			m.loadingCount++
-			m.setInfo("Searching...")
-			return m, m.searchIssuesCmd(query)
+			return m.submitSearch()
 		}
 	}
 
@@ -178,55 +180,84 @@ func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.searchInput, cmd = m.searchInput.Update(msg)
 	if m.searchInput.Value() != prev {
-		m.searchCursor = -1 // typing targets the typed query, not a recent
+		m.searchCursor = -1 // typing targets the typed query, not a list row
 	}
 	return m, cmd
 }
 
-func (m model) renderSearchView() string {
-	var b strings.Builder
-	b.WriteString(m.searchInput.View() + "\n")
-
-	if len(m.recentSearches) > 0 {
-		b.WriteString("\n" + ui.SectionTitleStyle.Render("Recent searches") + "\n")
-		for i, r := range m.recentSearches {
-			if i == m.searchCursor {
-				b.WriteString(ui.IconCursor + ui.SelectedRowStyle.Render(" "+r) + "\n")
-			} else {
-				b.WriteString("  " + r + "\n")
+// submitSearch handles Enter: open a highlighted result, re-run a highlighted
+// recent search, or run the typed query.
+func (m model) submitSearch() (tea.Model, tea.Cmd) {
+	if m.searchCursor >= 0 {
+		if m.searched {
+			if m.searchCursor < len(m.searchResults) {
+				issue := m.searchResults[m.searchCursor].issue
+				m.selectedIssue = &issue
+				m.detailReturnView = searchView
+				m.detailLayout = m.calculateDetailLayout()
+				m.mode = detailView
+				m.loadingCount++
+				return m, m.fetchIssueDetailCmd(issue.Key)
 			}
+			return m, nil
+		}
+		if m.searchCursor < len(m.recentSearches) {
+			return m.runSearch(m.recentSearches[m.searchCursor])
 		}
 	}
+	return m.runSearch(m.searchInput.Value())
+}
 
-	return m.renderModal("Search Issues", b.String(), 0.4, 0.4)
+func (m model) runSearch(query string) (tea.Model, tea.Cmd) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return m, nil
+	}
+	m.recentSearches = pushRecentSearch(m.recentSearches, query)
+	m.searchInput.SetValue(query)
+	m.searchQuery = query
+	m.searchResults = nil
+	m.searchCursor = -1
+	m.loadingCount++
+	m.setInfo("Searching...")
+	return m, m.searchIssuesCmd(query)
+}
+
+// searchModalInnerSize returns the width/height available for the results
+// viewport inside the modal box.
+func (m model) searchModalInnerSize() (int, int) {
+	w := ui.GetModalWidth(m.windowWidth, searchModalWScale) - ui.PanelOverheadWidth
+	h := ui.GetModalHeight(m.windowHeight, searchModalHScale) - ui.PanelOverheadHeight - 4
+	if w < 20 {
+		w = 20
+	}
+	if h < 3 {
+		h = 3
+	}
+	return w, h
 }
 
 func (m *model) refreshSearchResultsViewport() {
-	width := m.windowWidth - ui.PanelOverheadWidth
-	height := m.windowHeight - 6 // header block + footer + spacing
-	if height < 3 {
-		height = 3
-	}
-	m.searchResultsViewport.SetWidth(width)
-	m.searchResultsViewport.SetHeight(height)
+	w, h := m.searchModalInnerSize()
+	m.searchResultsViewport.SetWidth(w)
+	m.searchResultsViewport.SetHeight(h)
 
-	content, cursorLine := m.buildSearchResultsContent()
+	content, cursorLine := m.buildSearchResultsContent(w)
 	m.searchResultsViewport.SetContent(content)
 
 	top := m.searchResultsViewport.YOffset()
 	if cursorLine < top {
 		m.searchResultsViewport.SetYOffset(cursorLine)
-	} else if cursorLine >= top+height {
-		m.searchResultsViewport.SetYOffset(cursorLine - height + 1)
+	} else if cursorLine >= top+h {
+		m.searchResultsViewport.SetYOffset(cursorLine - h + 1)
 	}
 }
 
-// buildSearchResultsContent renders the grouped result rows and returns the line
-// index of the highlighted row so the viewport can keep it in view.
-func (m model) buildSearchResultsContent() (string, int) {
+// buildSearchResultsContent renders compact, modal-width result rows grouped by
+// match category, and returns the line index of the highlighted row.
+func (m model) buildSearchResultsContent(width int) (string, int) {
 	var b strings.Builder
-	line := 0
-	cursorLine := 0
+	line, cursorLine := 0, 0
 	lastCat := searchCategory(-1)
 
 	for i, r := range m.searchResults {
@@ -235,72 +266,52 @@ func (m model) buildSearchResultsContent() (string, int) {
 			line++
 			lastCat = r.category
 		}
-		if i == m.searchResultsCursor {
-			cursorLine = line
+
+		is := r.issue
+		typeIcon := ui.RenderIssueType(is.Type, false)
+		key := ui.PadCell(is.Key, 12)
+		status := ui.RenderStatusBadge(is.Status)
+		used := 2 + lipgloss.Width(typeIcon) + 1 + 12 + 1 + lipgloss.Width(status) + 1
+		summaryW := width - used
+		if summaryW < 10 {
+			summaryW = 10
 		}
-		b.WriteString(m.renderIssueRow(r.issue, i == m.searchResultsCursor, closureStatuses[r.issue.Status]) + "\n")
+		summary := ui.PadCell(is.Summary, summaryW)
+		row := typeIcon + " " + key + " " + status + " " + summary
+
+		if i == m.searchCursor {
+			cursorLine = line
+			b.WriteString(ui.IconCursor + ui.SelectedRowStyle.Render(row) + "\n")
+		} else {
+			b.WriteString("  " + ui.NormalRowStyle.Render(row) + "\n")
+		}
 		line++
 	}
 	return b.String(), cursorLine
 }
 
-func (m model) updateSearchResultsView(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if kp, ok := msg.(tea.KeyPressMsg); ok {
-		switch kp.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "esc":
-			return m.openSearchView(m.searchQuery)
-		case "j", "down":
-			if m.searchResultsCursor < len(m.searchResults)-1 {
-				m.searchResultsCursor++
-				m.refreshSearchResultsViewport()
-			}
-			return m, nil
-		case "k", "up":
-			if m.searchResultsCursor > 0 {
-				m.searchResultsCursor--
-				m.refreshSearchResultsViewport()
-			}
-			return m, nil
-		case "g":
-			m.searchResultsCursor = 0
-			m.refreshSearchResultsViewport()
-			return m, nil
-		case "G":
-			if len(m.searchResults) > 0 {
-				m.searchResultsCursor = len(m.searchResults) - 1
-				m.refreshSearchResultsViewport()
-			}
-			return m, nil
-		case "enter":
-			if m.searchResultsCursor >= 0 && m.searchResultsCursor < len(m.searchResults) {
-				issue := m.searchResults[m.searchResultsCursor].issue
-				m.selectedIssue = &issue
-				m.detailReturnView = searchResultsView
-				m.detailLayout = m.calculateDetailLayout()
-				m.mode = detailView
-				m.loadingCount++
-				return m, m.fetchIssueDetailCmd(issue.Key)
-			}
-			return m, nil
-		}
-	}
-	return m, nil
-}
-
-func (m model) renderSearchResultsView() string {
-	header := fmt.Sprintf("Search: %q — %d result(s)", m.searchQuery, len(m.searchResults))
+func (m model) renderSearchView() string {
 	var b strings.Builder
-	b.WriteString(ui.DetailHeaderStyle.Render(header) + "\n\n")
+	b.WriteString(m.searchInput.View() + "\n\n")
 
-	if len(m.searchResults) == 0 {
-		b.WriteString(ui.StatusBarInfoStyle.Render("  No results") + "\n")
-	} else {
-		b.WriteString(m.renderListColumnsHeader() + "\n")
-		b.WriteString(m.searchResultsViewport.View() + "\n")
+	switch {
+	case m.searched && len(m.searchResults) == 0:
+		b.WriteString(ui.StatusBarInfoStyle.Render(fmt.Sprintf("No results for %q", m.searchQuery)))
+	case m.searched:
+		b.WriteString(m.searchResultsViewport.View())
+	case len(m.recentSearches) > 0:
+		b.WriteString(ui.SectionTitleStyle.Render("Recent searches") + "\n")
+		for i, r := range m.recentSearches {
+			if i == m.searchCursor {
+				b.WriteString(ui.IconCursor + ui.SelectedRowStyle.Render(" "+r) + "\n")
+			} else {
+				b.WriteString("  " + r + "\n")
+			}
+		}
+	default:
+		b.WriteString(ui.StatusBarInfoStyle.Render("Type a query and press enter"))
 	}
 
-	footer := ui.StatusBarInfoStyle.Render("  ↑/↓ navigate · enter open · esc refine")
-	return b.String() + "\n" + footer
+	b.WriteString("\n" + ui.StatusBarInfoStyle.Render("↑/↓ select · enter open/search · esc close"))
+	return m.renderModal("Search Issues", b.String(), searchModalWScale, searchModalHScale)
 }
