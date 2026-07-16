@@ -231,11 +231,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "ctrl+s":
-			var cmds []tea.Cmd
-			m.mode = issueSearchView
-			m.searchIssueData = NewSearchIssueFormData()
-			cmds = append(cmds, m.searchIssueData.Form.Init())
-			return m, tea.Batch(cmds...)
+			return m.openSearchView("")
 
 		case "/":
 			m.filtering = true
@@ -329,6 +325,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadingCount++
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
+				m.detailReturnView = listView
 				m.mode = detailView
 			}
 			return m, tea.Batch(cmds...)
