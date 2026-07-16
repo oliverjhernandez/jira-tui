@@ -159,13 +159,13 @@ func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = m.previousMode
 			return m, nil
-		case "up", "ctrl+k":
+		case "up", "[":
 			if m.searchCursor > -1 {
 				m.searchCursor--
 				m.refreshSearchResultsViewport()
 			}
 			return m, nil
-		case "down", "ctrl+j":
+		case "down", "]":
 			if m.searchCursor < m.searchListLen()-1 {
 				m.searchCursor++
 				m.refreshSearchResultsViewport()
@@ -312,6 +312,6 @@ func (m model) renderSearchView() string {
 		b.WriteString(ui.StatusBarInfoStyle.Render("Type a query and press enter"))
 	}
 
-	b.WriteString("\n" + ui.StatusBarInfoStyle.Render("↑/↓ select · enter open/search · esc close"))
+	b.WriteString("\n" + ui.StatusBarInfoStyle.Render("[ / ] select · enter open/search · esc close"))
 	return m.renderModal("Search Issues", b.String(), searchModalWScale, searchModalHScale)
 }
