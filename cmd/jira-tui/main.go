@@ -44,6 +44,8 @@ const (
 	savedBoardPickerView
 	summaryView
 	transitionWorklogView
+	searchView
+	searchResultsView
 )
 
 func (v viewMode) String() string {
@@ -82,6 +84,10 @@ func (v viewMode) String() string {
 		return "summaryView"
 	case transitionWorklogView:
 		return "transitionWorklogView"
+	case searchView:
+		return "searchView"
+	case searchResultsView:
+		return "searchResultsView"
 	default:
 		return "unknown"
 	}
@@ -151,7 +157,11 @@ type model struct {
 	mode         viewMode
 	previousMode viewMode
 	baseView     viewMode
-	err          error
+	// detailReturnView is where esc from the detail view returns to. It's a
+	// one-shot (consumed and reset to listView) so opening an issue from search
+	// results returns to the results rather than the board.
+	detailReturnView viewMode
+	err              error
 
 	// Tabs
 	tabs      []Tab
@@ -252,6 +262,15 @@ type model struct {
 
 	// Pollers
 	detailPolling bool
+
+	// Search
+	searchInput           textinput.Model
+	searchCursor          int // -1 = typed query; 0..n-1 = recent search index
+	recentSearches        []string
+	searchResults         []searchResult
+	searchResultsCursor   int
+	searchResultsViewport viewport.Model
+	searchQuery           string
 }
 
 func (m model) Init() tea.Cmd {
@@ -683,6 +702,20 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.usersCache = msg.users
 		return m, nil
 
+	case searchResultsLoadedMsg:
+		m.loadingCount--
+		m.searchQuery = msg.query
+		m.searchResults = msg.results
+		m.searchResultsCursor = 0
+		m.searchResultsViewport.SetYOffset(0)
+		m.refreshSearchResultsViewport()
+		if len(msg.results) == 0 {
+			m.setInfo(fmt.Sprintf("No results for %q", msg.query))
+		} else {
+			m.setInfo(fmt.Sprintf("%d result(s) for %q", len(msg.results), msg.query))
+		}
+		return m, nil
+
 	case myIssuesPollMsg:
 		var cmds []tea.Cmd
 		m.loadingCount++
@@ -783,6 +816,10 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateEditSummaryView(msg)
 	case transitionWorklogView:
 		tmpModel, viewCmd = m.updateTransitionWorklogView(msg)
+	case searchView:
+		tmpModel, viewCmd = m.updateSearchView(msg)
+	case searchResultsView:
+		tmpModel, viewCmd = m.updateSearchResultsView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -833,6 +870,10 @@ func (m model) View() tea.View {
 		content = m.renderEditSummaryView()
 	case transitionWorklogView:
 		content = m.renderTransitionWorklogView()
+	case searchView:
+		content = m.renderSearchView()
+	case searchResultsView:
+		content = m.renderSearchResultsView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:

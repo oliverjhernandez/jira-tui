@@ -31,7 +31,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q", "ctrl+c":
 				return m, tea.Quit
 			case "esc":
-				m.mode = listView
+				m.mode = m.detailReturnView
+				m.detailReturnView = listView
 				m.detailPolling = false
 				return m, nil
 			}
@@ -469,7 +470,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case keyPressMsg.String() == "esc":
 			var cmds []tea.Cmd
-			m.mode = listView
+			m.mode = m.detailReturnView
+			m.detailReturnView = listView
 			m.detailPolling = false
 			m.activeIssue = nil
 
