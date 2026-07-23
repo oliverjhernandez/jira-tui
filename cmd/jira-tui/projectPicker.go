@@ -20,7 +20,7 @@ type ProjectPickerFormData struct {
 	Form          *huh.Form
 }
 
-func NewProjectPickerFormData(projects []jira.Project) *ProjectPickerFormData {
+func NewProjectPickerFormData(projects []jira.Project, visibleRows int) *ProjectPickerFormData {
 	sorted := make([]jira.Project, len(projects))
 	copy(sorted, projects)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Name < sorted[j].Name })
@@ -30,12 +30,19 @@ func NewProjectPickerFormData(projects []jira.Project) *ProjectPickerFormData {
 		options[i] = huh.NewOption(p.Name, i)
 	}
 
+	if visibleRows < 3 {
+		visibleRows = 3
+	}
+
 	d := &ProjectPickerFormData{SelectedIndex: 0, Projects: sorted}
 	d.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[int]().
-				Title("Open Project").
+				Title("Open Project (type to filter)").
 				Options(options...).
+				// Bound the visible options so a long list scrolls inside the
+				// modal instead of overflowing the screen.
+				Height(visibleRows).
 				Value(&d.SelectedIndex),
 		),
 	).WithWidth(50)
@@ -43,13 +50,18 @@ func NewProjectPickerFormData(projects []jira.Project) *ProjectPickerFormData {
 	return d
 }
 
+// projectPickerHScale is the modal height as a fraction of the terminal; the
+// select's visible rows are sized to match so the list scrolls within it.
+const projectPickerHScale = 0.6
+
 func (m model) openProjectPicker() (tea.Model, tea.Cmd) {
 	if len(m.projects) == 0 {
 		m.setInfo("No projects loaded yet")
 		return m, m.clearStatusAfter(clearMsgTimeout)
 	}
 	m.previousMode = m.mode
-	m.projectPickerData = NewProjectPickerFormData(m.projects)
+	visibleRows := int(float64(m.windowHeight)*projectPickerHScale) - 6 // title/help/borders
+	m.projectPickerData = NewProjectPickerFormData(m.projects, visibleRows)
 	m.mode = projectPickerView
 	return m, m.projectPickerData.Form.Init()
 }
@@ -91,5 +103,5 @@ func (m model) renderProjectPickerView() string {
 	if m.projectPickerData != nil {
 		content = m.projectPickerData.Form.View()
 	}
-	return m.renderModal("Open Project", content, 0.3, 0.4)
+	return m.renderModal("Open Project", content, 0.4, projectPickerHScale)
 }
