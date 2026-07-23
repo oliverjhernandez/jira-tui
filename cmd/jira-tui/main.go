@@ -45,6 +45,7 @@ const (
 	summaryView
 	transitionWorklogView
 	searchView
+	projectPickerView
 )
 
 func (v viewMode) String() string {
@@ -85,6 +86,8 @@ func (v viewMode) String() string {
 		return "transitionWorklogView"
 	case searchView:
 		return "searchView"
+	case projectPickerView:
+		return "projectPickerView"
 	default:
 		return "unknown"
 	}
@@ -251,6 +254,7 @@ type model struct {
 	blockReasonData       *BlockReasonFormData
 	searchUserData        *SearchUserFormData
 	savedBoardData        *SavedBoardFormData
+	projectPickerData     *ProjectPickerFormData
 
 	// UI Elements
 	spinner       spinner.Model
@@ -322,6 +326,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.closeActiveTab()
 		case "B":
 			return m.openSavedBoardPicker()
+		case "P":
+			return m.openProjectPicker()
 		}
 	}
 
@@ -817,6 +823,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateTransitionWorklogView(msg)
 	case searchView:
 		tmpModel, viewCmd = m.updateSearchView(msg)
+	case projectPickerView:
+		tmpModel, viewCmd = m.updateProjectPickerView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -869,6 +877,8 @@ func (m model) View() tea.View {
 		content = m.renderTransitionWorklogView()
 	case searchView:
 		content = m.renderSearchView()
+	case projectPickerView:
+		content = m.renderProjectPickerView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:

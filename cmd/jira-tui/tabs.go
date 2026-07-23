@@ -19,6 +19,7 @@ const (
 	tabMyIssues tabKind = iota
 	tabEpicBoard
 	tabSavedBoard
+	tabProjectBoard
 )
 
 // boardState is the per-tab list/board state. sections and filteredSections are
