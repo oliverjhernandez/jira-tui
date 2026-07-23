@@ -145,6 +145,7 @@ type issuesSearchResponse struct {
 
 type projectsSearchResponse struct {
 	Projects []jiraProject `json:"values"`
+	IsLast   bool          `json:"isLast"`
 }
 
 type worklogsResponse struct {
@@ -560,18 +561,30 @@ func (c *Client) GetSubTasks(ctx context.Context, parentKey string) ([]Issue, er
 func (c *Client) GetProjects(ctx context.Context) ([]jiraProject, error) {
 	apiURL := "/rest/api/3/project/search"
 
-	var projects projectsSearchResponse
-	err := c.doJiraRequest(
-		ctx,
-		"GET",
-		apiURL,
-		nil,
-		nil,
-		&projects,
-		http.StatusOK,
-	)
+	// /project/search is paginated (default 50 per page); page through it so
+	// projects beyond the first page are included.
+	var all []jiraProject
+	startAt := 0
+	for page := 0; page < 100; page++ { // safety cap
+		query := url.Values{
+			"startAt":    {strconv.Itoa(startAt)},
+			"maxResults": {"50"},
+		}
 
-	return projects.Projects, err
+		var resp projectsSearchResponse
+		err := c.doJiraRequest(ctx, "GET", apiURL, query, nil, &resp, http.StatusOK)
+		if err != nil {
+			return all, err
+		}
+
+		all = append(all, resp.Projects...)
+		if resp.IsLast || len(resp.Projects) == 0 {
+			break
+		}
+		startAt += len(resp.Projects)
+	}
+
+	return all, nil
 }
 
 func (c *Client) GetIssueTypes(ctx context.Context) ([]IssueType, error) {
