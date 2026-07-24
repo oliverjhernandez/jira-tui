@@ -249,22 +249,26 @@ func TestKeyInterceptionGuards(t *testing.T) {
 		return m
 	}
 
-	// Base view, not filtering: `]` switches.
-	next, _ := twoTabs(listView, false).Update(keyPress("]"))
-	if got := next.(model).activeTab; got != 1 {
-		t.Errorf("] in base view should switch tab, activeTab = %d", got)
+	// gt is a two-key sequence (g then t).
+	gt := func(m model) model {
+		next, _ := m.Update(keyPress("g"))
+		next, _ = next.(model).Update(keyPress("t"))
+		return next.(model)
 	}
 
-	// Filtering: `]` is input, not a switch.
-	next, _ = twoTabs(listView, true).Update(keyPress("]"))
-	if got := next.(model).activeTab; got != 0 {
-		t.Errorf("] while filtering should not switch tab, activeTab = %d", got)
+	// Base view, not filtering: `gt` switches.
+	if got := gt(twoTabs(listView, false)).activeTab; got != 1 {
+		t.Errorf("gt in base view should switch tab, activeTab = %d", got)
 	}
 
-	// Modal mode: `]` ignored by tab handling.
-	next, _ = twoTabs(transitionView, false).Update(keyPress("]"))
-	if got := next.(model).activeTab; got != 0 {
-		t.Errorf("] in a modal should not switch tab, activeTab = %d", got)
+	// Filtering: `gt` is input, not a switch.
+	if got := gt(twoTabs(listView, true)).activeTab; got != 0 {
+		t.Errorf("gt while filtering should not switch tab, activeTab = %d", got)
+	}
+
+	// Modal mode: `gt` ignored by tab handling.
+	if got := gt(twoTabs(transitionView, false)).activeTab; got != 0 {
+		t.Errorf("gt in a modal should not switch tab, activeTab = %d", got)
 	}
 }
 

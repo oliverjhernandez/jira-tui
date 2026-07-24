@@ -159,13 +159,13 @@ func (m model) updateSearchView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.mode = m.previousMode
 			return m, nil
-		case "up", "[":
+		case "up", "[", "ctrl+p":
 			if m.searchCursor > -1 {
 				m.searchCursor--
 				m.refreshSearchResultsViewport()
 			}
 			return m, nil
-		case "down", "]":
+		case "down", "]", "ctrl+n":
 			if m.searchCursor < m.searchListLen()-1 {
 				m.searchCursor++
 				m.refreshSearchResultsViewport()

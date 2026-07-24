@@ -46,6 +46,7 @@ const (
 	transitionWorklogView
 	searchView
 	projectPickerView
+	helpView
 )
 
 func (v viewMode) String() string {
@@ -88,6 +89,8 @@ func (v viewMode) String() string {
 		return "searchView"
 	case projectPickerView:
 		return "projectPickerView"
+	case helpView:
+		return "helpView"
 	default:
 		return "unknown"
 	}
@@ -276,6 +279,9 @@ type model struct {
 	searchResults         []searchResult
 	searchResultsViewport viewport.Model
 	searchQuery           string
+
+	// Help
+	helpViewport viewport.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -318,21 +324,33 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Tab management keys, intercepted globally in base views (not in modals or
 	// while filtering, where these characters are legitimate input).
 	if keyMsg, ok := msg.(tea.KeyPressMsg); ok && !m.mode.isModal() && !m.filtering {
-		switch keyMsg.String() {
-		case "]":
-			return m.switchTab(+1)
-		case "[":
-			return m.switchTab(-1)
-		case "b":
-			return m.openEpicBoardTab()
-		case "x":
-			return m.closeActiveTab()
-		case "B":
-			return m.openSavedBoardPicker()
-		case "P":
-			return m.openProjectPicker()
-		case "v":
-			return m.toggleTabGrouping()
+		key := keyMsg.String()
+		if m.lastKey == "g" {
+			// g-leader tab motions (gt/gT). Other g-sequences (gg, gp) fall
+			// through to the view handlers below.
+			switch key {
+			case "t":
+				m.lastKey = ""
+				return m.switchTab(+1)
+			case "T":
+				m.lastKey = ""
+				return m.switchTab(-1)
+			}
+		} else {
+			switch key {
+			case "b":
+				return m.openEpicBoardTab()
+			case "x":
+				return m.closeActiveTab()
+			case "B":
+				return m.openSavedBoardPicker()
+			case "P":
+				return m.openProjectPicker()
+			case "v":
+				return m.toggleTabGrouping()
+			case "?":
+				return m.openHelp()
+			}
 		}
 	}
 
@@ -830,6 +848,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateSearchView(msg)
 	case projectPickerView:
 		tmpModel, viewCmd = m.updateProjectPickerView(msg)
+	case helpView:
+		tmpModel, viewCmd = m.updateHelpView(msg)
 	case priorityView:
 		tmpModel, viewCmd = m.updateEditPriorityView(msg)
 	case transitionView:
@@ -884,6 +904,8 @@ func (m model) View() tea.View {
 		content = m.renderSearchView()
 	case projectPickerView:
 		content = m.renderProjectPickerView()
+	case helpView:
+		content = m.renderHelpView()
 	case priorityView:
 		content = m.renderEditPriorityView()
 	case commentView:

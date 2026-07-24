@@ -50,6 +50,22 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.descViewport.ScrollUp(1)
 				return m, nil
 
+			case keyPressMsg.String() == "ctrl+d":
+				m.descViewport.HalfPageDown()
+				return m, nil
+
+			case keyPressMsg.String() == "ctrl+u":
+				m.descViewport.HalfPageUp()
+				return m, nil
+
+			case keyPressMsg.String() == "ctrl+f":
+				m.descViewport.PageDown()
+				return m, nil
+
+			case keyPressMsg.String() == "ctrl+b":
+				m.descViewport.PageUp()
+				return m, nil
+
 			case keyPressMsg.String() == "y" && m.lastKey == "":
 				m.lastKey = "y"
 				return m, nil
@@ -282,7 +298,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				subTask := m.activeIssue.SubTasks[m.subTasksCursor]
 				return m, m.fetchTransitionsCmd(subTask.Key, subTask.Status)
 
-			case keyPressMsg.String() == "e":
+			case keyPressMsg.String() == "E":
 				m.mode = estimateView
 				m.estimateData = NewEstimateFormData()
 				return m, m.estimateData.Form.Init()
@@ -409,8 +425,8 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = priorityView
 			return m, m.priorityData.Form.Init()
 
-		// rename (edit summary)
-		case keyPressMsg.String() == "r":
+		// edit summary (contextual edit on the metadata section)
+		case keyPressMsg.String() == "e":
 			if m.activeIssue == nil {
 				return m, nil
 			}
@@ -419,13 +435,13 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = summaryView
 			return m, m.summaryData.Form.Init()
 
-		// tab
-		case keyPressMsg.String() == "tab":
+		// next / previous section
+		case keyPressMsg.String() == "tab" || keyPressMsg.String() == "]":
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx+1)%len(detailViewSections)]
 			return m, nil
 
-		case keyPressMsg.String() == "shift+tab":
+		case keyPressMsg.String() == "shift+tab" || keyPressMsg.String() == "[":
 			currentIdx := findIndex(m.focusedSection, detailViewSections)
 			m.focusedSection = detailViewSections[(currentIdx-1+len(detailViewSections))%len(detailViewSections)]
 			return m, nil
@@ -448,7 +464,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.worklogFormData.Form.Init()
 
 		// estimate
-		case keyPressMsg.String() == "e":
+		case keyPressMsg.String() == "E":
 			var cmds []tea.Cmd
 			m.pendingIssue = m.activeIssue
 			if m.pendingIssue != nil {
