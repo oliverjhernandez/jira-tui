@@ -115,6 +115,11 @@ func rowPrefix(selected bool) string {
 	return "  "
 }
 
+// isMine reports whether the issue is assigned to the current user.
+func (m model) isMine(i jira.Issue) bool {
+	return m.myself != nil && i.Assignee != "" && i.Assignee == m.myself.Name
+}
+
 // renderIssueRow builds one data row from the column model.
 func (m model) renderIssueRow(i jira.Issue, selected, dimmed bool) string {
 	cells := make([]string, len(listColumns))
@@ -122,10 +127,14 @@ func (m model) renderIssueRow(i jira.Issue, selected, dimmed bool) string {
 		cells[ci] = ui.PadCell(col.cell(m, i, selected, dimmed), col.width(m.columnWidths))
 	}
 	line := strings.Join(cells, " ")
-	if selected {
+	switch {
+	case selected:
 		return rowPrefix(true) + ui.SelectedRowStyle.Render(line)
+	case m.isMine(i):
+		return rowPrefix(false) + ui.MineRowStyle.Render(line)
+	default:
+		return rowPrefix(false) + ui.NormalRowStyle.Render(line)
 	}
-	return rowPrefix(false) + ui.NormalRowStyle.Render(line)
 }
 
 // renderListColumnsHeader builds the pinned header: the labels aligned to the
