@@ -149,6 +149,9 @@ type Section struct {
 	CategoryKey string
 	Collapsed   bool
 	Issues      []jira.Issue
+	// Epic is set for epic-grouped sections (the epic rendered as the header);
+	// nil for status-category sections.
+	Epic *jira.Issue
 }
 
 type model struct {
@@ -527,7 +530,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		m.sections = m.classifyIssues(m.issues, m.statuses)
+		m.sections = m.sectionsFor(m.issues)
 		m.listViewport.SetContent(m.buildListContent())
 
 		m.selectedIssue = nil

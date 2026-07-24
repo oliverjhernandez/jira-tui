@@ -829,6 +829,10 @@ func (m model) calculateListLayout() listLayout {
 }
 
 func (m model) buildListContent() string {
+	if m.currentGrouping() == groupEpic {
+		return m.buildEpicListContent()
+	}
+
 	var listContent strings.Builder
 
 	sortSectionsIssues(m.sections)

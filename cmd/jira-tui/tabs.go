@@ -59,7 +59,8 @@ type Tab struct {
 	id       int
 	title    string
 	kind     tabKind
-	baseView viewMode // listView or detailView
+	grouping listGrouping // how this tab groups issues (status vs epic)
+	baseView viewMode     // listView or detailView
 	board    boardState
 	detail   detailState
 }
@@ -156,7 +157,7 @@ func (m *model) loadActiveTab() tea.Cmd {
 	m.cursor = t.board.cursor
 	m.sectionCursor = t.board.sectionCursor
 
-	m.sections = m.classifyIssues(m.issues, m.statuses)
+	m.sections = m.sectionsFor(m.issues)
 	if m.filtering && t.board.filterValue != "" {
 		m.filteredSections = filterSections(m.sections, t.board.filterValue)
 	} else {
@@ -282,6 +283,7 @@ func (m model) openBoardTab(title, jql string, kind tabKind) (tea.Model, tea.Cmd
 		id:       id,
 		title:    title,
 		kind:     kind,
+		grouping: groupingForKind(kind),
 		baseView: listView,
 		board:    boardState{jql: jql},
 	})
