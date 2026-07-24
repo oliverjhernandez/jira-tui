@@ -266,6 +266,10 @@ type model struct {
 	spinner       spinner.Model
 	statusMessage statusMessage
 	loadingCount  int
+	// spinning tracks whether the spinner tick loop is running. The spinner only
+	// animates while loadingCount > 0; when idle the loop stops so the app isn't
+	// re-rendering every frame (which flickers the view).
+	spinning bool
 
 	// Pollers
 	detailPolling bool
@@ -316,6 +320,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// whatever base view the user was on, without each modal inferring it.
 	if !nm.mode.isModal() {
 		nm.baseView = nm.mode
+	}
+	// (Re)start the spinner animation when a load begins and the tick loop isn't
+	// already running.
+	if nm.loadingCount > 0 && !nm.spinning {
+		nm.spinning = true
+		return nm, tea.Batch(cmd, nm.spinner.Tick)
 	}
 	return nm, cmd
 }
@@ -775,6 +785,13 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case spinner.TickMsg:
+		// Stop animating when nothing is loading, so the app idles instead of
+		// re-rendering every frame. The Update wrapper restarts the loop when a
+		// load begins.
+		if m.loadingCount <= 0 {
+			m.spinning = false
+			return m, nil
+		}
 		var tickCmd tea.Cmd
 		m.spinner, tickCmd = m.spinner.Update(msg)
 		return m, tickCmd
@@ -982,6 +999,7 @@ func main() {
 		windowWidth:     80,
 		windowHeight:    24,
 		spinner:         spinner,
+		spinning:        true, // Init starts the tick loop
 		worklogTotals:   make(map[string]int),
 		columnWidths:    ui.CalculateColumnWidths(80),
 		loadingCount:    6, // Init cmds
