@@ -398,6 +398,36 @@ func (m model) navSections() []Section {
 	return m.sections
 }
 
+// selectIssueByKey points the cursor at the issue with the given key, falling
+// back to the first issue when the key is empty or missing. Used to keep the
+// selection stable across list rebuilds (e.g. background refreshes) instead of
+// snapping back to the top.
+func (m *model) selectIssueByKey(key string) {
+	m.selectedIssue = nil
+	if key != "" {
+		for si := range m.sections {
+			for ii := range m.sections[si].Issues {
+				if m.sections[si].Issues[ii].Key == key {
+					m.sectionCursor = si
+					m.cursor = ii
+					m.selectedIssue = &m.sections[si].Issues[ii]
+					return
+				}
+			}
+		}
+	}
+	for si := range m.sections {
+		if len(m.sections[si].Issues) > 0 {
+			m.sectionCursor = si
+			m.cursor = 0
+			m.selectedIssue = &m.sections[si].Issues[0]
+			return
+		}
+	}
+	m.sectionCursor = 0
+	m.cursor = 0
+}
+
 // listCursorStepDown moves the cursor to the next issue (crossing sections).
 // Returns false if already at the last issue.
 func (m *model) listCursorStepDown() bool {

@@ -560,17 +560,19 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		prevKey := ""
+		if m.selectedIssue != nil {
+			prevKey = m.selectedIssue.Key
+		}
+
 		m.sections = m.sectionsFor(m.issues)
+		m.selectIssueByKey(prevKey) // keep the selection across refreshes
 		m.listViewport.SetContent(m.buildListContent())
 
-		m.selectedIssue = nil
-		for si := range m.sections {
-			if len(m.sections[si].Issues) > 0 {
-				m.sectionCursor = si
-				m.cursor = 0
-				m.selectedIssue = &m.sections[si].Issues[0]
-				break
-			}
+		// Keep the (restored) cursor visible.
+		cursorLine := m.getAbsoluteCursorLine()
+		if h := m.listViewport.Height(); h > 0 && cursorLine >= h {
+			m.listViewport.SetYOffset(cursorLine - h + 1)
 		}
 
 		return m, nil
