@@ -218,6 +218,22 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
+		case "ctrl+d":
+			m.pageList(m.listViewport.Height() / 2)
+			return m, nil
+
+		case "ctrl+u":
+			m.pageList(-m.listViewport.Height() / 2)
+			return m, nil
+
+		case "ctrl+f":
+			m.pageList(m.listViewport.Height())
+			return m, nil
+
+		case "ctrl+b":
+			m.pageList(-m.listViewport.Height())
+			return m, nil
+
 		case "G":
 			for s := len(m.sections) - 1; s >= 0; s-- {
 				if len(m.sections[s].Issues) > 0 {
@@ -372,4 +388,85 @@ func (m model) renderListView() string {
 	body := m.renderListColumnsHeader() + "\n" + m.listViewport.View()
 
 	return m.renderTabBar() + "\n" + infoPanel + "\n" + ui.PanelActiveStyle.Render(body) + "\n" + statusBar
+}
+
+// navSections returns the sections the cursor navigates (filtered when active).
+func (m model) navSections() []Section {
+	if m.filteredSections != nil {
+		return m.filteredSections
+	}
+	return m.sections
+}
+
+// listCursorStepDown moves the cursor to the next issue (crossing sections).
+// Returns false if already at the last issue.
+func (m *model) listCursorStepDown() bool {
+	secs := m.navSections()
+	if m.sectionCursor < 0 || m.sectionCursor >= len(secs) {
+		return false
+	}
+	if m.cursor < len(secs[m.sectionCursor].Issues)-1 {
+		m.cursor++
+		m.selectedIssue = &secs[m.sectionCursor].Issues[m.cursor]
+		return true
+	}
+	for ns := m.sectionCursor + 1; ns < len(secs); ns++ {
+		if len(secs[ns].Issues) > 0 {
+			m.sectionCursor = ns
+			m.cursor = 0
+			m.selectedIssue = &secs[ns].Issues[0]
+			return true
+		}
+	}
+	return false
+}
+
+// listCursorStepUp moves the cursor to the previous issue (crossing sections).
+func (m *model) listCursorStepUp() bool {
+	secs := m.navSections()
+	if m.sectionCursor < 0 || m.sectionCursor >= len(secs) {
+		return false
+	}
+	if m.cursor > 0 && len(secs[m.sectionCursor].Issues) > 0 {
+		m.cursor--
+		m.selectedIssue = &secs[m.sectionCursor].Issues[m.cursor]
+		return true
+	}
+	for ps := m.sectionCursor - 1; ps >= 0; ps-- {
+		if len(secs[ps].Issues) > 0 {
+			m.sectionCursor = ps
+			m.cursor = len(secs[ps].Issues) - 1
+			m.selectedIssue = &secs[ps].Issues[m.cursor]
+			return true
+		}
+	}
+	return false
+}
+
+// pageList moves the cursor by delta issues (negative = up) and keeps it in view.
+func (m *model) pageList(delta int) {
+	if delta > 0 {
+		for i := 0; i < delta; i++ {
+			if !m.listCursorStepDown() {
+				break
+			}
+		}
+	} else {
+		for i := 0; i < -delta; i++ {
+			if !m.listCursorStepUp() {
+				break
+			}
+		}
+	}
+
+	m.listViewport.SetContent(m.buildListContent())
+	cursorLine := m.getAbsoluteCursorLine()
+	h := m.listViewport.Height()
+	off := m.listViewport.YOffset()
+	if cursorLine >= off+h {
+		m.listViewport.SetYOffset(cursorLine - h + 1)
+	}
+	if cursorLine < off {
+		m.listViewport.SetYOffset(cursorLine)
+	}
 }
