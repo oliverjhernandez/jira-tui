@@ -213,14 +213,25 @@ func (m model) getCommentCursorLine() int {
 	return lines
 }
 
+// compareIssues orders issues within a list: finished (Done/Cancelada) always
+// sink to the bottom, then highest priority first, then by status.
+func compareIssues(a, b jira.Issue) int {
+	aClosed, bClosed := closureStatuses[a.Status], closureStatuses[b.Status]
+	if aClosed != bClosed {
+		if aClosed {
+			return 1 // a is finished -> after b
+		}
+		return -1
+	}
+	if pa, pb := priorityOrder[a.Priority.Name], priorityOrder[b.Priority.Name]; pa != pb {
+		return pa - pb // lower rank value = higher priority, comes first
+	}
+	return statusOrder[a.Status] - statusOrder[b.Status]
+}
+
 func sortSectionsIssues(sections []Section) {
 	for si := range sections {
-		slices.SortFunc(sections[si].Issues, func(a, b jira.Issue) int {
-			if statusOrder[a.Status] != statusOrder[b.Status] {
-				return statusOrder[a.Status] - statusOrder[b.Status]
-			}
-			return priorityOrder[a.Priority.Name] - priorityOrder[b.Priority.Name]
-		})
+		slices.SortFunc(sections[si].Issues, compareIssues)
 	}
 }
 

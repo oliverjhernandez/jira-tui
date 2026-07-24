@@ -143,6 +143,9 @@ func (m model) buildEpicListContent() string {
 	if m.filteredSections != nil {
 		sectionsToRender = m.filteredSections
 	}
+	// Sort each epic's tasks: finished at the bottom, then by priority, then
+	// status (epic order itself stays in Jira rank order).
+	sortSectionsIssues(sectionsToRender)
 
 	for si, s := range sectionsToRender {
 		if s.Epic != nil {
