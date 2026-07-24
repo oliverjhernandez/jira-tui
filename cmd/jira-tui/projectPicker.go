@@ -11,7 +11,7 @@ import (
 
 // projectBoardJQL lists a project's top-level epics and tasks.
 func projectBoardJQL(key string) string {
-	return fmt.Sprintf(`project = %q AND issuetype in (Epic, Task) ORDER BY status DESC`, key)
+	return fmt.Sprintf(`project = %q AND issuetype in (Epic, Task) ORDER BY Rank ASC`, key)
 }
 
 type ProjectPickerFormData struct {
