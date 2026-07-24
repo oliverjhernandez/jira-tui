@@ -331,6 +331,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.openSavedBoardPicker()
 		case "P":
 			return m.openProjectPicker()
+		case "v":
+			return m.toggleTabGrouping()
 		}
 	}
 

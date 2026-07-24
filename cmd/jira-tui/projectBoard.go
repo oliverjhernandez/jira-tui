@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -39,6 +40,49 @@ func (m *model) sectionsFor(issues []jira.Issue) []Section {
 		return groupByEpic(issues)
 	}
 	return m.classifyIssues(issues, m.statuses)
+}
+
+// toggleTabGrouping switches the active tab between status- and epic-grouped
+// views and rebuilds the list. Persisted on the tab, so it sticks across tab
+// switches.
+func (m model) toggleTabGrouping() (tea.Model, tea.Cmd) {
+	if m.activeTab < 0 || m.activeTab >= len(m.tabs) {
+		return m, nil
+	}
+
+	if m.tabs[m.activeTab].grouping == groupEpic {
+		m.tabs[m.activeTab].grouping = groupStatus
+		m.setInfo("View: status")
+	} else {
+		m.tabs[m.activeTab].grouping = groupEpic
+		m.setInfo("View: epics")
+	}
+
+	m.sections = m.sectionsFor(m.issues)
+	if m.filtering && m.textInput.Value() != "" {
+		m.filteredSections = filterSections(m.sections, m.textInput.Value())
+	} else {
+		m.filteredSections = nil
+	}
+
+	// Reset the cursor to the first issue of the rebuilt list.
+	m.sectionCursor = 0
+	m.cursor = 0
+	m.selectedIssue = nil
+	sections := m.sections
+	if m.filteredSections != nil {
+		sections = m.filteredSections
+	}
+	for si := range sections {
+		if len(sections[si].Issues) > 0 {
+			m.sectionCursor = si
+			m.selectedIssue = &sections[si].Issues[0]
+			break
+		}
+	}
+
+	m.listViewport.SetContent(m.buildListContent())
+	return m, m.clearStatusAfter(clearMsgTimeout)
 }
 
 func isEpic(i jira.Issue) bool {
