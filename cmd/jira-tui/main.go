@@ -899,7 +899,7 @@ func (m model) View() tea.View {
 	var content string
 
 	if m.err != nil {
-		return tea.NewView(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
+		return altScreenView(fmt.Sprintf("Error: %v\n\nPress 'q' to quit.\n", m.err))
 	}
 
 	switch m.mode {
@@ -947,7 +947,17 @@ func (m model) View() tea.View {
 		content = "Unknown view\n"
 	}
 
-	return tea.NewView(content)
+	return altScreenView(content)
+}
+
+// altScreenView renders content on the alternate screen buffer (full-window
+// mode). This keeps a stable full-screen frame and hides the terminal cursor;
+// rendering inline instead leaves the cursor visible and blinking (a flicker
+// especially noticeable under tmux) over the view.
+func altScreenView(content string) tea.View {
+	v := tea.NewView(content)
+	v.AltScreen = true
+	return v
 }
 
 // Build metadata, overridden via -ldflags at release time (see .goreleaser.yaml).
