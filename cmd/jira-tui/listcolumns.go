@@ -63,6 +63,9 @@ var listColumns = []listColumn{
 			if a != "" && a != "Unassigned" {
 				a = "@" + a
 			}
+			if m.isMine(i) {
+				return m.columnWidths.RenderAssigneeMine(a)
+			}
 			return m.columnWidths.RenderAssignee(a)
 		},
 	},
@@ -127,14 +130,10 @@ func (m model) renderIssueRow(i jira.Issue, selected, dimmed bool) string {
 		cells[ci] = ui.PadCell(col.cell(m, i, selected, dimmed), col.width(m.columnWidths))
 	}
 	line := strings.Join(cells, " ")
-	switch {
-	case selected:
+	if selected {
 		return rowPrefix(true) + ui.SelectedRowStyle.Render(line)
-	case m.isMine(i):
-		return rowPrefix(false) + ui.MineRowStyle.Render(line)
-	default:
-		return rowPrefix(false) + ui.NormalRowStyle.Render(line)
 	}
+	return rowPrefix(false) + ui.NormalRowStyle.Render(line)
 }
 
 // renderListColumnsHeader builds the pinned header: the labels aligned to the

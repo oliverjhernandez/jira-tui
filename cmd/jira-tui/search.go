@@ -279,13 +279,10 @@ func (m model) buildSearchResultsContent(width int) (string, int) {
 		summary := ui.PadCell(is.Summary, summaryW)
 		row := typeIcon + " " + key + " " + status + " " + summary
 
-		switch {
-		case i == m.searchCursor:
+		if i == m.searchCursor {
 			cursorLine = line
 			b.WriteString(ui.IconCursor + ui.SelectedRowStyle.Render(row) + "\n")
-		case m.isMine(is):
-			b.WriteString("  " + ui.MineRowStyle.Render(row) + "\n")
-		default:
+		} else {
 			b.WriteString("  " + ui.NormalRowStyle.Render(row) + "\n")
 		}
 		line++
