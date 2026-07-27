@@ -45,7 +45,8 @@ type Issue struct {
 	Summary          string
 	Status           string
 	Type             string
-	Assignee         string
+	Assignee         string // display name
+	AssigneeID       string // account id (stable identifier)
 	Reporter         Reporter
 	Priority         Priority
 	Parent           *Parent
@@ -487,20 +488,21 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 
 		page++
 		for _, issue := range searchResp.Issues {
-			var assignee string
-			if issue.Fields.Assignee == nil {
-				assignee = "Unassigned"
-			} else {
+			assignee := "Unassigned"
+			assigneeID := ""
+			if issue.Fields.Assignee != nil {
 				assignee = issue.Fields.Assignee.DisplayName
+				assigneeID = issue.Fields.Assignee.ID
 			}
 			i := Issue{
-				ID:       issue.ID,
-				Key:      issue.Key,
-				Summary:  issue.Fields.Summary,
-				Status:   issue.Fields.Status.Name,
-				Type:     issue.Fields.Type.Name,
-				Assignee: assignee,
-				Project:  issue.Fields.Project,
+				ID:         issue.ID,
+				Key:        issue.Key,
+				Summary:    issue.Fields.Summary,
+				Status:     issue.Fields.Status.Name,
+				Type:       issue.Fields.Type.Name,
+				Assignee:   assignee,
+				AssigneeID: assigneeID,
+				Project:    issue.Fields.Project,
 			}
 			if issue.Fields.Priority != nil {
 				i.Priority = Priority{
@@ -640,6 +642,7 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, e
 
 	if issue.Fields.Assignee != nil {
 		detail.Assignee = issue.Fields.Assignee.DisplayName
+		detail.AssigneeID = issue.Fields.Assignee.ID
 	} else {
 		detail.Assignee = "Unassigned"
 	}

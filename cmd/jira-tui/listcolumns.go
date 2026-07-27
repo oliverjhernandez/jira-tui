@@ -118,9 +118,10 @@ func rowPrefix(selected bool) string {
 	return "  "
 }
 
-// isMine reports whether the issue is assigned to the current user.
+// isMine reports whether the issue is assigned to the current user, matched by
+// account id (a stable identifier) rather than display name.
 func (m model) isMine(i jira.Issue) bool {
-	return m.myself != nil && i.Assignee != "" && i.Assignee == m.myself.Name
+	return m.myself != nil && i.AssigneeID != "" && i.AssigneeID == m.myself.ID
 }
 
 // renderIssueRow builds one data row from the column model.
