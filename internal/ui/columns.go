@@ -102,6 +102,11 @@ func (c ColumnWidths) RenderAssignee(text string) string {
 	return AssigneeFieldStyle.Width(c.Assignee).Render(TruncateLongString(text, c.Assignee))
 }
 
+// RenderAssigneeMine renders the assignee cell highlighted (current user).
+func (c ColumnWidths) RenderAssigneeMine(text string) string {
+	return AssigneeMineStyle.Width(c.Assignee).Render(TruncateLongString(text, c.Assignee))
+}
+
 func (c ColumnWidths) RenderTimeSpent(text string) string {
 	return TimeSpentFieldStyle.Width(c.TimeSpent).Render(text)
 }

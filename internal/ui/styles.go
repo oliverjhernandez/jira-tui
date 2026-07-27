@@ -173,12 +173,11 @@ var (
 	NormalRowStyle = lipgloss.NewStyle().
 			Foreground(ThemeFg)
 
-	// MineRowStyle tints rows assigned to the current user so they stand out in
-	// any list. A subtle blue background is used because it shows through the
-	// per-cell colors — a plain foreground accent would be overridden by each
-	// column's own foreground.
-	MineRowStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("#2b3b52"))
+	// AssigneeMineStyle colors the assignee cell when the current user is the
+	// assignee, so your issues stand out at a glance.
+	AssigneeMineStyle = lipgloss.NewStyle().
+				Foreground(CatGreen).
+				Bold(true)
 
 	CursorStyle = lipgloss.NewStyle().
 			Foreground(ThemeAccent).
