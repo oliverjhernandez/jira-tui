@@ -272,6 +272,93 @@ func TestKeyInterceptionGuards(t *testing.T) {
 	}
 }
 
+func TestLeaderKeyExpiresOnNextKey(t *testing.T) {
+	tests := []struct {
+		name   string
+		second string
+	}{
+		{"unhandled key drops the leader", "w"},
+		{"navigation drops the leader", "j"},
+		{"global key drops the leader", "P"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := newTabModel([]Tab{
+				{id: 0, baseView: listView, board: boardState{jql: "a"}},
+				{id: 1, baseView: listView, board: boardState{jql: "b"}},
+			}, 0)
+
+			next, _ := m.Update(keyPress("g"))
+			m = next.(model)
+			if m.lastKey != "g" {
+				t.Fatalf("g should arm the leader, lastKey = %q", m.lastKey)
+			}
+
+			next, _ = m.Update(keyPress(tt.second))
+			m = next.(model)
+			if m.lastKey != "" {
+				t.Fatalf("leader survived %q, lastKey = %q", tt.second, m.lastKey)
+			}
+
+			m.mode = listView
+			next, _ = m.Update(keyPress("g"))
+			next, _ = next.(model).Update(keyPress("t"))
+			m = next.(model)
+			if m.activeTab != 1 {
+				t.Errorf("gt after a dropped leader: activeTab = %d, mode = %v, want tab 1", m.activeTab, m.mode)
+			}
+		})
+	}
+}
+
+func TestLeaderKeySequencesStillComplete(t *testing.T) {
+	t.Parallel()
+	m := newTabModel([]Tab{
+		{id: 0, baseView: listView, board: boardState{jql: "a"}},
+		{id: 1, baseView: listView, board: boardState{jql: "b"}},
+	}, 0)
+	m.issues = []jira.Issue{{Key: "A-1", Status: "In Progress", Project: jira.Project{ID: "P"}}}
+	m.loadActiveTab()
+	m.cursor = 0
+
+	next, _ := m.Update(keyPress("g"))
+	next, _ = next.(model).Update(keyPress("g"))
+	m = next.(model)
+	if m.lastKey != "" {
+		t.Errorf("gg should consume the leader, lastKey = %q", m.lastKey)
+	}
+	if m.mode != listView {
+		t.Errorf("gg changed mode to %v", m.mode)
+	}
+}
+
+func TestLeaderKeyTimeout(t *testing.T) {
+	t.Parallel()
+	m := newTabModel([]Tab{
+		{id: 0, baseView: listView, board: boardState{jql: "a"}},
+		{id: 1, baseView: listView, board: boardState{jql: "b"}},
+	}, 0)
+
+	next, _ := m.Update(keyPress("g"))
+	m = next.(model)
+	staleSeq := m.keySeq
+
+	next, _ = m.Update(keyTimeoutMsg{seq: staleSeq})
+	m = next.(model)
+	if m.lastKey != "" {
+		t.Errorf("timeout should expire the armed leader, lastKey = %q", m.lastKey)
+	}
+
+	next, _ = m.Update(keyPress("g"))
+	m = next.(model)
+	next, _ = m.Update(keyTimeoutMsg{seq: staleSeq})
+	m = next.(model)
+	if m.lastKey != "g" {
+		t.Errorf("stale timeout cleared a newer leader, lastKey = %q", m.lastKey)
+	}
+}
+
 func TestRenderTabBarNoPanic(t *testing.T) {
 	for _, n := range []int{1, 3, 12} {
 		tabs := make([]Tab, n)
