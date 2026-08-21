@@ -360,6 +360,13 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.toggleTabGrouping()
 			case "?":
 				return m.openHelp()
+			case "]", "[":
+				if m.mode == listView {
+					if key == "]" {
+						return m.switchTab(+1)
+					}
+					return m.switchTab(-1)
+				}
 			}
 		}
 	}
