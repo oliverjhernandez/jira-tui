@@ -11,6 +11,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
@@ -259,10 +260,14 @@ func findIndex(section focusedSection, order []focusedSection) int {
 }
 
 func yankToClipboard(text string) {
-	err := clipboard.WriteAll(text)
+	err := clipboard.WriteAll(plainClipboardText(text))
 	if err != nil {
 		slog.Error("copying to clipboard", "err", err)
 	}
+}
+
+func plainClipboardText(s string) string {
+	return ansi.Strip(s)
 }
 
 func formatSecondsToString(seconds int) string {
