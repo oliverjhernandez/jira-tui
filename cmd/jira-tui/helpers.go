@@ -249,6 +249,15 @@ func sortIssuesByStatus(issues []jira.Issue) {
 	})
 }
 
+func (m *model) setPendingIssue(i *jira.Issue) {
+	if i == nil {
+		m.pendingIssue = nil
+		return
+	}
+	snapshot := *i
+	m.pendingIssue = &snapshot
+}
+
 func findIndex(section focusedSection, order []focusedSection) int {
 	for i, s := range order {
 		if s == section {

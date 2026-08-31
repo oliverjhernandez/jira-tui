@@ -260,7 +260,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// transition
 		case "t":
 			var cmds []tea.Cmd
-			m.pendingIssue = m.selectedIssue
+			m.setPendingIssue(m.selectedIssue)
 			m.previousMode = m.mode
 			m.mode = transitionView
 			m.transitionCursor = 0
@@ -290,7 +290,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// assign
 		case "a":
 			var cmds []tea.Cmd
-			m.pendingIssue = m.selectedIssue
+			m.setPendingIssue(m.selectedIssue)
 			m.previousMode = m.mode
 			m.mode = userSearchView
 			m.userSelectionMode = assignUser
@@ -303,7 +303,10 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// priorities
 		case "p":
-			m.pendingIssue = m.selectedIssue
+			if m.selectedIssue == nil {
+				return m, nil
+			}
+			m.setPendingIssue(m.selectedIssue)
 			m.previousMode = m.mode
 			m.mode = priorityView
 			m.priorityData = NewPriorityFormData(m.priorities, m.pendingIssue.Priority.Name)
