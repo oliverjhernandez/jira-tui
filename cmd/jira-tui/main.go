@@ -238,6 +238,7 @@ type model struct {
 	textArea  textarea.Model
 	filtering bool
 	lastKey   string
+	keySeq    int
 
 	// Editing State
 	editingDescription bool
@@ -314,8 +315,22 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	leader := ""
+	if _, ok := msg.(tea.KeyPressMsg); ok {
+		leader = m.lastKey
+	}
+
 	next, cmd := m.update(msg)
 	nm := next.(model)
+
+	if leader != "" && nm.lastKey == leader {
+		nm.lastKey = ""
+	}
+	if leader == "" && nm.lastKey != "" {
+		nm.keySeq++
+		cmd = tea.Batch(cmd, keyTimeoutCmd(nm.keySeq))
+	}
+
 	// Record the last full-screen view so modal overlays always composite over
 	// whatever base view the user was on, without each modal inferring it.
 	if !nm.mode.isModal() {
@@ -826,7 +841,9 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case keyTimeoutMsg:
-		m.lastKey = ""
+		if msg.seq == m.keySeq {
+			m.lastKey = ""
+		}
 		return m, nil
 
 	case clearStatusMsg:

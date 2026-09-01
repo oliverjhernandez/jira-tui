@@ -117,7 +117,9 @@ type workLogDeletedMsg struct{}
 
 type estimatePostedMsg struct{}
 
-type keyTimeoutMsg struct{}
+type keyTimeoutMsg struct {
+	seq int
+}
 
 type clearStatusMsg struct{}
 
@@ -1284,4 +1286,12 @@ func (m model) clearStatusAfter(d time.Duration) tea.Cmd {
 		time.Sleep(d)
 		return clearStatusMsg{}
 	}
+}
+
+const keySequenceTimeout = 1500 * time.Millisecond
+
+func keyTimeoutCmd(seq int) tea.Cmd {
+	return tea.Tick(keySequenceTimeout, func(time.Time) tea.Msg {
+		return keyTimeoutMsg{seq: seq}
+	})
 }
