@@ -279,7 +279,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.subTasksCursor < 0 || m.subTasksCursor >= len(m.activeIssue.SubTasks) {
 					return m, nil
 				}
-				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+				m.setPendingIssue(&m.activeIssue.SubTasks[m.subTasksCursor])
 
 				if m.activeIssue.SubTasks[m.subTasksCursor].Description == nil {
 					m.setErrorMsg("Cannot transition, missing description")
@@ -308,9 +308,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				var cmds []tea.Cmd
-				m.pendingIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+				m.setPendingIssue(&m.activeIssue.SubTasks[m.subTasksCursor])
 				m.previousMode = m.mode
 				m.mode = userSearchView
+				m.userSelectionMode = assignUser
 
 				if m.usersCache != nil {
 					m.loadingCount++
@@ -378,7 +379,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.previousMode = m.mode
 			m.mode = transitionView
 			m.transitionCursor = 0
-			m.pendingIssue = m.activeIssue
+			m.setPendingIssue(m.activeIssue)
 
 			if m.activeIssue != nil {
 				if m.activeIssue.Description == nil {
@@ -407,6 +408,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// assign
 		case keyPressMsg.String() == "a":
 			var cmds []tea.Cmd
+			m.setPendingIssue(m.activeIssue)
 			m.previousMode = m.mode
 			m.mode = userSearchView
 			m.userSelectionMode = assignUser
@@ -449,7 +451,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// link
 		case keyPressMsg.String() == "l":
 			m.issueLinkData = NewIssueLinkForm(40)
-			m.pendingIssue = m.activeIssue
+			m.setPendingIssue(m.activeIssue)
 			m.mode = issueLinkView
 			return m, m.issueLinkData.Form.Init()
 
@@ -466,7 +468,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// estimate
 		case keyPressMsg.String() == "E":
 			var cmds []tea.Cmd
-			m.pendingIssue = m.activeIssue
+			m.setPendingIssue(m.activeIssue)
 			if m.pendingIssue != nil {
 				m.mode = estimateView
 				m.estimateData = NewEstimateFormData()

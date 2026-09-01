@@ -78,12 +78,15 @@ func (m model) updateSearchUserView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			cmds = append(cmds, m.postAssigneeCmd(m.pendingIssue.Key, user.ID))
-			if m.focusedSection == metadataSection {
-				m.loadingCount++
-				cmds = append(cmds, m.fetchIssueDetailCmd(m.pendingIssue.Key))
-			} else if m.focusedSection == subTasksSection {
-				m.loadingCount++
-				cmds = append(cmds, m.fetchSubTasksCmd(m.pendingIssue.Key))
+			if m.previousMode == detailView {
+				switch m.focusedSection {
+				case subTasksSection:
+					m.loadingCount++
+					cmds = append(cmds, m.fetchSubTasksCmd(m.pendingIssue.Key))
+				default:
+					m.loadingCount++
+					cmds = append(cmds, m.fetchIssueDetailCmd(m.pendingIssue.Key))
+				}
 			}
 			m.loadingCount++
 			cmds = append(cmds, m.fetchMyIssuesCmd())
