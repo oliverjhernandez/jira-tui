@@ -359,6 +359,71 @@ func TestLeaderKeyTimeout(t *testing.T) {
 	}
 }
 
+func TestBracketTabCycle(t *testing.T) {
+	threeTabs := func() model {
+		return newTabModel([]Tab{
+			{id: 0, baseView: listView, board: boardState{jql: "a"}},
+			{id: 1, baseView: listView, board: boardState{jql: "b"}},
+			{id: 2, baseView: listView, board: boardState{jql: "c"}},
+		}, 0)
+	}
+
+	tests := []struct {
+		name string
+		keys []string
+		want int
+	}{
+		{"] advances", []string{"]"}, 1},
+		{"] wraps at the end", []string{"]", "]", "]"}, 0},
+		{"[ wraps backwards", []string{"["}, 2},
+		{"] then [ returns", []string{"]", "["}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := threeTabs()
+			for _, k := range tt.keys {
+				next, _ := m.Update(keyPress(k))
+				m = next.(model)
+			}
+			if m.activeTab != tt.want {
+				t.Errorf("after %v activeTab = %d, want %d", tt.keys, m.activeTab, tt.want)
+			}
+		})
+	}
+}
+
+func TestBracketGuards(t *testing.T) {
+	t.Parallel()
+
+	m := newTabModel([]Tab{
+		{id: 0, baseView: detailView, board: boardState{jql: "a"}},
+		{id: 1, baseView: listView, board: boardState{jql: "b"}},
+	}, 0)
+	m.mode = detailView
+	m.activeIssue = &jira.Issue{Key: "A-1"}
+	m.focusedSection = metadataSection
+
+	next, _ := m.Update(keyPress("]"))
+	dm := next.(model)
+	if dm.activeTab != 0 {
+		t.Errorf("] in the detail view switched tabs (activeTab = %d)", dm.activeTab)
+	}
+	if dm.focusedSection != descriptionSection {
+		t.Errorf("] in the detail view should advance the section, got %v", dm.focusedSection)
+	}
+
+	f := newTabModel([]Tab{
+		{id: 0, baseView: listView, board: boardState{jql: "a"}},
+		{id: 1, baseView: listView, board: boardState{jql: "b"}},
+	}, 0)
+	f.filtering = true
+	next, _ = f.Update(keyPress("]"))
+	if got := next.(model).activeTab; got != 0 {
+		t.Errorf("] while filtering switched tabs (activeTab = %d)", got)
+	}
+}
+
 func TestRenderTabBarNoPanic(t *testing.T) {
 	for _, n := range []int{1, 3, 12} {
 		tabs := make([]Tab, n)

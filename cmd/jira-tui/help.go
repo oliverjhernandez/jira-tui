@@ -32,6 +32,7 @@ type helpGroup struct {
 var helpGroups = []helpGroup{
 	{"Global / Tabs", []helpBind{
 		{"gt / gT", "Next / previous tab"},
+		{"] / [", "Next / previous tab (list view)"},
 		{"x", "Close current tab"},
 		{"b", "Open epic board"},
 		{"B", "Open saved-board picker"},
@@ -60,7 +61,7 @@ var helpGroups = []helpGroup{
 	}},
 	{"Detail", []helpBind{
 		{"tab / shift+tab", "Next / previous section"},
-		{"[ / ]", "Previous / next section"},
+		{"[ / ]", "Previous / next section (not tabs, here)"},
 		{"e", "Edit summary / description / comment / worklog"},
 		{"E", "Set estimate"},
 		{"t", "Transition"},
