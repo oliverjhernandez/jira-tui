@@ -1,10 +1,12 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func TestFilterIssues(t *testing.T) {
@@ -156,5 +158,63 @@ func TestParseTimeToSeconds(t *testing.T) {
 				t.Errorf("parseTimeToSeconds(%q) = %d, expected %d", tt.time, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestPlainClipboardText(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		markdown string
+		want     []string
+	}{
+		{
+			name:     "heading and paragraph",
+			markdown: "# Release notes\n\nShipped the **new** board.\n",
+			want:     []string{"# Release notes", "Shipped the new board."},
+		},
+		{
+			name:     "bullet list keeps its items",
+			markdown: "- **first** item\n- second item\n",
+			want:     []string{"first item", "second item"},
+		},
+		{
+			name:     "code block keeps its contents",
+			markdown: "```\ngo test ./...\n```\n",
+			want:     []string{"go test ./..."},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			styled := jira.ExtractText(jira.MarkdownToADF(tt.markdown), 80)
+			if !strings.Contains(styled, "\x1b") {
+				t.Fatalf("renderer emitted no escape codes, test proves nothing:\n%q", styled)
+			}
+
+			got := plainClipboardText(styled)
+			if strings.Contains(got, "\x1b") {
+				t.Errorf("clipboard text still contains escape codes:\n%q", got)
+			}
+			for _, w := range tt.want {
+				if !strings.Contains(got, w) {
+					t.Errorf("clipboard text lost %q:\n%q", w, got)
+				}
+			}
+		})
+	}
+}
+
+func TestPlainClipboardTextStripsHyperlinks(t *testing.T) {
+	t.Parallel()
+
+	linked := ui.Osc8("https://example.com/x", ui.LinkStyle.Render("https://example.com/x"))
+	got := plainClipboardText(linked)
+
+	if got != "https://example.com/x" {
+		t.Errorf("hyperlink yanked as %q, want the bare URL", got)
 	}
 }
