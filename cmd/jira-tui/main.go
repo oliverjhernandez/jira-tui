@@ -486,24 +486,27 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if msg.detail == nil {
+			m.setErrorMsg("Issue detail came back empty")
+			return m, m.clearStatusAfter(clearMsgTimeout)
+		}
+
 		var cmds []tea.Cmd
 		m.activeIssue = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
 		m.previousMode = m.mode
 		m.mode = detailView
 
-		if m.activeIssue != nil {
-			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
-			descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
-			m.descViewport.SetHeight(m.detailLayout.descHeight)
-			m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
-			m.descViewport.SetContent(descContent)
+		m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
+		descContent := m.buildDescriptionContent(m.detailLayout.leftColumnWidth)
+		m.descViewport.SetHeight(m.detailLayout.descHeight)
+		m.descViewport.SetWidth(m.detailLayout.leftColumnWidth)
+		m.descViewport.SetContent(descContent)
 
-			commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
-			m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
-			m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
-			m.commentsViewport.SetContent(commentsContent)
-		}
+		commentsContent := m.buildCommentsContent(m.detailLayout.leftColumnWidth)
+		m.commentsViewport.SetHeight(m.detailLayout.commentsHeight)
+		m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
+		m.commentsViewport.SetContent(commentsContent)
 
 		issueLinksContent := m.buildIssueLinksContent(m.detailLayout.rightColumnWidth - ui.PanelOverheadWidth)
 		m.issueLinksViewport.SetWidth(m.detailLayout.rightColumnWidth)
@@ -604,14 +607,12 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Issue transitioned")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		switch m.focusedSection {
-		case metadataSection:
-			m.loadingCount++
-			cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
-		case subTasksSection:
+		if m.baseView == detailView && m.activeIssue != nil && m.focusedSection == subTasksSection {
+			m.mode = detailView
 			m.loadingCount++
 			cmds = append(cmds, m.fetchSubTasksCmd(m.activeIssue.Key))
+		} else {
+			cmds = append(cmds, m.afterIssueAction()...)
 		}
 
 		return m, tea.Batch(cmds...)
@@ -643,9 +644,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Issue linked successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case updatedDescriptionMsg:
@@ -653,9 +652,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 		m.setSuccess("Description edited successfully")
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case updatedSummaryMsg:
@@ -663,9 +660,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 		m.setSuccess("Summary edited successfully")
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case priorityPostedMsg:
@@ -673,9 +668,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Priority posted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case commentPostedMsg:
@@ -683,9 +676,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Comment posted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case commentUpdatedMsg:
@@ -693,9 +684,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Comment edited successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case commentDeletedMsg:
@@ -703,9 +692,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Comment deleted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case workLogPostedMsg:
@@ -713,11 +700,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Worklog posted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
-		m.loadingCount++
-		cmds = append(cmds, m.fetchWorkLogsCmd(m.activeIssue.ID))
+		cmds = append(cmds, m.afterWorklogAction()...)
 		return m, tea.Batch(cmds...)
 
 	case workLogUpdatedMsg:
@@ -725,11 +708,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Worklog edited successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
-		m.loadingCount++
-		cmds = append(cmds, m.fetchWorkLogsCmd(m.activeIssue.ID))
+		cmds = append(cmds, m.afterWorklogAction()...)
 		return m, tea.Batch(cmds...)
 
 	case workLogDeletedMsg:
@@ -737,11 +716,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSuccess("Worklog deleted successfully")
 		var cmds []tea.Cmd
 		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
-		m.loadingCount++
-		cmds = append(cmds, m.fetchWorkLogsCmd(m.activeIssue.ID))
+		cmds = append(cmds, m.afterWorklogAction()...)
 		return m, tea.Batch(cmds...)
 
 	case estimatePostedMsg:
@@ -753,9 +728,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingTransition != nil {
 			return m.routeTransition(*m.pendingTransition)
 		}
-		m.mode = detailView
-		m.loadingCount++
-		cmds = append(cmds, m.fetchIssueDetailCmd(m.activeIssue.Key))
+		cmds = append(cmds, m.afterIssueAction()...)
 		return m, tea.Batch(cmds...)
 
 	case usersLoadedMsg:

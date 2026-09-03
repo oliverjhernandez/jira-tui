@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
@@ -248,6 +249,25 @@ func sortIssuesByStatus(issues []jira.Issue) {
 	slices.SortFunc(issues, func(a, b jira.Issue) int {
 		return statusOrder[a.Status] - statusOrder[b.Status]
 	})
+}
+
+func (m *model) afterIssueAction() []tea.Cmd {
+	m.mode = m.baseView
+	if m.baseView == detailView && m.activeIssue != nil {
+		m.loadingCount++
+		return []tea.Cmd{m.fetchIssueDetailCmd(m.activeIssue.Key)}
+	}
+	m.loadingCount++
+	return []tea.Cmd{m.fetchMyIssuesCmd()}
+}
+
+func (m *model) afterWorklogAction() []tea.Cmd {
+	cmds := m.afterIssueAction()
+	if m.baseView == detailView && m.activeIssue != nil {
+		m.loadingCount++
+		cmds = append(cmds, m.fetchWorkLogsCmd(m.activeIssue.ID))
+	}
+	return cmds
 }
 
 func (m *model) setPendingIssue(i *jira.Issue) {
