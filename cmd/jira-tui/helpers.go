@@ -251,6 +251,41 @@ func sortIssuesByStatus(issues []jira.Issue) {
 	})
 }
 
+func (m model) modalDataReady() bool {
+	switch m.mode {
+	case projectPickerView:
+		return m.projectPickerData != nil
+	case savedBoardPickerView:
+		return m.savedBoardData != nil
+	case issueSearchView:
+		return m.searchIssueData != nil
+	case userSearchView:
+		return m.searchUserData != nil
+	case newIssueView:
+		return m.newIssueData != nil
+	case priorityView:
+		return m.priorityData != nil
+	case estimateView:
+		return m.estimateData != nil
+	case issueLinkView:
+		return m.issueLinkData != nil
+	case summaryView:
+		return m.summaryData != nil
+	case descriptionView:
+		return m.descriptionData != nil
+	case worklogView:
+		return m.worklogFormData != nil
+	case cancelReasonView:
+		return m.cancelReasonData != nil
+	case blockReasonView:
+		return m.blockReasonData != nil
+	case transitionWorklogView:
+		return m.transitionWorklogData != nil
+	default:
+		return true
+	}
+}
+
 func (m *model) afterIssueAction() []tea.Cmd {
 	m.mode = m.baseView
 	if m.baseView == detailView && m.activeIssue != nil {
