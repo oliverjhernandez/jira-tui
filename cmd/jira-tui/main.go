@@ -494,7 +494,9 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 		m.activeIssue = msg.detail
 		m.detailLayout = m.calculateDetailLayout()
-		m.previousMode = m.mode
+		if !m.mode.isModal() {
+			m.previousMode = m.mode
+		}
 		m.mode = detailView
 
 		m.commentsViewport.SetWidth(m.detailLayout.leftColumnWidth)
@@ -843,6 +845,12 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, tea.Batch(cmds...)
+	}
+
+	if !m.modalDataReady() {
+		m.mode = m.baseView
+		m.setErrorMsg("That form was closed unexpectedly")
+		return m, m.clearStatusAfter(clearMsgTimeout)
 	}
 
 	var viewCmd tea.Cmd
