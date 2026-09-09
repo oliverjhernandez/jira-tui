@@ -153,3 +153,92 @@ func TestSummaryTruncatesRatherThanOverflowing(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatEstimate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"hours and minutes", "9000", "2h 30m"},
+		{"whole hours", "10800", "3h"},
+		{"minutes only", "1800", "30m"},
+		{"zero is no estimate", "0", ""},
+		{"absent field", "", ""},
+		{"not a number", "3h", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := formatEstimate(tt.in); got != tt.want {
+				t.Errorf("formatEstimate(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestJoinNonEmpty(t *testing.T) {
+	t.Parallel()
+
+	if got := joinNonEmpty("  ", "a", "", "b"); got != "a  b" {
+		t.Errorf("joinNonEmpty dropped the wrong parts: %q", got)
+	}
+	if got := joinNonEmpty("  ", "", ""); got != "" {
+		t.Errorf("all-empty should join to empty, got %q", got)
+	}
+	if got := joinNonEmpty("  ", "only"); got != "only" {
+		t.Errorf("single part should not gain a separator: %q", got)
+	}
+}
+
+func TestMetadataPanelShowsOriginalEstimate(t *testing.T) {
+	t.Parallel()
+
+	m := metadataPanelModel("Fix the thing")
+	m.activeIssue.OriginalEstimate = "9000"
+
+	panel := m.renderMetadataPanel(120, 7)
+	plain := stripANSI(panel)
+
+	if !strings.Contains(plain, "Est: 2h 30m") {
+		t.Errorf("original estimate missing from the panel:\n%s", panel)
+	}
+	if got := len(strings.Split(panel, "\n")); got > 8 {
+		t.Errorf("estimate added a line: panel is %d lines\n%s", got, panel)
+	}
+}
+
+func TestMetadataPanelOmitsAbsentEstimate(t *testing.T) {
+	t.Parallel()
+
+	m := metadataPanelModel("Fix the thing")
+	m.activeIssue.OriginalEstimate = ""
+
+	plain := stripANSI(m.renderMetadataPanel(120, 7))
+
+	if strings.Contains(plain, "Est:") {
+		t.Errorf("issue with no estimate should not show the label:\n%s", plain)
+	}
+}
+
+func TestEstimateDoesNotWrapTheHeader(t *testing.T) {
+	t.Parallel()
+
+	for _, width := range []int{80, 100, 120, 160, 240} {
+		m := metadataPanelModel(longSummary)
+		m.activeIssue.OriginalEstimate = "144000"
+		m.activeIssue.Worklogs = []jira.Worklog{{Time: 45296}}
+
+		panel := m.renderMetadataPanel(width, 7)
+
+		if got := lipgloss.Width(panel); got != width {
+			t.Errorf("width=%d: panel rendered %d wide", width, got)
+		}
+		if got := len(strings.Split(panel, "\n")); got > 8 {
+			t.Errorf("width=%d: estimate + logged wrapped the panel to %d lines:\n%s", width, got, panel)
+		}
+	}
+}
