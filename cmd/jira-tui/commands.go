@@ -969,9 +969,10 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	}
 
 	issueKey := ui.RenderIssueType(m.activeIssue.Type, false) + " " + ui.DetailHeaderStyle.Render(m.activeIssue.Key)
-	summaryMaxWidth := 50
+	headerPrefix := index + " " + parent + issueKey + "  "
+	summaryMaxWidth := max(0, width-ui.PanelOverheadWidth-lipgloss.Width(headerPrefix))
 	issueSummary := ui.DetailValueStyle.Render(ui.TruncateLongString(m.activeIssue.Summary, summaryMaxWidth))
-	detailsHeaderLine1 := index + " " + parent + issueKey + "  " + issueSummary
+	detailsHeaderLine1 := headerPrefix + issueSummary
 
 	status := ui.RenderStatusBadge(m.activeIssue.Status)
 	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.activeIssue.Assignee, " ")[0]))
