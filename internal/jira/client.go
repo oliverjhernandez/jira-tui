@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -58,6 +59,7 @@ type Issue struct {
 	Created          string
 	Updated          string
 	DueDate          string
+	StartDate        string
 	SubTasks         []Issue
 	Worklogs         []Worklog
 }
@@ -181,6 +183,34 @@ type issueFields struct {
 	DueDate          string         `json:"duedate"`
 	Created          string         `json:"created"`
 	Updated          string         `json:"updated"`
+	Custom           map[string]string
+}
+
+func (f *issueFields) UnmarshalJSON(b []byte) error {
+	type plain issueFields
+	var p plain
+	if err := json.Unmarshal(b, &p); err != nil {
+		return err
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+
+	p.Custom = make(map[string]string)
+	for k, v := range raw {
+		if !strings.HasPrefix(k, "customfield_") {
+			continue
+		}
+		var s string
+		if err := json.Unmarshal(v, &s); err == nil {
+			p.Custom[k] = s
+		}
+	}
+
+	*f = issueFields(p)
+	return nil
 }
 
 type IssueLink struct {
@@ -510,10 +540,7 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 					Name: issue.Fields.Priority.Name,
 				}
 			}
-			d, err := time.Parse("2006-01-02", issue.Fields.DueDate)
-			if err == nil {
-				i.DueDate = d.Format("Jan 02")
-			}
+			i.DueDate = issue.Fields.DueDate
 			cr, err := time.Parse("2006-01-02T15:04:05.000-0700", issue.Fields.Created)
 			if err == nil {
 				i.Created = cr.Format("Jan 02")
@@ -606,10 +633,14 @@ func (c *Client) GetIssueTypes(ctx context.Context) ([]IssueType, error) {
 	return issueTypes, err
 }
 
-func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, error) {
+func (c *Client) GetIssueDetail(ctx context.Context, issueKey, startDateFieldID string) (*Issue, error) {
 	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
+	fields := "id,summary,description,project,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,duedate,created,updated"
+	if startDateFieldID != "" {
+		fields += "," + startDateFieldID
+	}
 	params := url.Values{}
-	params.Add("fields", "id,summary,description,project,status,issuetype,assignee,reporter,comment,priority,parent,issuelinks,timeoriginalestimate,created,updated")
+	params.Add("fields", fields)
 
 	var issue jiraIssue
 	err := c.doJiraRequest(
@@ -630,6 +661,11 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey string) (*Issue, e
 		Summary:     issue.Fields.Summary,
 		Status:      issue.Fields.Status.Name,
 		Description: issue.Fields.Description,
+		DueDate:     issue.Fields.DueDate,
+	}
+
+	if startDateFieldID != "" {
+		detail.StartDate = issue.Fields.Custom[startDateFieldID]
 	}
 
 	if issue.Fields.Parent != nil {
@@ -930,6 +966,56 @@ func (c *Client) UpdateOriginalEstimate(ctx context.Context, issueKey string, es
 	)
 
 	return err
+}
+
+type Field struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (c *Client) GetFields(ctx context.Context) ([]Field, error) {
+	var fields []Field
+	err := c.doJiraRequest(
+		ctx,
+		"GET",
+		"/rest/api/3/field",
+		nil,
+		nil,
+		&fields,
+		http.StatusOK,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getting field metadata: %w", err)
+	}
+	return fields, nil
+}
+
+func (c *Client) UpdateDates(ctx context.Context, issueKey, startDateFieldID, startDate, dueDate string) error {
+	apiURL := fmt.Sprintf("/rest/api/3/issue/%s", issueKey)
+
+	fields := map[string]any{"duedate": nilIfEmpty(dueDate)}
+	if startDateFieldID != "" {
+		fields[startDateFieldID] = nilIfEmpty(startDate)
+	}
+
+	err := c.doJiraRequest(
+		ctx,
+		"PUT",
+		apiURL,
+		nil,
+		map[string]any{"fields": fields},
+		nil,
+		http.StatusNoContent,
+	)
+
+	return err
+}
+
+func nilIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 func (c *Client) GetPriorities(ctx context.Context) ([]Priority, error) {

@@ -64,6 +64,7 @@ var helpGroups = []helpGroup{
 		{"[ / ]", "Previous / next section (not tabs, here)"},
 		{"e", "Edit summary / description / comment / worklog"},
 		{"E", "Set estimate"},
+		{"D", "Set start / due dates"},
 		{"t", "Transition"},
 		{"a", "Assign"},
 		{"p", "Priority"},

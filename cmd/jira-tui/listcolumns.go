@@ -77,7 +77,9 @@ var listColumns = []listColumn{
 	{
 		header: "DUE",
 		width:  func(c ui.ColumnWidths) int { return c.DueDate },
-		cell:   func(m model, i jira.Issue, _, _ bool) string { return m.columnWidths.RenderDueDate(i.DueDate) },
+		cell: func(m model, i jira.Issue, _, _ bool) string {
+			return m.columnWidths.RenderDueDate(formatDateShort(i.DueDate))
+		},
 	},
 	{
 		header: "LOGGED",

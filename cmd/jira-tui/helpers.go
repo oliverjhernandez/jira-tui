@@ -281,6 +281,8 @@ func (m model) modalDataReady() bool {
 		return m.blockReasonData != nil
 	case transitionWorklogView:
 		return m.transitionWorklogData != nil
+	case datesView:
+		return m.datesData != nil
 	default:
 		return true
 	}
