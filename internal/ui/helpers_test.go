@@ -277,3 +277,99 @@ func TestColumnRenderDueDateFitsItsWidth(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderPriorityUnsetIsNotAlarming(t *testing.T) {
+	t.Parallel()
+
+	alarming := []string{IconError, IconPriorityCritical, IconPriorityHighest, IconPriorityHigh}
+
+	unset := []struct {
+		name string
+		in   string
+	}{
+		{"empty", ""},
+		{"whitespace", "   "},
+		{"por definir", "Por Definir"},
+		{"sin definir", "Sin definir"},
+		{"none", "None"},
+		{"unrecognized label", "Totally Unknown"},
+	}
+
+	for _, tt := range unset {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			for _, showText := range []bool{false, true} {
+				got := RenderPriority(tt.in, showText)
+				if !strings.Contains(got, IconPriorityUnset) {
+					t.Errorf("RenderPriority(%q, %v) = %q, want the unset dash", tt.in, showText, got)
+				}
+				for _, icon := range alarming {
+					if icon != "" && strings.Contains(got, icon) {
+						t.Errorf("RenderPriority(%q, %v) = %q, carries the alarming icon %q",
+							tt.in, showText, got, icon)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestRenderPriorityUnsetOmitsTheEmptyLabel(t *testing.T) {
+	t.Parallel()
+
+	// An issue with no priority must not render "- " with a dangling separator.
+	for _, in := range []string{"", "  "} {
+		got := RenderPriority(in, true)
+		if strings.TrimSpace(stripStyle(got)) != IconPriorityUnset {
+			t.Errorf("RenderPriority(%q, true) = %q, want just the dash", in, stripStyle(got))
+		}
+	}
+}
+
+func TestRenderPriorityKeepsKnownLevels(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in       string
+		wantIcon string
+	}{
+		{"Critica", IconPriorityCritical},
+		{"Highest", IconPriorityHighest},
+		{"High", IconPriorityHigh},
+		{"Medium", IconPriorityMedium},
+		{"Low", IconPriorityLow},
+		{"Lowest", IconPriorityLowest},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+			got := RenderPriority(tt.in, true)
+			if !strings.Contains(got, tt.wantIcon) {
+				t.Errorf("RenderPriority(%q) = %q, want icon %q", tt.in, got, tt.wantIcon)
+			}
+			if !strings.Contains(got, tt.in) {
+				t.Errorf("RenderPriority(%q) = %q, want the label kept", tt.in, got)
+			}
+			if strings.Contains(got, IconPriorityUnset) {
+				t.Errorf("RenderPriority(%q) = %q, should not read as unset", tt.in, got)
+			}
+		})
+	}
+}
+
+func stripStyle(s string) string {
+	var b strings.Builder
+	inEscape := false
+	for _, r := range s {
+		switch {
+		case r == '\x1b':
+			inEscape = true
+		case inEscape && r == 'm':
+			inEscape = false
+		case !inEscape:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
