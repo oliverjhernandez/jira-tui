@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
@@ -77,7 +78,9 @@ var listColumns = []listColumn{
 	{
 		header: "DUE",
 		width:  func(c ui.ColumnWidths) int { return c.DueDate },
-		cell:   func(m model, i jira.Issue, _, _ bool) string { return m.columnWidths.RenderDueDate(i.DueDate) },
+		cell: func(m model, i jira.Issue, _, _ bool) string {
+			return m.columnWidths.RenderDueDate(i.DueDate, time.Now())
+		},
 	},
 	{
 		header: "LOGGED",

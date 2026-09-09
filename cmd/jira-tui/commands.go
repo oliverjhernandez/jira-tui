@@ -52,6 +52,12 @@ type statusesLoadedMsg struct {
 	tabID    int
 }
 
+type fieldsLoadedMsg struct {
+	fields []jira.Field
+}
+
+type datesPostedMsg struct{}
+
 type prioritiesLoadedMsg struct {
 	priorities []jira.Priority
 }
@@ -152,7 +158,7 @@ func (m model) fetchIssueDetailCmd(issueKey string) tea.Cmd {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		detail, err := m.client.GetIssueDetail(context.Background(), issueKey)
+		detail, err := m.client.GetIssueDetail(context.Background(), issueKey, m.startDateFieldID)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -477,6 +483,36 @@ func (m model) fetchPrioritiesCmd() tea.Cmd {
 		}
 
 		return prioritiesLoadedMsg{priorities}
+	}
+}
+
+func (m model) fetchFieldsCmd() tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		fields, err := m.client.GetFields(context.Background())
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return fieldsLoadedMsg{fields}
+	}
+}
+
+func (m model) postDatesCmd(issueKey, startDate, dueDate string) tea.Cmd {
+	return func() tea.Msg {
+		if m.client == nil {
+			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+
+		err := m.client.UpdateDates(context.Background(), issueKey, m.startDateFieldID, startDate, dueDate)
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return datesPostedMsg{}
 	}
 }
 
@@ -943,19 +979,21 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	if m.activeIssue.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
-	detailsHeaderLine2 := status + "  " + assignee + "  " + logged
+	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now())
+	detailsHeaderLine2 := status + "  " + assignee + "  " + logged + "  " + due
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
 	colwidth := 30
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.activeIssue.Priority.Name, true), colwidth)
 	// TODO: map reporter to name
 	col2 := ui.RenderFieldStyled("Reporter", m.activeIssue.Reporter.DisplayName, colwidth)
-	col3 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.activeIssue.Type, true), colwidth)
+	col3 := ui.RenderFieldStyled("Start", ui.FormatDate(m.activeIssue.StartDate), colwidth)
 	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
 	col4 := ui.RenderFieldStyled("Created", timeAgo(m.activeIssue.Created), colwidth)
 	col5 := ui.RenderFieldStyled("Updated", timeAgo(m.activeIssue.Updated), colwidth)
-	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5)
+	col6 := ui.RenderFieldStyled("Type", ui.RenderIssueType(m.activeIssue.Type, true), colwidth)
+	metadataRow2 := lipgloss.JoinHorizontal(lipgloss.Top, col4, col5, col6)
 
 	var detailsContent strings.Builder
 	detailsContent.WriteString(leftHeader + "\n")

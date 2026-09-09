@@ -420,6 +420,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmds...)
 
+		case keyPressMsg.String() == "D":
+			return m.openDatesForm()
+
 		// priorities
 		case keyPressMsg.String() == "p":
 			m.priorityData = NewPriorityFormData(m.priorities, m.activeIssue.Priority.Name)

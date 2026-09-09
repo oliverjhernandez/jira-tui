@@ -47,6 +47,7 @@ const (
 	searchView
 	projectPickerView
 	helpView
+	datesView
 )
 
 func (v viewMode) String() string {
@@ -89,6 +90,8 @@ func (v viewMode) String() string {
 		return "searchView"
 	case projectPickerView:
 		return "projectPickerView"
+	case datesView:
+		return "datesView"
 	case helpView:
 		return "helpView"
 	default:
@@ -205,6 +208,7 @@ type model struct {
 	filteredSections []Section
 	statuses         map[string][]jira.Status
 	priorities       []jira.Priority
+	startDateFieldID string
 
 	// Worklogs
 	worklogTotals map[string]int
@@ -260,6 +264,7 @@ type model struct {
 	cancelReasonData      *CancelReasonFormData
 	blockReasonData       *BlockReasonFormData
 	searchUserData        *SearchUserFormData
+	datesData             *DatesFormData
 	savedBoardData        *SavedBoardFormData
 	projectPickerData     *ProjectPickerFormData
 
@@ -310,6 +315,7 @@ func (m model) Init() tea.Cmd {
 	cmds = append(cmds, m.fetchPrioritiesCmd())
 	cmds = append(cmds, m.fetchAllUsersCmd())
 	cmds = append(cmds, m.fetchIssueTypesCmd())
+	cmds = append(cmds, m.fetchFieldsCmd())
 
 	return tea.Batch(cmds...)
 }
@@ -451,6 +457,22 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listViewport.SetContent(m.buildListContent())
 		}
 		return m, nil
+
+	case fieldsLoadedMsg:
+		m.loadingCount--
+		m.startDateFieldID = resolveStartDateField(msg.fields)
+		if m.startDateFieldID == "" {
+			slog.Warn("no start date field found in Jira metadata", "tried", startDateFieldNames)
+		}
+		return m, nil
+
+	case datesPostedMsg:
+		m.loadingCount--
+		m.setSuccess("Dates updated")
+		var cmds []tea.Cmd
+		cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+		cmds = append(cmds, m.afterIssueAction()...)
+		return m, tea.Batch(cmds...)
 
 	case prioritiesLoadedMsg:
 		m.loadingCount--
@@ -872,6 +894,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateSearchView(msg)
 	case projectPickerView:
 		tmpModel, viewCmd = m.updateProjectPickerView(msg)
+	case datesView:
+		tmpModel, viewCmd = m.updateDatesView(msg)
 	case helpView:
 		tmpModel, viewCmd = m.updateHelpView(msg)
 	case priorityView:
@@ -928,6 +952,8 @@ func (m model) View() tea.View {
 		content = m.renderSearchView()
 	case projectPickerView:
 		content = m.renderProjectPickerView()
+	case datesView:
+		content = m.renderDatesView()
 	case helpView:
 		content = m.renderHelpView()
 	case priorityView:
@@ -1019,7 +1045,7 @@ func main() {
 		spinning:        true, // Init starts the tick loop
 		worklogTotals:   make(map[string]int),
 		columnWidths:    ui.CalculateColumnWidths(80),
-		loadingCount:    6, // Init cmds
+		loadingCount:    7, // Init cmds
 		transitionCache: make(map[string]map[string][]jira.Transition, 0),
 		activeTab:       0,
 		nextTabID:       1,

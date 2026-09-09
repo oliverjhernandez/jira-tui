@@ -2,8 +2,11 @@ package jira
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -113,7 +116,7 @@ func TestGetIssueDetailMapping(t *testing.T) {
 	c, srv := newTestClient(mux)
 	defer srv.Close()
 
-	issue, err := c.GetIssueDetail(context.Background(), "DEV-5")
+	issue, err := c.GetIssueDetail(context.Background(), "DEV-5", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -254,5 +257,212 @@ func TestDoJiraRequestErrorStatus(t *testing.T) {
 	_, err := c.GetProjects(context.Background())
 	if err == nil {
 		t.Fatalf("expected error for 500 response, got nil")
+	}
+}
+
+func TestGetIssueDetailMapsDates(t *testing.T) {
+	body := `{
+		"key": "DEV-7", "id": "7",
+		"fields": {
+			"summary": "Dated issue",
+			"status": {"name": "To Do"},
+			"issuetype": {"name": "Task"},
+			"project": {"id": "10", "key": "DEV", "name": "Dev"},
+			"duedate": "2026-09-12",
+			"customfield_10015": "2026-09-01",
+			"customfield_10099": {"value": "not a date"}
+		}
+	}`
+
+	var gotFields string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/api/3/issue/DEV-7", func(w http.ResponseWriter, r *http.Request) {
+		gotFields = r.URL.Query().Get("fields")
+		_, _ = w.Write([]byte(body))
+	})
+
+	c, srv := newTestClient(mux)
+	defer srv.Close()
+
+	issue, err := c.GetIssueDetail(context.Background(), "DEV-7", "customfield_10015")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(gotFields, "duedate") {
+		t.Errorf("duedate not requested, fields = %q", gotFields)
+	}
+	if !strings.Contains(gotFields, "customfield_10015") {
+		t.Errorf("start date field not requested, fields = %q", gotFields)
+	}
+	if issue.DueDate != "2026-09-12" {
+		t.Errorf("DueDate = %q, want 2026-09-12", issue.DueDate)
+	}
+	if issue.StartDate != "2026-09-01" {
+		t.Errorf("StartDate = %q, want 2026-09-01", issue.StartDate)
+	}
+}
+
+func TestGetIssueDetailWithoutStartDateField(t *testing.T) {
+	body := `{
+		"key": "DEV-8", "id": "8",
+		"fields": {
+			"summary": "No start field",
+			"status": {"name": "To Do"},
+			"issuetype": {"name": "Task"},
+			"project": {"id": "10", "key": "DEV", "name": "Dev"},
+			"duedate": "2026-09-12",
+			"customfield_10015": "2026-09-01"
+		}
+	}`
+
+	var gotFields string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/api/3/issue/DEV-8", func(w http.ResponseWriter, r *http.Request) {
+		gotFields = r.URL.Query().Get("fields")
+		_, _ = w.Write([]byte(body))
+	})
+
+	c, srv := newTestClient(mux)
+	defer srv.Close()
+
+	issue, err := c.GetIssueDetail(context.Background(), "DEV-8", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(gotFields, "customfield") {
+		t.Errorf("no custom field should be requested, fields = %q", gotFields)
+	}
+	if issue.StartDate != "" {
+		t.Errorf("StartDate = %q, want empty", issue.StartDate)
+	}
+	if issue.DueDate != "2026-09-12" {
+		t.Errorf("DueDate = %q, want 2026-09-12", issue.DueDate)
+	}
+}
+
+func TestSearchIssuesJqlKeepsIsoDueDate(t *testing.T) {
+	page := `{
+		"nextPageToken": "",
+		"issues": [
+			{
+				"key": "DEV-1", "id": "1001",
+				"fields": {
+					"summary": "First issue",
+					"status": {"name": "To Do"},
+					"issuetype": {"name": "Task"},
+					"project": {"id": "10", "key": "DEV", "name": "Dev"},
+					"duedate": "2026-09-12"
+				}
+			}
+		]
+	}`
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/api/3/search/jql", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(page))
+	})
+
+	c, srv := newTestClient(mux)
+	defer srv.Close()
+
+	issues, err := c.SearchIssuesJql(context.Background(), "project = DEV")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("expected 1 issue, got %d", len(issues))
+	}
+	if issues[0].DueDate != "2026-09-12" {
+		t.Errorf("DueDate = %q, want the raw ISO value", issues[0].DueDate)
+	}
+}
+
+func TestGetFields(t *testing.T) {
+	body := `[
+		{"id": "duedate", "name": "Due date"},
+		{"id": "customfield_10015", "name": "Start date"}
+	]`
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/api/3/field", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(body))
+	})
+
+	c, srv := newTestClient(mux)
+	defer srv.Close()
+
+	fields, err := c.GetFields(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(fields) != 2 {
+		t.Fatalf("expected 2 fields, got %d", len(fields))
+	}
+	if fields[1].ID != "customfield_10015" || fields[1].Name != "Start date" {
+		t.Errorf("fields not mapped: %+v", fields)
+	}
+}
+
+func TestUpdateDatesPayload(t *testing.T) {
+	tests := []struct {
+		name             string
+		startDateFieldID string
+		startDate        string
+		dueDate          string
+		want             map[string]any
+	}{
+		{
+			name:             "both dates set",
+			startDateFieldID: "customfield_10015",
+			startDate:        "2026-09-01",
+			dueDate:          "2026-09-12",
+			want:             map[string]any{"duedate": "2026-09-12", "customfield_10015": "2026-09-01"},
+		},
+		{
+			name:             "empty dates clear the fields",
+			startDateFieldID: "customfield_10015",
+			startDate:        "",
+			dueDate:          "",
+			want:             map[string]any{"duedate": nil, "customfield_10015": nil},
+		},
+		{
+			name:             "unknown start field sends due date only",
+			startDateFieldID: "",
+			startDate:        "2026-09-01",
+			dueDate:          "2026-09-12",
+			want:             map[string]any{"duedate": "2026-09-12"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got struct {
+				Fields map[string]any `json:"fields"`
+			}
+			var method string
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("/rest/api/3/issue/DEV-9", func(w http.ResponseWriter, r *http.Request) {
+				method = r.Method
+				if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+					t.Errorf("decoding body: %v", err)
+				}
+				w.WriteHeader(http.StatusNoContent)
+			})
+
+			c, srv := newTestClient(mux)
+			defer srv.Close()
+
+			err := c.UpdateDates(context.Background(), "DEV-9", tt.startDateFieldID, tt.startDate, tt.dueDate)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if method != http.MethodPut {
+				t.Errorf("method = %q, want PUT", method)
+			}
+			if !reflect.DeepEqual(got.Fields, tt.want) {
+				t.Errorf("fields = %#v, want %#v", got.Fields, tt.want)
+			}
+		})
 	}
 }

@@ -55,6 +55,11 @@ var (
 	ThemeStatusBlocked    = CatRed
 	ThemeStatusDefault    = CatOverlay1
 
+	// Due date colors
+	ThemeDueOverdue = CatRed
+	ThemeDueToday   = CatPeach
+	ThemeDueSoon    = CatYellow
+
 	// Priority colors
 	ThemePriorityCritical = CatRed
 	ThemePriorityHighest  = CatRed
@@ -93,6 +98,12 @@ var (
 	IconPriorityMedium   = `󰇼`
 	IconPriorityLow      = `󰄼`
 	IconPriorityLowest   = `󰶹`
+
+	// Due dates
+	IconDueOverdue = `󰀨`
+	IconDueToday   = `󰀦`
+	IconDueSoon    = `󰃰`
+	IconDueLater   = `󰃭`
 
 	// Status indicators
 	IconStatusInProgress = `󰐊`
@@ -217,6 +228,23 @@ var (
 	DueDateFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
 				Align(lipgloss.Left)
+
+	DueOverdueStyle = lipgloss.NewStyle().
+			Foreground(ThemeDueOverdue).
+			Bold(true)
+
+	DueTodayStyle = lipgloss.NewStyle().
+			Foreground(ThemeDueToday).
+			Bold(true)
+
+	DueSoonStyle = lipgloss.NewStyle().
+			Foreground(ThemeDueSoon)
+
+	DueLaterStyle = lipgloss.NewStyle().
+			Foreground(ThemeFg)
+
+	DueUnsetStyle = lipgloss.NewStyle().
+			Foreground(ThemeFgMuted)
 
 	CreatedDateFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).

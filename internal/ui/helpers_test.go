@@ -3,6 +3,9 @@ package ui
 import (
 	"strings"
 	"testing"
+	"time"
+
+	"charm.land/lipgloss/v2"
 )
 
 func TestFormatTimeSpent(t *testing.T) {
@@ -137,5 +140,140 @@ func TestRenderPanelWithLabel(t *testing.T) {
 	out := RenderPanelWithLabel("A very long label that exceeds width", "content", 10, 5, true)
 	if out == "" {
 		t.Errorf("RenderPanelWithLabel returned empty output")
+	}
+}
+
+func TestFormatDate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"2026-09-08", "Sep 08"},
+		{"", DateUnset},
+		{"not-a-date", "not-a-date"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+			if got := FormatDate(tt.in); got != tt.want {
+				t.Errorf("FormatDate(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClassifyDue(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 9, 15, 30, 0, 0, time.UTC)
+
+	tests := []struct {
+		name string
+		in   string
+		want DueUrgency
+	}{
+		{"no due date", "", DueUnset},
+		{"unparseable", "not-a-date", DueUnset},
+		{"long overdue", "2026-08-01", DueOverdue},
+		{"yesterday is overdue", "2026-09-08", DueOverdue},
+		{"today", "2026-09-09", DueToday},
+		{"tomorrow is soon", "2026-09-10", DueSoon},
+		{"the last soon day", "2026-09-12", DueSoon},
+		{"one day past soon", "2026-09-13", DueLater},
+		{"far out", "2027-01-01", DueLater},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := ClassifyDue(tt.in, now); got != tt.want {
+				t.Errorf("ClassifyDue(%q) = %v, want %v", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClassifyDueIgnoresTimeOfDay(t *testing.T) {
+	t.Parallel()
+
+	// A due date is "today" all day, not only until the clock passes midnight
+	// of the due date's zero hour.
+	for _, hour := range []int{0, 9, 23} {
+		now := time.Date(2026, 9, 9, hour, 59, 0, 0, time.UTC)
+		if got := ClassifyDue("2026-09-09", now); got != DueToday {
+			t.Errorf("at %02d:59 ClassifyDue = %v, want today", hour, got)
+		}
+	}
+}
+
+func TestRenderDueIconAndColor(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		in       string
+		wantIcon string
+		wantText string
+	}{
+		{"overdue", "2026-09-01", IconDueOverdue, "Sep 01"},
+		{"today", "2026-09-09", IconDueToday, "Sep 09"},
+		{"soon", "2026-09-11", IconDueSoon, "Sep 11"},
+		{"later", "2026-10-30", IconDueLater, "Oct 30"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := RenderDue(tt.in, now)
+			if !strings.Contains(got, tt.wantIcon) {
+				t.Errorf("RenderDue(%q) = %q, want icon %q", tt.in, got, tt.wantIcon)
+			}
+			if !strings.Contains(got, tt.wantText) {
+				t.Errorf("RenderDue(%q) = %q, want text %q", tt.in, got, tt.wantText)
+			}
+		})
+	}
+
+	icons := map[string]bool{}
+	for _, tt := range tests {
+		icons[tt.wantIcon] = true
+	}
+	if len(icons) != len(tests) {
+		t.Errorf("each urgency needs its own icon, got %d distinct for %d buckets", len(icons), len(tests))
+	}
+}
+
+func TestRenderDueWithoutADate(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	got := RenderDue("", now)
+
+	if !strings.Contains(got, DateUnset) {
+		t.Errorf("RenderDue(\"\") = %q, want the unset placeholder", got)
+	}
+	for _, icon := range []string{IconDueOverdue, IconDueToday, IconDueSoon, IconDueLater} {
+		if strings.Contains(got, icon) {
+			t.Errorf("RenderDue(\"\") = %q, should carry no urgency icon", got)
+		}
+	}
+}
+
+func TestColumnRenderDueDateFitsItsWidth(t *testing.T) {
+	t.Parallel()
+
+	c := CalculateColumnWidths(120)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+
+	for _, iso := range []string{"", "2026-09-01", "2026-09-09", "2026-09-11", "2026-12-31"} {
+		cell := c.RenderDueDate(iso, now)
+		if got := lipgloss.Width(cell); got != c.DueDate {
+			t.Errorf("RenderDueDate(%q) width = %d, want %d (%q)", iso, got, c.DueDate, cell)
+		}
 	}
 }

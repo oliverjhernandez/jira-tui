@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -239,4 +240,106 @@ func TruncateLongString(s string, max int) string {
 
 func Osc8(url, s string) string {
 	return "\x1b]8;;" + url + "\x1b\\" + s + "\x1b]8;;\x1b\\"
+}
+
+const DateLayout = "2006-01-02"
+
+// DateUnset is shown in place of a date the issue does not have.
+const DateUnset = "—"
+
+// DueSoonDays is how many days ahead of the due date the field starts warning.
+const DueSoonDays = 3
+
+type DueUrgency int
+
+const (
+	DueUnset DueUrgency = iota
+	DueOverdue
+	DueToday
+	DueSoon
+	DueLater
+)
+
+func (u DueUrgency) String() string {
+	switch u {
+	case DueOverdue:
+		return "overdue"
+	case DueToday:
+		return "today"
+	case DueSoon:
+		return "soon"
+	case DueLater:
+		return "later"
+	default:
+		return "unset"
+	}
+}
+
+// FormatDate renders an ISO date for display, falling back to the raw value
+// when it does not parse and to DateUnset when empty.
+func FormatDate(iso string) string {
+	if iso == "" {
+		return DateUnset
+	}
+	d, err := time.Parse(DateLayout, iso)
+	if err != nil {
+		return iso
+	}
+	return d.Format("Jan 02")
+}
+
+// ClassifyDue buckets a due date by how much calendar time is left, counting
+// whole days in now's location so "today" means today to the reader.
+func ClassifyDue(iso string, now time.Time) DueUrgency {
+	if iso == "" {
+		return DueUnset
+	}
+	d, err := time.Parse(DateLayout, iso)
+	if err != nil {
+		return DueUnset
+	}
+
+	loc := now.Location()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	due := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc)
+	days := int(due.Sub(today).Hours() / 24)
+
+	switch {
+	case days < 0:
+		return DueOverdue
+	case days == 0:
+		return DueToday
+	case days <= DueSoonDays:
+		return DueSoon
+	default:
+		return DueLater
+	}
+}
+
+func dueStyle(u DueUrgency) (lipgloss.Style, string) {
+	switch u {
+	case DueOverdue:
+		return DueOverdueStyle, IconDueOverdue
+	case DueToday:
+		return DueTodayStyle, IconDueToday
+	case DueSoon:
+		return DueSoonStyle, IconDueSoon
+	case DueLater:
+		return DueLaterStyle, IconDueLater
+	default:
+		return DueUnsetStyle, ""
+	}
+}
+
+// RenderDue colors a due date by urgency and prefixes an icon signalling how
+// close it is.
+func RenderDue(iso string, now time.Time) string {
+	urgency := ClassifyDue(iso, now)
+	style, icon := dueStyle(urgency)
+
+	text := FormatDate(iso)
+	if icon != "" {
+		text = icon + " " + text
+	}
+	return style.Render(text)
 }
