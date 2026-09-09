@@ -8,9 +8,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-const dateLayout = "2006-01-02"
+const dateLayout = ui.DateLayout
 
 type DatesFormData struct {
 	StartDate string
@@ -111,17 +112,6 @@ func (m model) renderDatesView() string {
 		content = m.datesData.Form.View()
 	}
 	return m.renderModal("Dates", content, 0.25, 0.2)
-}
-
-func formatDateShort(iso string) string {
-	if iso == "" {
-		return "—"
-	}
-	d, err := time.Parse(dateLayout, iso)
-	if err != nil {
-		return iso
-	}
-	return d.Format("Jan 02")
 }
 
 var startDateFieldNames = []string{

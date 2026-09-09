@@ -3,8 +3,10 @@ package main
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
 func TestValidateDate(t *testing.T) {
@@ -32,28 +34,6 @@ func TestValidateDate(t *testing.T) {
 			}
 			if !tt.wantErr && err != nil {
 				t.Errorf("validateDate(%q) = %v, want nil", tt.in, err)
-			}
-		})
-	}
-}
-
-func TestFormatDateShort(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{"2026-09-08", "Sep 08"},
-		{"", "—"},
-		{"not-a-date", "not-a-date"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
-			t.Parallel()
-			if got := formatDateShort(tt.in); got != tt.want {
-				t.Errorf("formatDateShort(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
 	}
@@ -112,6 +92,8 @@ func TestResolveStartDateField(t *testing.T) {
 func TestMetadataPanelShowsDates(t *testing.T) {
 	t.Parallel()
 
+	dueDate := time.Now().AddDate(0, 0, 30).Format(ui.DateLayout)
+
 	m := newTabModel([]Tab{{id: 0, baseView: detailView}}, 0)
 	m.mode = detailView
 	m.activeIssue = &jira.Issue{
@@ -121,13 +103,13 @@ func TestMetadataPanelShowsDates(t *testing.T) {
 		Status:    "In Progress",
 		Assignee:  "Oliver Hernandez",
 		StartDate: "2026-09-01",
-		DueDate:   "2026-09-12",
+		DueDate:   dueDate,
 	}
 
 	panel := m.renderMetadataPanel(120, 7)
 	lines := strings.Split(panel, "\n")
 
-	for _, want := range []string{"Due: Sep 12", "Start", "Sep 01", "Type"} {
+	for _, want := range []string{"Due", ui.FormatDate(dueDate), "Start", "Sep 01", "Type"} {
 		if !strings.Contains(panel, want) {
 			t.Errorf("metadata panel missing %q:\n%s", want, panel)
 		}
@@ -140,7 +122,7 @@ func TestMetadataPanelShowsDates(t *testing.T) {
 	var dueLine, startLine, typeLine int
 	for i, ln := range lines {
 		switch {
-		case strings.Contains(ln, "Due: Sep 12"):
+		case strings.Contains(ln, "Due"):
 			dueLine = i
 		case strings.Contains(ln, "Sep 01"):
 			startLine = i
@@ -150,6 +132,28 @@ func TestMetadataPanelShowsDates(t *testing.T) {
 	}
 	if dueLine >= startLine || startLine >= typeLine {
 		t.Errorf("rows out of order: due=%d start=%d type=%d\n%s", dueLine, startLine, typeLine, panel)
+	}
+}
+
+func TestMetadataPanelDueDateIsNotDimmed(t *testing.T) {
+	t.Parallel()
+
+	m := newTabModel([]Tab{{id: 0, baseView: detailView}}, 0)
+	m.mode = detailView
+	m.activeIssue = &jira.Issue{
+		Key:     "DEV-1",
+		Type:    "Task",
+		Status:  "In Progress",
+		DueDate: time.Now().AddDate(0, 0, 30).Format(ui.DateLayout),
+	}
+
+	panel := m.renderMetadataPanel(120, 7)
+
+	if !strings.Contains(panel, ui.IconDueLater) {
+		t.Errorf("far-off due date should carry the calendar icon:\n%s", panel)
+	}
+	if strings.Contains(panel, ui.DimTextStyle.Render(ui.FormatDate(m.activeIssue.DueDate))) {
+		t.Errorf("due date is still rendered dim:\n%s", panel)
 	}
 }
 

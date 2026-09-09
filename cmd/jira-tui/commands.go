@@ -979,7 +979,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	if m.activeIssue.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
-	due := ui.DimTextStyle.Render("Due: " + formatDateShort(m.activeIssue.DueDate))
+	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now())
 	detailsHeaderLine2 := status + "  " + assignee + "  " + logged + "  " + due
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
@@ -987,7 +987,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	col1 := ui.RenderFieldStyled("Priority", ui.RenderPriority(m.activeIssue.Priority.Name, true), colwidth)
 	// TODO: map reporter to name
 	col2 := ui.RenderFieldStyled("Reporter", m.activeIssue.Reporter.DisplayName, colwidth)
-	col3 := ui.RenderFieldStyled("Start", formatDateShort(m.activeIssue.StartDate), colwidth)
+	col3 := ui.RenderFieldStyled("Start", ui.FormatDate(m.activeIssue.StartDate), colwidth)
 	metadataRow1 := lipgloss.JoinHorizontal(lipgloss.Top, col1, col2, col3)
 
 	col4 := ui.RenderFieldStyled("Created", timeAgo(m.activeIssue.Created), colwidth)

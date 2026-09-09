@@ -1,5 +1,7 @@
 package ui
 
+import "time"
+
 type ColumnWidths struct {
 	Type        int
 	Key         int
@@ -86,8 +88,8 @@ func (c ColumnWidths) RenderSummary(text string, selected bool, dimmed bool) str
 	return SummaryFieldStyle.Width(c.Summary).Render(text)
 }
 
-func (c ColumnWidths) RenderDueDate(text string) string {
-	return DueDateFieldStyle.Width(c.DueDate).Render(TruncateLongString(text, c.DueDate))
+func (c ColumnWidths) RenderDueDate(iso string, now time.Time) string {
+	return PadCell(RenderDue(iso, now), c.DueDate)
 }
 
 func (c ColumnWidths) RenderCreatedDate(text string) string {
