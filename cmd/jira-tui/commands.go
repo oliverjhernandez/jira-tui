@@ -976,12 +976,16 @@ func (m model) renderMetadataPanel(width int, height int) string {
 
 	status := ui.RenderStatusBadge(m.activeIssue.Status)
 	assignee := ui.DimTextStyle.Render("@" + strings.ToLower(strings.Split(m.activeIssue.Assignee, " ")[0]))
+	estimate := ""
+	if est := formatEstimate(m.activeIssue.OriginalEstimate); est != "" {
+		estimate = ui.DimTextStyle.Render("Est: " + est)
+	}
 	logged := ""
 	if m.activeIssue.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
 	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now())
-	detailsHeaderLine2 := status + "  " + assignee + "  " + logged + "  " + due
+	detailsHeaderLine2 := joinNonEmpty("  ", status, assignee, estimate, logged, due)
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
 	colwidth := 30

@@ -348,3 +348,21 @@ func formatSecondsToString(seconds int) string {
 	}
 	return ""
 }
+
+func formatEstimate(originalEstimate string) string {
+	seconds, err := strconv.Atoi(originalEstimate)
+	if err != nil {
+		return ""
+	}
+	return formatSecondsToString(seconds)
+}
+
+func joinNonEmpty(sep string, parts ...string) string {
+	kept := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p != "" {
+			kept = append(kept, p)
+		}
+	}
+	return strings.Join(kept, sep)
+}
