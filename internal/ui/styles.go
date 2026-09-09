@@ -98,6 +98,7 @@ var (
 	IconPriorityMedium   = `󰇼`
 	IconPriorityLow      = `󰄼`
 	IconPriorityLowest   = `󰶹`
+	IconPriorityUnset    = `-`
 
 	// Due dates
 	IconDueOverdue = `󰀨`
@@ -344,6 +345,9 @@ var (
 
 	PriorityLowestStyle = PriorityBaseStyle.
 				Foreground(ThemePriorityLowest)
+
+	PriorityUnsetStyle = PriorityBaseStyle.
+				Foreground(ThemeFgDim)
 )
 
 // ============================================================================

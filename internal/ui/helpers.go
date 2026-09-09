@@ -100,11 +100,14 @@ func RenderStatusBadge(status string) string {
 
 // RenderPriority renders priority with icon and color
 func RenderPriority(priority string, showText bool) string {
-	p := strings.ToLower(priority)
+	p := strings.ToLower(strings.TrimSpace(priority))
 	var style lipgloss.Style
 	var icon string
 
 	switch {
+	case p == "", strings.Contains(p, "definir"), p == "none":
+		style = PriorityUnsetStyle
+		icon = IconPriorityUnset
 	case strings.Contains(p, "critica") || strings.Contains(p, "crítica"):
 		style = PriorityCriticalStyle
 		icon = IconPriorityCritical
@@ -124,15 +127,14 @@ func RenderPriority(priority string, showText bool) string {
 		style = PriorityLowestStyle
 		icon = IconPriorityLowest
 	default:
-		style = ErrorStyle
-		icon = IconError
+		style = PriorityUnsetStyle
+		icon = IconPriorityUnset
 	}
 
-	if showText {
+	if showText && p != "" {
 		return style.Render(icon + " " + priority)
-	} else {
-		return style.Render(icon)
 	}
+	return style.Render(icon)
 }
 
 // RenderIssueType renders issue type with icon
