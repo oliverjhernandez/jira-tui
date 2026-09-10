@@ -242,3 +242,89 @@ func TestEstimateDoesNotWrapTheHeader(t *testing.T) {
 		}
 	}
 }
+
+func TestIsClosedStatus(t *testing.T) {
+	t.Parallel()
+
+	closed := []string{"Done", "Cancelada"}
+	open := []string{"Trabajando", "To Do", "Backlog", "Validación", "Ready to Deploy", "Selected for Development"}
+
+	for _, s := range closed {
+		if !isClosedStatus(s) {
+			t.Errorf("isClosedStatus(%q) = false, want true", s)
+		}
+	}
+	for _, s := range open {
+		if isClosedStatus(s) {
+			t.Errorf("isClosedStatus(%q) = true, want false", s)
+		}
+	}
+}
+
+func TestDetailPanelDoesNotAlarmOnClosedIssues(t *testing.T) {
+	t.Parallel()
+
+	overdue := "2026-01-15"
+
+	openModel := metadataPanelModel("Still going")
+	openModel.activeIssue.Status = "Trabajando"
+	openModel.activeIssue.DueDate = overdue
+
+	doneModel := metadataPanelModel("All finished")
+	doneModel.activeIssue.Status = "Done"
+	doneModel.activeIssue.DueDate = overdue
+
+	cancelledModel := metadataPanelModel("Dropped")
+	cancelledModel.activeIssue.Status = "Cancelada"
+	cancelledModel.activeIssue.DueDate = overdue
+
+	openPanel := openModel.renderMetadataPanel(120, 7)
+	if !strings.Contains(openPanel, ui.IconDueOverdue) {
+		t.Errorf("an open overdue issue should still alarm:\n%s", openPanel)
+	}
+
+	for _, tc := range []struct {
+		name  string
+		panel string
+	}{
+		{"Done", doneModel.renderMetadataPanel(120, 7)},
+		{"Cancelada", cancelledModel.renderMetadataPanel(120, 7)},
+	} {
+		if strings.Contains(tc.panel, ui.IconDueOverdue) {
+			t.Errorf("%s issue still shows the overdue alarm:\n%s", tc.name, tc.panel)
+		}
+		if !strings.Contains(tc.panel, ui.IconDueClosed) {
+			t.Errorf("%s issue should show the settled-date icon:\n%s", tc.name, tc.panel)
+		}
+		if !strings.Contains(stripANSI(tc.panel), "Jan 15") {
+			t.Errorf("%s issue should still show the date:\n%s", tc.name, tc.panel)
+		}
+	}
+}
+
+func TestListDueColumnDoesNotAlarmOnClosedIssues(t *testing.T) {
+	t.Parallel()
+
+	var dueCell func(m model, i jira.Issue, a, b bool) string
+	for _, col := range listColumns {
+		if col.header == "DUE" {
+			dueCell = col.cell
+			break
+		}
+	}
+	if dueCell == nil {
+		t.Fatal("no DUE column found")
+	}
+
+	m := newTabModel([]Tab{{id: 0, baseView: listView}}, 0)
+	m.columnWidths = ui.CalculateColumnWidths(120)
+	overdue := jira.Issue{Key: "DEV-1", Status: "Trabajando", DueDate: "2026-01-15"}
+	done := jira.Issue{Key: "DEV-2", Status: "Done", DueDate: "2026-01-15"}
+
+	if got := dueCell(m, overdue, false, false); !strings.Contains(got, ui.IconDueOverdue) {
+		t.Errorf("open overdue list cell = %q, want the overdue icon", got)
+	}
+	if got := dueCell(m, done, false, false); strings.Contains(got, ui.IconDueOverdue) {
+		t.Errorf("closed list cell = %q, should not alarm", got)
+	}
+}

@@ -884,7 +884,7 @@ func (m model) buildListContent() string {
 		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
 		for ii, issue := range s.Issues {
 			selected := m.sectionCursor == si && m.cursor == ii
-			dimmed := closureStatuses[issue.Status]
+			dimmed := isClosedStatus(issue.Status)
 			listContent.WriteString(m.renderIssueRow(issue, selected, dimmed) + "\n")
 		}
 		listContent.WriteString("\n\n")
@@ -984,7 +984,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	if m.activeIssue.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
-	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now())
+	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now(), isClosedStatus(m.activeIssue.Status))
 	detailsHeaderLine2 := joinNonEmpty("  ", status, assignee, estimate, logged, due)
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 

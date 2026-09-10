@@ -105,6 +105,7 @@ var (
 	IconDueToday   = `󰀦`
 	IconDueSoon    = `󰃰`
 	IconDueLater   = `󰃭`
+	IconDueClosed  = `󰃯`
 
 	// Status indicators
 	IconStatusInProgress = `󰐊`
@@ -246,6 +247,9 @@ var (
 
 	DueUnsetStyle = lipgloss.NewStyle().
 			Foreground(ThemeFgMuted)
+
+	DueClosedStyle = lipgloss.NewStyle().
+			Foreground(ThemeFgDim)
 
 	CreatedDateFieldStyle = lipgloss.NewStyle().
 				Foreground(ThemeFgMuted).
