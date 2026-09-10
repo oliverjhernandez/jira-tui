@@ -189,7 +189,7 @@ func TestClassifyDue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := ClassifyDue(tt.in, now); got != tt.want {
+			if got := ClassifyDue(tt.in, now, false); got != tt.want {
 				t.Errorf("ClassifyDue(%q) = %v, want %v", tt.in, got, tt.want)
 			}
 		})
@@ -203,7 +203,7 @@ func TestClassifyDueIgnoresTimeOfDay(t *testing.T) {
 	// of the due date's zero hour.
 	for _, hour := range []int{0, 9, 23} {
 		now := time.Date(2026, 9, 9, hour, 59, 0, 0, time.UTC)
-		if got := ClassifyDue("2026-09-09", now); got != DueToday {
+		if got := ClassifyDue("2026-09-09", now, false); got != DueToday {
 			t.Errorf("at %02d:59 ClassifyDue = %v, want today", hour, got)
 		}
 	}
@@ -229,7 +229,7 @@ func TestRenderDueIconAndColor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := RenderDue(tt.in, now)
+			got := RenderDue(tt.in, now, false)
 			if !strings.Contains(got, tt.wantIcon) {
 				t.Errorf("RenderDue(%q) = %q, want icon %q", tt.in, got, tt.wantIcon)
 			}
@@ -252,7 +252,7 @@ func TestRenderDueWithoutADate(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
-	got := RenderDue("", now)
+	got := RenderDue("", now, false)
 
 	if !strings.Contains(got, DateUnset) {
 		t.Errorf("RenderDue(\"\") = %q, want the unset placeholder", got)
@@ -271,7 +271,7 @@ func TestColumnRenderDueDateFitsItsWidth(t *testing.T) {
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 
 	for _, iso := range []string{"", "2026-09-01", "2026-09-09", "2026-09-11", "2026-12-31"} {
-		cell := c.RenderDueDate(iso, now)
+		cell := c.RenderDueDate(iso, now, false)
 		if got := lipgloss.Width(cell); got != c.DueDate {
 			t.Errorf("RenderDueDate(%q) width = %d, want %d (%q)", iso, got, c.DueDate, cell)
 		}
@@ -372,4 +372,78 @@ func stripStyle(s string) string {
 		}
 	}
 	return b.String()
+}
+
+func TestClosedIssueIsNeverUrgent(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	// Every bucket an open issue could land in, including long overdue.
+	for _, iso := range []string{"2026-01-15", "2026-09-09", "2026-09-10", "2026-09-11", "2027-06-01"} {
+		if got := ClassifyDue(iso, now, true); got != DueClosed {
+			t.Errorf("ClassifyDue(%q, closed) = %v, want closed", iso, got)
+		}
+	}
+}
+
+func TestClosedIssueDueDateIsNotAlarming(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+	overdue := "2026-01-15"
+
+	open := RenderDue(overdue, now, false)
+	closed := RenderDue(overdue, now, true)
+
+	if !strings.Contains(open, IconDueOverdue) {
+		t.Errorf("an open overdue issue should still alarm: %q", open)
+	}
+	if strings.Contains(closed, IconDueOverdue) {
+		t.Errorf("a closed issue kept the overdue icon: %q", closed)
+	}
+	if !strings.Contains(closed, IconDueClosed) {
+		t.Errorf("closed issue = %q, want the settled-date icon", closed)
+	}
+	if !strings.Contains(closed, "Jan 15") {
+		t.Errorf("closed issue = %q, the date itself should still be readable", closed)
+	}
+	if open == closed {
+		t.Error("open and closed overdue dates render identically")
+	}
+}
+
+func TestClosedIssueWithoutADueDateStaysUnset(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	if got := ClassifyDue("", now, true); got != DueUnset {
+		t.Errorf("ClassifyDue(\"\", closed) = %v, want unset", got)
+	}
+	if got := RenderDue("", now, true); !strings.Contains(got, DateUnset) {
+		t.Errorf("RenderDue(\"\", closed) = %q, want the unset placeholder", got)
+	}
+}
+
+func TestClosedColumnCellKeepsItsWidth(t *testing.T) {
+	t.Parallel()
+
+	c := CalculateColumnWidths(120)
+	now := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+
+	for _, iso := range []string{"", "2026-01-15", "2026-09-10", "2027-06-01"} {
+		cell := c.RenderDueDate(iso, now, true)
+		if got := lipgloss.Width(cell); got != c.DueDate {
+			t.Errorf("RenderDueDate(%q, closed) width = %d, want %d (%q)", iso, got, c.DueDate, cell)
+		}
+	}
+}
+
+func TestDueUrgencyStringCoversClosed(t *testing.T) {
+	t.Parallel()
+
+	if got := DueClosed.String(); got != "closed" {
+		t.Errorf("DueClosed.String() = %q, want closed", got)
+	}
 }

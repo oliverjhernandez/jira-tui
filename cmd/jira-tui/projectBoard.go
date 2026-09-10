@@ -157,7 +157,7 @@ func (m model) buildEpicListContent() string {
 
 		for ii, issue := range s.Issues {
 			selected := m.sectionCursor == si && m.cursor == ii
-			dimmed := closureStatuses[issue.Status]
+			dimmed := isClosedStatus(issue.Status)
 			b.WriteString(m.renderIssueRow(issue, selected, dimmed) + "\n")
 		}
 		b.WriteString("\n\n")

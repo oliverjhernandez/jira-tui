@@ -260,6 +260,7 @@ const (
 	DueToday
 	DueSoon
 	DueLater
+	DueClosed
 )
 
 func (u DueUrgency) String() string {
@@ -272,6 +273,8 @@ func (u DueUrgency) String() string {
 		return "soon"
 	case DueLater:
 		return "later"
+	case DueClosed:
+		return "closed"
 	default:
 		return "unset"
 	}
@@ -291,14 +294,18 @@ func FormatDate(iso string) string {
 }
 
 // ClassifyDue buckets a due date by how much calendar time is left, counting
-// whole days in now's location so "today" means today to the reader.
-func ClassifyDue(iso string, now time.Time) DueUrgency {
+// whole days in now's location so "today" means today to the reader. A closed
+// issue is never urgent: its deadline has stopped meaning anything.
+func ClassifyDue(iso string, now time.Time, closed bool) DueUrgency {
 	if iso == "" {
 		return DueUnset
 	}
 	d, err := time.Parse(DateLayout, iso)
 	if err != nil {
 		return DueUnset
+	}
+	if closed {
+		return DueClosed
 	}
 
 	loc := now.Location()
@@ -328,6 +335,8 @@ func dueStyle(u DueUrgency) (lipgloss.Style, string) {
 		return DueSoonStyle, IconDueSoon
 	case DueLater:
 		return DueLaterStyle, IconDueLater
+	case DueClosed:
+		return DueClosedStyle, IconDueClosed
 	default:
 		return DueUnsetStyle, ""
 	}
@@ -335,8 +344,8 @@ func dueStyle(u DueUrgency) (lipgloss.Style, string) {
 
 // RenderDue colors a due date by urgency and prefixes an icon signalling how
 // close it is.
-func RenderDue(iso string, now time.Time) string {
-	urgency := ClassifyDue(iso, now)
+func RenderDue(iso string, now time.Time, closed bool) string {
+	urgency := ClassifyDue(iso, now, closed)
 	style, icon := dueStyle(urgency)
 
 	text := FormatDate(iso)

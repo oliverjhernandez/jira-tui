@@ -50,6 +50,10 @@ var closureStatuses = map[string]bool{
 	"Cancelada": true,
 }
 
+func isClosedStatus(status string) bool {
+	return closureStatuses[status]
+}
+
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
 	var filtered []jira.Issue
 
@@ -218,7 +222,7 @@ func (m model) getCommentCursorLine() int {
 // compareIssues orders issues within a list: finished (Done/Cancelada) always
 // sink to the bottom, then highest priority first, then by status.
 func compareIssues(a, b jira.Issue) int {
-	aClosed, bClosed := closureStatuses[a.Status], closureStatuses[b.Status]
+	aClosed, bClosed := isClosedStatus(a.Status), isClosedStatus(b.Status)
 	if aClosed != bClosed {
 		if aClosed {
 			return 1 // a is finished -> after b

@@ -88,8 +88,8 @@ func (c ColumnWidths) RenderSummary(text string, selected bool, dimmed bool) str
 	return SummaryFieldStyle.Width(c.Summary).Render(text)
 }
 
-func (c ColumnWidths) RenderDueDate(iso string, now time.Time) string {
-	return PadCell(RenderDue(iso, now), c.DueDate)
+func (c ColumnWidths) RenderDueDate(iso string, now time.Time, closed bool) string {
+	return PadCell(RenderDue(iso, now, closed), c.DueDate)
 }
 
 func (c ColumnWidths) RenderCreatedDate(text string) string {
