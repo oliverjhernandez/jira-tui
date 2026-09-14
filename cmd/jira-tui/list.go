@@ -310,7 +310,6 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.previousMode = m.mode
 			m.mode = priorityView
 			m.priorityData = NewPriorityFormData(m.priorities, m.pendingIssue.Priority.Name)
-			m.loadingCount++
 			return m, m.priorityData.Form.Init()
 
 		case "ctrl+r":

@@ -425,6 +425,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// priorities
 		case keyPressMsg.String() == "p":
+			if m.activeIssue == nil {
+				return m, nil
+			}
+			m.setPendingIssue(m.activeIssue)
 			m.priorityData = NewPriorityFormData(m.priorities, m.activeIssue.Priority.Name)
 			m.previousMode = m.mode
 			m.mode = priorityView
