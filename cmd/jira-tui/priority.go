@@ -52,9 +52,10 @@ func (m model) updateEditPriorityView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.priorityData.Form.State == huh.StateCompleted {
-		m.mode = detailView
+		m.mode = m.previousMode
 		if m.pendingIssue != nil {
 			priority := m.priorityData.SelectedPriority
+			m.loadingCount++
 			cmds = append(cmds, m.postPriorityCmd(m.pendingIssue.Key, priority))
 		}
 	}
