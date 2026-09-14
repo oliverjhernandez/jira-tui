@@ -615,6 +615,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.sections = m.sectionsFor(m.issues)
+		m.rebuildFilteredSections()
 		m.selectIssueByKey(prevKey) // keep the selection across refreshes
 		m.listViewport.SetContent(m.buildListContent())
 
