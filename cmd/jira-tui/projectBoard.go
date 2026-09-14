@@ -59,11 +59,7 @@ func (m model) toggleTabGrouping() (tea.Model, tea.Cmd) {
 	}
 
 	m.sections = m.sectionsFor(m.issues)
-	if m.filtering && m.textInput.Value() != "" {
-		m.filteredSections = filterSections(m.sections, m.textInput.Value())
-	} else {
-		m.filteredSections = nil
-	}
+	m.rebuildFilteredSections()
 
 	// Reset the cursor to the first issue of the rebuilt list.
 	m.sectionCursor = 0

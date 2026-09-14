@@ -406,29 +406,43 @@ func (m model) navSections() []Section {
 // selection stable across list rebuilds (e.g. background refreshes) instead of
 // snapping back to the top.
 func (m *model) selectIssueByKey(key string) {
+	// Index into the same sections the list renders and navigates, so the cursor
+	// and the selection cannot disagree while a filter is active.
+	secs := m.navSections()
+
 	m.selectedIssue = nil
 	if key != "" {
-		for si := range m.sections {
-			for ii := range m.sections[si].Issues {
-				if m.sections[si].Issues[ii].Key == key {
+		for si := range secs {
+			for ii := range secs[si].Issues {
+				if secs[si].Issues[ii].Key == key {
 					m.sectionCursor = si
 					m.cursor = ii
-					m.selectedIssue = &m.sections[si].Issues[ii]
+					m.selectedIssue = &secs[si].Issues[ii]
 					return
 				}
 			}
 		}
 	}
-	for si := range m.sections {
-		if len(m.sections[si].Issues) > 0 {
+	for si := range secs {
+		if len(secs[si].Issues) > 0 {
 			m.sectionCursor = si
 			m.cursor = 0
-			m.selectedIssue = &m.sections[si].Issues[0]
+			m.selectedIssue = &secs[si].Issues[0]
 			return
 		}
 	}
 	m.sectionCursor = 0
 	m.cursor = 0
+}
+
+// rebuildFilteredSections recomputes the filtered view from the current
+// sections, or clears it when no filter is active.
+func (m *model) rebuildFilteredSections() {
+	if m.filtering && m.textInput.Value() != "" {
+		m.filteredSections = filterSections(m.sections, m.textInput.Value())
+		return
+	}
+	m.filteredSections = nil
 }
 
 // listCursorStepDown moves the cursor to the next issue (crossing sections).
