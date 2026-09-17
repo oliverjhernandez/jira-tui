@@ -135,7 +135,9 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "n":
-			i := &NewIssueFormData{}
+			i := &NewIssueFormData{
+				ParentKey: m.currentEpicKey(),
+			}
 			m.activeIssue = nil
 			m.newIssueData = m.NewIssueForm(i)
 			m.mode = newIssueView

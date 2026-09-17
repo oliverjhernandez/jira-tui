@@ -51,3 +51,77 @@ func TestGroupByEpic(t *testing.T) {
 		t.Errorf("last section should be 'No epic' with 2 tasks (orphan + missing-epic), got %+v", last)
 	}
 }
+
+func TestCurrentEpicKey(t *testing.T) {
+	t.Parallel()
+
+	epic := jira.Issue{Key: "P-10", Type: "Epic", Summary: "Billing"}
+	sections := []Section{
+		{Name: "Billing", CategoryKey: "P-10", Epic: &epic, Issues: []jira.Issue{{Key: "P-11"}}},
+		{Name: "No epic", CategoryKey: "no-epic", Issues: []jira.Issue{{Key: "P-30"}}},
+	}
+
+	tests := []struct {
+		name             string
+		grouping         listGrouping
+		sections         []Section
+		filteredSections []Section
+		sectionCursor    int
+		want             string
+	}{
+		{
+			name:          "cursor inside an epic section",
+			grouping:      groupEpic,
+			sections:      sections,
+			sectionCursor: 0,
+			want:          "P-10",
+		},
+		{
+			name:          "cursor in the no-epic section",
+			grouping:      groupEpic,
+			sections:      sections,
+			sectionCursor: 1,
+			want:          "",
+		},
+		{
+			name:          "status grouping",
+			grouping:      groupStatus,
+			sections:      sections,
+			sectionCursor: 0,
+			want:          "",
+		},
+		{
+			name:          "cursor out of range",
+			grouping:      groupEpic,
+			sections:      sections,
+			sectionCursor: 7,
+			want:          "",
+		},
+		{
+			name:             "filtered sections win",
+			grouping:         groupEpic,
+			sections:         sections,
+			filteredSections: []Section{sections[1], sections[0]},
+			sectionCursor:    1,
+			want:             "P-10",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			m := model{
+				tabs:             []Tab{{grouping: tt.grouping}},
+				activeTab:        0,
+				sections:         tt.sections,
+				filteredSections: tt.filteredSections,
+				sectionCursor:    tt.sectionCursor,
+			}
+
+			if got := m.currentEpicKey(); got != tt.want {
+				t.Errorf("currentEpicKey() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
