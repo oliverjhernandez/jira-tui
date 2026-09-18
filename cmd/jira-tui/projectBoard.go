@@ -161,3 +161,22 @@ func (m model) buildEpicListContent() string {
 
 	return b.String()
 }
+
+func (m model) currentEpicKey() string {
+	if m.currentGrouping() != groupEpic {
+		return ""
+	}
+
+	sections := m.sections
+	if m.filteredSections != nil {
+		sections = m.filteredSections
+	}
+	if m.sectionCursor < 0 || m.sectionCursor >= len(sections) {
+		return ""
+	}
+	if sections[m.sectionCursor].Epic == nil {
+		return ""
+	}
+
+	return sections[m.sectionCursor].Epic.Key
+}
