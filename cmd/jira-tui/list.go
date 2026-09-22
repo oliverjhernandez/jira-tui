@@ -128,6 +128,18 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setInfo("Summary yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
+
+		case keyPressMsg.String() == "d" && m.lastKey == "y":
+			var cmds []tea.Cmd
+			m.lastKey = ""
+			issue, ok := m.currentIssue()
+			if !ok {
+				return m, nil
+			}
+			yankToClipboard(issueYankBlock(*issue))
+			m.setInfo("Key, summary and description yanked to clipboard")
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
 		}
 
 		switch keyPressMsg.String() {

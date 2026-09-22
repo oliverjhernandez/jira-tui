@@ -60,6 +60,7 @@ var helpGroups = []helpGroup{
 		{"ctrl+s", "Search issues"},
 		{"ctrl+r", "Refresh"},
 		{"y k / y K / y s", "Yank key / URL / summary"},
+		{"y d", "Yank key, summary and description"},
 	}},
 	{"Detail", []helpBind{
 		{"tab / shift+tab", "Next / previous section"},
@@ -78,6 +79,8 @@ var helpGroups = []helpGroup{
 		{"n", "New sub-task (sub-tasks section)"},
 		{"gp", "Go to parent"},
 		{"yy", "Yank focused text"},
+		{"y k / y K / y s", "Yank key / URL / summary"},
+		{"y d", "Yank key, summary and description"},
 		{"ctrl+r", "Refresh"},
 		{"esc", "Back"},
 	}},
