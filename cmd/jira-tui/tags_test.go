@@ -374,7 +374,10 @@ func TestTaggedRowsStayAligned(t *testing.T) {
 	}
 }
 
-func TestTagsYieldToTheSummaryOnNarrowTerminals(t *testing.T) {
+// TestTagsAreVisibleOnANarrowTerminal is the reason chips borrow from the
+// summary text rather than waiting for slack: SUMMARY sits at its floor on
+// every terminal under ~170 columns, so slack-only chips never showed up.
+func TestTagsAreVisibleOnANarrowTerminal(t *testing.T) {
 	t.Parallel()
 
 	store := newFakeTagStore(map[string][]string{"DEV-1": {"urgent"}})
@@ -383,11 +386,56 @@ func TestTagsYieldToTheSummaryOnNarrowTerminals(t *testing.T) {
 	m.columnWidths = ui.CalculateColumnWidths(80)
 
 	row := stripANSI(m.renderIssueRow(m.issues[0], false, false))
-	if !strings.Contains(row, "a readable summary") {
-		t.Errorf("the summary must survive intact on a narrow terminal, got %q", row)
+	if !strings.Contains(row, "#urgent") {
+		t.Errorf("an 80-column terminal should still show tags, got %q", row)
 	}
-	if strings.Contains(row, "#urgent") {
-		t.Errorf("tags should drop out when SUMMARY is already at its floor, got %q", row)
+	if !strings.Contains(row, "a readable summary") {
+		t.Errorf("a short summary should still fit beside its tags, got %q", row)
+	}
+}
+
+// TestUntaggedRowsKeepTheWholeSummary pins that only tagged rows pay for the
+// chip gutter.
+func TestUntaggedRowsKeepTheWholeSummary(t *testing.T) {
+	t.Parallel()
+
+	long := strings.Repeat("ab", 30)
+	store := newFakeTagStore(map[string][]string{"DEV-2": {"urgent"}})
+	m := tagsModel(t, store, issue("DEV-1", long), issue("DEV-2", long))
+	m.windowWidth = 80
+	m.columnWidths = ui.CalculateColumnWidths(80)
+
+	untagged := stripANSI(m.renderIssueRow(m.issues[0], false, false))
+	tagged := stripANSI(m.renderIssueRow(m.issues[1], false, false))
+
+	keptUntagged := strings.Count(untagged, "ab")
+	keptTagged := strings.Count(tagged, "ab")
+	if keptUntagged <= keptTagged {
+		t.Errorf("an untagged row should keep more summary (%d) than a tagged one (%d)", keptUntagged, keptTagged)
+	}
+	if !strings.Contains(tagged, "#urgent") {
+		t.Errorf("the tagged row should show its tag, got %q", tagged)
+	}
+}
+
+func TestSummaryTextKeepsItsFloorBesideTags(t *testing.T) {
+	t.Parallel()
+
+	store := newFakeTagStore(map[string][]string{
+		"DEV-1": {"one", "two", "three", "four", "five", "six"},
+	})
+	long := strings.Repeat("z", 200)
+	m := tagsModel(t, store, issue("DEV-1", long))
+
+	for _, width := range []int{80, 100, 160, 200, 240} {
+		m.windowWidth = width
+		m.columnWidths = ui.CalculateColumnWidths(width)
+
+		row := stripANSI(m.renderIssueRow(m.issues[0], false, false))
+		if kept := strings.Count(row, "z"); kept < minSummaryTextWidth-1 {
+			t.Errorf("width=%d: tags left only %d columns of summary, want at least %d",
+				width, kept, minSummaryTextWidth-1)
+		}
 	}
 }
 

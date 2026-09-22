@@ -388,8 +388,14 @@ func RenderTags(tags []string, budget int, dimmed bool) string {
 		chips = append(chips, chipStyle.Render(chip))
 	}
 
+	// Nothing fit: say how many tags are hidden rather than hiding the fact
+	// that the issue is tagged at all.
 	if len(chips) == 0 {
-		return ""
+		alone := fmt.Sprintf("+%d", len(tags))
+		if lipgloss.Width(alone) > budget {
+			return ""
+		}
+		return TagMoreStyle.Render(alone)
 	}
 
 	out := strings.Join(chips, " ")
