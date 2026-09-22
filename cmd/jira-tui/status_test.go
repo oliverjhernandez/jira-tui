@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -85,5 +86,50 @@ func TestAPIErrorIncludesBody(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("APIError.Error() = %q, missing %q", got, want)
 		}
+	}
+}
+
+func TestAuthErrorsAreSticky(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		err        error
+		wantSticky bool
+	}{
+		{"401 sticks", &jira.APIError{StatusCode: http.StatusUnauthorized}, true},
+		{"403 sticks", &jira.APIError{StatusCode: http.StatusForbidden}, true},
+		{"404 clears", &jira.APIError{StatusCode: http.StatusNotFound}, false},
+		{"500 clears", &jira.APIError{StatusCode: http.StatusInternalServerError}, false},
+		{"plain error clears", errors.New("boom"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var m model
+			m.setError("loading issues", tt.err)
+			if m.statusMessage.sticky != tt.wantSticky {
+				t.Errorf("sticky = %v, want %v", m.statusMessage.sticky, tt.wantSticky)
+			}
+		})
+	}
+}
+
+func TestStickyMessageSurvivesClear(t *testing.T) {
+	t.Parallel()
+
+	var m model
+	m.setError("loading issues", &jira.APIError{StatusCode: http.StatusUnauthorized})
+
+	updated, _ := m.update(clearStatusMsg{})
+	got := updated.(model)
+	if got.statusMessage.content == "" {
+		t.Error("an auth error must stay on screen after the clear tick")
+	}
+
+	got.setInfo("something else")
+	if got.statusMessage.sticky {
+		t.Error("a later message must not inherit stickiness")
 	}
 }

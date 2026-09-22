@@ -64,7 +64,7 @@ func TestStatePath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := statePath(tt.xdg, tt.homeDir)
+			got, err := statePath(tt.xdg, tt.homeDir, stateFileName)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("statePath(%q) = %q, want an error: %s", tt.xdg, got, tt.whyItIs)
@@ -82,9 +82,24 @@ func TestStatePath(t *testing.T) {
 
 	t.Run("home lookup errors are wrapped", func(t *testing.T) {
 		t.Parallel()
-		_, err := statePath("", broken)
+		_, err := statePath("", broken, stateFileName)
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Errorf("error = %v, want it to wrap the home lookup failure", err)
 		}
 	})
+}
+
+func TestDefaultLogPathUsesStateDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", dir)
+
+	got, err := DefaultLogPath()
+	if err != nil {
+		t.Fatalf("DefaultLogPath() unexpected error: %v", err)
+	}
+
+	want := filepath.Join(dir, appDirName, logFileName)
+	if got != want {
+		t.Errorf("DefaultLogPath() = %q, want %q", got, want)
+	}
 }
