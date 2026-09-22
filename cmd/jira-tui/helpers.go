@@ -402,3 +402,7 @@ func joinNonEmpty(sep string, parts ...string) string {
 	}
 	return strings.Join(kept, sep)
 }
+
+func browseURL(jiraBaseURL string) string {
+	return strings.TrimSuffix(jiraBaseURL, "/") + "/browse/"
+}

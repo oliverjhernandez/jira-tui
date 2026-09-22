@@ -20,8 +20,6 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
-const jiraURL = "https://layer7.atlassian.net/browse/"
-
 const clearMsgTimeout = 5 * time.Second
 
 type viewMode int
@@ -213,6 +211,7 @@ type model struct {
 	statuses         map[string][]jira.Status
 	priorities       []jira.Priority
 	startDateFieldID string
+	browseURL        string
 
 	// Worklogs
 	worklogTotals map[string]int
@@ -1054,6 +1053,7 @@ func main() {
 		mode:            listView,
 		baseView:        listView,
 		client:          client,
+		browseURL:       browseURL(cfg.JiraURL),
 		tags:            tags,
 		textInput:       textInput,
 		windowWidth:     80,

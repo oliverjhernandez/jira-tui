@@ -340,7 +340,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case keyPressMsg.String() == "K" && m.lastKey == "y":
 			var cmds []tea.Cmd
 			m.lastKey = ""
-			textToCopy := jiraURL + m.activeIssue.Key
+			textToCopy := m.browseURL + m.activeIssue.Key
 			yankToClipboard(textToCopy)
 			m.setInfo("URL yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))

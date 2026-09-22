@@ -218,3 +218,27 @@ func TestPlainClipboardTextStripsHyperlinks(t *testing.T) {
 		t.Errorf("hyperlink yanked as %q, want the bare URL", got)
 	}
 }
+
+func TestBrowseURL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{"no trailing slash", "https://acme.atlassian.net", "https://acme.atlassian.net/browse/"},
+		{"trailing slash", "https://acme.atlassian.net/", "https://acme.atlassian.net/browse/"},
+		{"self hosted path", "https://jira.example.com/jira", "https://jira.example.com/jira/browse/"},
+		{"empty", "", "/browse/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := browseURL(tt.base); got != tt.want {
+				t.Errorf("browseURL(%q) = %q, want %q", tt.base, got, tt.want)
+			}
+		})
+	}
+}
