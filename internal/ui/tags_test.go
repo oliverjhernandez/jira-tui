@@ -59,9 +59,15 @@ func TestRenderTagsMarksHiddenTags(t *testing.T) {
 			wantMarker: "+2",
 		},
 		{
-			name:   "nothing fits",
+			name:       "a long tag is replaced by a count",
+			tags:       []string{"needs-review"},
+			budget:     4,
+			wantMarker: "+1",
+		},
+		{
+			name:   "not even a count fits",
 			tags:   []string{"needs-review"},
-			budget: 4,
+			budget: 1,
 		},
 		{
 			name:   "zero budget",

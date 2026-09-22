@@ -123,14 +123,24 @@ func summaryCell(m model, i jira.Issue, selected, dimmed bool) string {
 	return m.columnWidths.RenderSummary(summaryText, selected, dimmed)
 }
 
-// tagCellWidth gives tag chips only the slack the SUMMARY column has above its
-// floor, so a narrow terminal drops the chips instead of the summary text.
+const (
+	// minSummaryTextWidth is how much of the SUMMARY cell is always left for
+	// the summary itself. Tag chips may borrow the rest: SUMMARY sits at its
+	// 50-column floor on any terminal under ~170, so chips that waited for
+	// slack never appeared at all.
+	minSummaryTextWidth = 36
+	minTagCellWidth     = 8
+	maxTagCellWidth     = 24
+)
+
+// tagCellWidth is how much of the SUMMARY cell tag chips may take. Only tagged
+// rows pay: an issue with no tags keeps the whole cell.
 func tagCellWidth(summaryWidth int) int {
-	slack := summaryWidth - ui.MinSummaryWidth
-	if slack < 8 {
+	room := summaryWidth - minSummaryTextWidth - 1 // the separating space
+	if room < minTagCellWidth {
 		return 0
 	}
-	return min(slack*2/3, 24)
+	return min(room, maxTagCellWidth)
 }
 
 // rowPrefix is the 2-cell cursor gutter. Both states are exactly 2 cells wide so
