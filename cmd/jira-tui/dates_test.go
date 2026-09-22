@@ -245,3 +245,36 @@ func TestFieldsLoadedResolvesStartField(t *testing.T) {
 		t.Errorf("loadingCount = %d, want 0", nm.loadingCount)
 	}
 }
+
+func TestResolveFieldByNames(t *testing.T) {
+	t.Parallel()
+
+	fields := []jira.Field{
+		{ID: "customfield_10021", Name: "Flagged"},
+		{ID: "customfield_10485", Name: "Motivo de bloqueo"},
+		{ID: "customfield_10999", Name: " Start Date "},
+	}
+
+	tests := []struct {
+		name  string
+		names []string
+		want  string
+	}{
+		{"exact match", []string{"flagged"}, "customfield_10021"},
+		{"case insensitive", []string{"FLAGGED"}, "customfield_10021"},
+		{"trims whitespace", []string{"start date"}, "customfield_10999"},
+		{"first name wins", []string{"motivo de bloqueo", "flagged"}, "customfield_10485"},
+		{"falls through to later name", []string{"nope", "flagged"}, "customfield_10021"},
+		{"no match", []string{"nonexistent"}, ""},
+		{"empty candidates", nil, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := resolveFieldByNames(fields, tt.names); got != tt.want {
+				t.Errorf("resolveFieldByNames(%v) = %q, want %q", tt.names, got, tt.want)
+			}
+		})
+	}
+}

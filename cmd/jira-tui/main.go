@@ -205,13 +205,15 @@ type model struct {
 	selectedIssue  *jira.Issue
 
 	// Issue Metadata
-	sections         []Section
-	focusedSection   focusedSection
-	filteredSections []Section
-	statuses         map[string][]jira.Status
-	priorities       []jira.Priority
-	startDateFieldID string
-	browseURL        string
+	sections           []Section
+	focusedSection     focusedSection
+	filteredSections   []Section
+	statuses           map[string][]jira.Status
+	priorities         []jira.Priority
+	startDateFieldID   string
+	flaggedFieldID     string
+	blockReasonFieldID string
+	browseURL          string
 
 	// Worklogs
 	worklogTotals map[string]int
@@ -467,6 +469,14 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.startDateFieldID = resolveStartDateField(msg.fields)
 		if m.startDateFieldID == "" {
 			slog.Warn("no start date field found in Jira metadata", "tried", startDateFieldNames)
+		}
+		m.flaggedFieldID = resolveFieldByNames(msg.fields, flaggedFieldNames)
+		if m.flaggedFieldID == "" {
+			slog.Warn("no flagged field found in Jira metadata", "tried", flaggedFieldNames)
+		}
+		m.blockReasonFieldID = resolveFieldByNames(msg.fields, blockReasonFieldNames)
+		if m.blockReasonFieldID == "" {
+			slog.Warn("no block reason field found in Jira metadata", "tried", blockReasonFieldNames)
 		}
 		return m, nil
 

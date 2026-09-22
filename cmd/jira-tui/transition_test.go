@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
@@ -55,7 +57,11 @@ func TestPostBlockedTransitionCmdPayload(t *testing.T) {
 	defer srv.Close()
 
 	client, _ := jira.NewClient(srv.URL, "user@example.com", "token", srv.URL, "tempo")
-	m := model{client: client}
+	m := model{
+		client:             client,
+		flaggedFieldID:     "customfield_10021",
+		blockReasonFieldID: "customfield_10485",
+	}
 
 	msg := m.postBlockedTransitionCmd("TSIPC-61", "3", "server is down")()
 
@@ -75,9 +81,9 @@ func TestPostBlockedTransitionCmdPayload(t *testing.T) {
 	}
 
 	// Flagged: array of {value: Impediment}
-	flagged, ok := fields[flaggedFieldID].([]any)
+	flagged, ok := fields[m.flaggedFieldID].([]any)
 	if !ok || len(flagged) != 1 {
-		t.Fatalf("flagged field wrong shape: %+v", fields[flaggedFieldID])
+		t.Fatalf("flagged field wrong shape: %+v", fields[m.flaggedFieldID])
 	}
 	flag0, ok := flagged[0].(map[string]any)
 	if !ok || flag0["value"] != flaggedFieldValue {
@@ -85,7 +91,43 @@ func TestPostBlockedTransitionCmdPayload(t *testing.T) {
 	}
 
 	// Blocker reason: plain string
-	if fields[blockReasonFieldID] != "server is down" {
-		t.Errorf("block reason = %v, want %q", fields[blockReasonFieldID], "server is down")
+	if fields[m.blockReasonFieldID] != "server is down" {
+		t.Errorf("block reason = %v, want %q", fields[m.blockReasonFieldID], "server is down")
+	}
+}
+
+func TestPostBlockedTransitionCmdUnresolvedFields(t *testing.T) {
+	var captured map[string]any
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/rest/api/3/issue/TSIPC-61/transitions", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(body, &captured); err != nil {
+			t.Errorf("failed to decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	client, _ := jira.NewClient(srv.URL, "user@example.com", "token", srv.URL, "tempo")
+	m := model{client: client}
+
+	msg := m.postBlockedTransitionCmd("TSIPC-61", "3", "server is down")()
+	if _, ok := msg.(transitionPostedMsg); !ok {
+		t.Fatalf("expected transitionPostedMsg, got %T (%+v)", msg, msg)
+	}
+
+	if _, ok := captured["fields"]; ok {
+		t.Errorf("fields should be omitted when no custom field resolves, got %+v", captured["fields"])
+	}
+
+	update, ok := captured["update"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected the reason to fall back to a comment, got %+v", captured)
+	}
+	if !strings.Contains(fmt.Sprint(update), "server is down") {
+		t.Errorf("comment fallback missing the reason: %+v", update)
 	}
 }
