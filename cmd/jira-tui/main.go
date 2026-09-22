@@ -2,10 +2,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"os"
+	"path/filepath"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -17,6 +20,7 @@ import (
 
 	"github.com/oliverjhernandez/jira-tui/internal/config"
 	"github.com/oliverjhernandez/jira-tui/internal/jira"
+	"github.com/oliverjhernandez/jira-tui/internal/store"
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
@@ -867,7 +871,9 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case clearStatusMsg:
-		m.statusMessage.content = ""
+		if !m.statusMessage.sticky {
+			m.statusMessage.content = ""
+		}
 		return m, nil
 
 	case errMsg:
@@ -1013,6 +1019,23 @@ func altScreenView(content string) tea.View {
 	return v
 }
 
+// openLogFile opens the debug log under the user state directory, creating it
+// if needed. Logging is best effort: a failure here must not stop the app.
+func openLogFile() (*os.File, error) {
+	path, err := store.DefaultLogPath()
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, fmt.Errorf("creating the log directory: %w", err)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("opening the log file: %w", err)
+	}
+	return f, nil
+}
+
 // Build metadata, overridden via -ldflags at release time (see .goreleaser.yaml).
 var (
 	version = "dev"
@@ -1020,36 +1043,89 @@ var (
 	date    = "unknown"
 )
 
+const usage = `jira-tui - a terminal UI for Jira
+
+Usage:
+  jira-tui [flags]
+
+Flags:
+  -v, --version   print version information and exit
+      --debug     log debug detail to the log file
+  -h, --help      show this help
+
+Required environment:
+  JIRA_URL        your Jira base URL, e.g. https://acme.atlassian.net
+  JIRA_EMAIL      the account email for the API token
+  JIRA_TOKEN      an API token from https://id.atlassian.com/manage-profile/security/api-tokens
+
+Optional environment (Tempo time tracking):
+  TEMPO_URL       Tempo API base URL, e.g. https://api.tempo.io
+  TEMPO_TOKEN     a Tempo API token
+
+Press ? inside the app for the full list of keybindings.
+`
+
 func main() {
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
+	debug := false
+	for _, arg := range os.Args[1:] {
+		switch arg {
 		case "--version", "-v", "version":
 			fmt.Printf("jira-tui %s (%s, %s)\n", version, commit, date)
 			return
+		case "--help", "-h", "help":
+			fmt.Print(usage)
+			return
+		case "--debug":
+			debug = true
+		default:
+			fmt.Fprintf(os.Stderr, "jira-tui: unknown argument %q\n\n%s", arg, usage)
+			os.Exit(2)
 		}
 	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		panic(err)
+		var missing *config.MissingEnvError
+		if errors.As(err, &missing) {
+			fmt.Fprintf(os.Stderr, "jira-tui: %s\n\n%s", err, usage)
+		} else {
+			fmt.Fprintf(os.Stderr, "jira-tui: %s\n", err)
+		}
+		os.Exit(1)
 	}
 
-	client, _ := jira.NewClient(cfg.JiraURL, cfg.JIraEmail, cfg.JiraToken, cfg.TempoURL, cfg.TempoToken)
+	client, err := jira.NewClient(cfg.JiraURL, cfg.JIraEmail, cfg.JiraToken, cfg.TempoURL, cfg.TempoToken)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "jira-tui: creating the Jira client: %s\n", err)
+		os.Exit(1)
+	}
 
 	tags, tagsErr := openTagStore()
 
-	logFile, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		panic(err)
+	logFile, logErr := openLogFile()
+	if logErr == nil {
+		defer func() {
+			if err := logFile.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "jira-tui: closing the log file: %s\n", err)
+			}
+		}()
 	}
-	defer func() {
-		if err := logFile.Close(); err != nil {
-			fmt.Printf("error: %s", err)
-		}
-	}()
-	slog.SetDefault(slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+	level := slog.LevelWarn
+	if debug {
+		level = slog.LevelDebug
+	}
+
+	logOut := io.Discard
+	if logErr == nil {
+		logOut = logFile
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(logOut, &slog.HandlerOptions{
+		Level: level,
 	})))
+
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "jira-tui: logging disabled: %s\n", logErr)
+	}
 
 	if tagsErr != nil {
 		slog.Error("opening the local state file", "err", tagsErr)

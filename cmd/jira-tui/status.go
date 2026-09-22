@@ -24,6 +24,18 @@ const (
 type statusMessage struct {
 	content string
 	msgType messageType
+	sticky  bool
+}
+
+// isAuthError reports whether err is a credential or permission failure. Those
+// stay on screen: clearing them leaves the user with an empty board and no
+// explanation for why nothing loaded.
+func isAuthError(err error) bool {
+	var apiErr *jira.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	return apiErr.StatusCode == http.StatusUnauthorized || apiErr.StatusCode == http.StatusForbidden
 }
 
 // setError records a failure: it logs the full error detail (for debug.log)
@@ -34,6 +46,7 @@ func (m *model) setError(op string, err error) {
 	m.statusMessage = statusMessage{
 		content: humanizeError(err),
 		msgType: errStatusBarMsg,
+		sticky:  isAuthError(err),
 	}
 }
 
