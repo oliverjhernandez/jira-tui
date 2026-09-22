@@ -474,6 +474,10 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.issueLinkData.Form.Init()
 
 		case keyPressMsg.String() == "w":
+			if !m.tempoEnabled {
+				m.setErrorMsg("Time logging needs Tempo: set TEMPO_URL and TEMPO_TOKEN")
+				return m, m.clearStatusAfter(clearMsgTimeout)
+			}
 			w := &jira.Worklog{
 				Time:        0,
 				StartDate:   time.Now().Format("2006-01-02"),

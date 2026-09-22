@@ -17,9 +17,31 @@ const listHeaderHeight = 2
 // both the pinned header and every data row, so labels always line up над the
 // data they name — change the order/width here and both move together.
 type listColumn struct {
-	header string
-	width  func(c ui.ColumnWidths) int
-	cell   func(m model, i jira.Issue, selected, dimmed bool) string
+	header  string
+	width   func(c ui.ColumnWidths) int
+	cell    func(m model, i jira.Issue, selected, dimmed bool) string
+	enabled func(m model) bool
+}
+
+// layoutWidths reclaims the space of any hidden column for the summary, so the
+// row still spans the same total width.
+func (m model) layoutWidths(cw ui.ColumnWidths) ui.ColumnWidths {
+	if !m.tempoEnabled {
+		cw.Summary += cw.TimeSpent + cw.Empty
+		cw.TimeSpent = 0
+	}
+	return cw
+}
+
+func (m model) visibleColumns() []listColumn {
+	cols := make([]listColumn, 0, len(listColumns))
+	for _, col := range listColumns {
+		if col.enabled != nil && !col.enabled(m) {
+			continue
+		}
+		cols = append(cols, col)
+	}
+	return cols
 }
 
 // listColumns is the ordered, single source of truth for the list layout.
@@ -88,6 +110,7 @@ var listColumns = []listColumn{
 		cell: func(m model, i jira.Issue, _, _ bool) string {
 			return m.columnWidths.RenderTimeSpent(ui.FormatTimeSpent(m.worklogTotals[i.ID]))
 		},
+		enabled: func(m model) bool { return m.tempoEnabled },
 	},
 }
 
@@ -160,8 +183,9 @@ func (m model) isMine(i jira.Issue) bool {
 
 // renderIssueRow builds one data row from the column model.
 func (m model) renderIssueRow(i jira.Issue, selected, dimmed bool) string {
-	cells := make([]string, len(listColumns))
-	for ci, col := range listColumns {
+	cols := m.visibleColumns()
+	cells := make([]string, len(cols))
+	for ci, col := range cols {
 		cells[ci] = ui.PadCell(col.cell(m, i, selected, dimmed), col.width(m.columnWidths))
 	}
 	line := strings.Join(cells, " ")
@@ -174,8 +198,9 @@ func (m model) renderIssueRow(i jira.Issue, selected, dimmed bool) string {
 // renderListColumnsHeader builds the pinned header: the labels aligned to the
 // same widths as the rows, plus a separator rule spanning the full row width.
 func (m model) renderListColumnsHeader() string {
-	cells := make([]string, len(listColumns))
-	for ci, col := range listColumns {
+	cols := m.visibleColumns()
+	cells := make([]string, len(cols))
+	for ci, col := range cols {
 		cells[ci] = ui.PadCell(ui.ColumnHeaderStyle.Render(col.header), col.width(m.columnWidths))
 	}
 	header := "  " + strings.Join(cells, " ")

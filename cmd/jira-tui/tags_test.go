@@ -361,14 +361,18 @@ func TestTaggedRowsStayAligned(t *testing.T) {
 	})
 
 	for _, width := range []int{80, 90, 100, 120, 160, 200, 240} {
-		m := tagsModel(t, store, issue("DEV-1", "alpha"))
-		m.windowWidth = width
-		m.columnWidths = ui.CalculateColumnWidths(width)
+		for _, tempo := range []bool{true, false} {
+			m := tagsModel(t, store, issue("DEV-1", "alpha"))
+			m.windowWidth = width
+			m.tempoEnabled = tempo
+			cw := ui.CalculateColumnWidths(width)
+			m.columnWidths = m.layoutWidths(cw)
 
-		for _, selected := range []bool{false, true} {
-			row := m.renderIssueRow(m.issues[0], selected, false)
-			if got, want := lipgloss.Width(row), m.columnWidths.TotalWidth(); got != want {
-				t.Errorf("width=%d selected=%v: tagged row is %d cells, want %d", width, selected, got, want)
+			for _, selected := range []bool{false, true} {
+				row := m.renderIssueRow(m.issues[0], selected, false)
+				if got, want := lipgloss.Width(row), cw.TotalWidth(); got != want {
+					t.Errorf("width=%d tempo=%v selected=%v: tagged row is %d cells, want %d", width, tempo, selected, got, want)
+				}
 			}
 		}
 	}

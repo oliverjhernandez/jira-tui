@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -414,7 +415,20 @@ func (c *Client) doJiraRequest(ctx context.Context, method, endpoint string, que
 	return nil
 }
 
+// ErrTempoNotConfigured is returned when a Tempo-backed call is attempted
+// without TEMPO_URL and TEMPO_TOKEN set.
+var ErrTempoNotConfigured = errors.New("tempo is not configured")
+
+// TempoEnabled reports whether Tempo worklog credentials were supplied.
+func (c *Client) TempoEnabled() bool {
+	return c.tempoURL != "" && c.tempoToken != ""
+}
+
 func (c *Client) doTempoRequest(ctx context.Context, method, endpoint string, queryParams url.Values, body any, result any, expectedStatus ...int) error {
+	if !c.TempoEnabled() {
+		return ErrTempoNotConfigured
+	}
+
 	apiURL := fmt.Sprintf("%s%s", c.tempoURL, endpoint)
 
 	if len(queryParams) > 0 {

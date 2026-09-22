@@ -28,31 +28,53 @@ func TestListHeaderAlignsWithRows(t *testing.T) {
 	unassigned.Assignee = "Unassigned"
 
 	for _, tw := range []int{200, 90} {
-		cw := ui.CalculateColumnWidths(tw)
-		m := model{columnWidths: cw}
-		want := cw.TotalWidth()
+		for _, tempo := range []bool{true, false} {
+			cw := ui.CalculateColumnWidths(tw)
+			m := model{tempoEnabled: tempo}
+			m.columnWidths = m.layoutWidths(cw)
+			want := cw.TotalWidth()
 
-		header := m.renderListColumnsHeader()
-		lines := strings.Split(header, "\n")
-		if len(lines) != 2 {
-			t.Fatalf("tw=%d: header should be 2 lines (labels + rule), got %d", tw, len(lines))
-		}
-		for i, ln := range lines {
-			if got := lipgloss.Width(ln); got != want {
-				t.Errorf("tw=%d: header line %d width = %d, want %d", tw, i, got, want)
+			header := m.renderListColumnsHeader()
+			lines := strings.Split(header, "\n")
+			if len(lines) != 2 {
+				t.Fatalf("tw=%d tempo=%v: header should be 2 lines, got %d", tw, tempo, len(lines))
+			}
+			for i, ln := range lines {
+				if got := lipgloss.Width(ln); got != want {
+					t.Errorf("tw=%d tempo=%v: header line %d width = %d, want %d", tw, tempo, i, got, want)
+				}
+			}
+
+			cases := map[string]string{
+				"selected":   m.renderIssueRow(issue, true, false),
+				"unselected": m.renderIssueRow(issue, false, false),
+				"dimmed":     m.renderIssueRow(issue, false, true),
+				"unassigned": m.renderIssueRow(unassigned, false, false),
+			}
+			for name, row := range cases {
+				if got := lipgloss.Width(row); got != want {
+					t.Errorf("tw=%d tempo=%v: %s row width = %d, want %d", tw, tempo, name, got, want)
+				}
 			}
 		}
+	}
+}
 
-		cases := map[string]string{
-			"selected":   m.renderIssueRow(issue, true, false),
-			"unselected": m.renderIssueRow(issue, false, false),
-			"dimmed":     m.renderIssueRow(issue, false, true),
-			"unassigned": m.renderIssueRow(unassigned, false, false),
-		}
-		for name, row := range cases {
-			if got := lipgloss.Width(row); got != want {
-				t.Errorf("tw=%d: %s row width = %d, want %d", tw, name, got, want)
-			}
+func TestLoggedColumnHiddenWithoutTempo(t *testing.T) {
+	t.Parallel()
+
+	withTempo := model{tempoEnabled: true}
+	withoutTempo := model{tempoEnabled: false}
+
+	if len(withTempo.visibleColumns()) != len(listColumns) {
+		t.Errorf("with Tempo all %d columns should show, got %d", len(listColumns), len(withTempo.visibleColumns()))
+	}
+	if got := len(withoutTempo.visibleColumns()); got != len(listColumns)-1 {
+		t.Errorf("without Tempo the LOGGED column should be hidden, got %d columns", got)
+	}
+	for _, col := range withoutTempo.visibleColumns() {
+		if col.header == "LOGGED" {
+			t.Error("LOGGED column should not render without Tempo")
 		}
 	}
 }

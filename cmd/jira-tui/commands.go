@@ -627,6 +627,9 @@ func (m model) fetchWorkLogsCmd(issueID string) tea.Cmd {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
+		if !m.client.TempoEnabled() {
+			return workLogsLoadedMsg{workLogs: nil, tabID: m.activeTabID()}
+		}
 
 		wls, err := m.client.GetWorkLogs(context.Background(), issueID)
 		if err != nil {
@@ -641,6 +644,9 @@ func (m model) fetchAllWorklogsTotalCmd(issues []jira.Issue, tabID int) tea.Cmd 
 	return func() tea.Msg {
 		if m.client == nil {
 			return errMsg{fmt.Errorf("jira client not initialized")}
+		}
+		if !m.client.TempoEnabled() {
+			return worklogTotalsLoadedMsg{totals: map[string]int{}, tabID: tabID}
 		}
 
 		type result struct {
@@ -958,14 +964,16 @@ func (m model) renderInfoPanel() string {
 	}
 	line2 := statusCounts + strings.Repeat(" ", line2Gap) + totalStr
 
-	var totalLoggedSeconds int
-	for _, seconds := range m.worklogTotals {
-		totalLoggedSeconds += seconds
-	}
-	totalLoggedStr := ui.InfoPanelCountLabelStyle.Render(ui.IconTime + " Total Logged: " + ui.FormatTimeSpent(totalLoggedSeconds))
-	line3 := totalLoggedStr
+	content := line1 + "\n" + line2
 
-	content := line1 + "\n" + line2 + "\n" + line3
+	if m.tempoEnabled {
+		var totalLoggedSeconds int
+		for _, seconds := range m.worklogTotals {
+			totalLoggedSeconds += seconds
+		}
+		content += "\n" + ui.InfoPanelCountLabelStyle.Render(ui.IconTime+" Total Logged: "+ui.FormatTimeSpent(totalLoggedSeconds))
+	}
+
 	return ui.InfoPanelStyle.Render(content)
 }
 
