@@ -45,6 +45,7 @@ type Issue struct {
 	Key              string
 	Summary          string
 	Status           string
+	StatusCategory   string
 	Type             string
 	Assignee         string // display name
 	AssigneeID       string // account id (stable identifier)
@@ -287,7 +288,8 @@ type contentAttrs struct {
 }
 
 type statusField struct {
-	Name string `json:"name"`
+	Name           string         `json:"name"`
+	StatusCategory StatusCategory `json:"statusCategory"`
 }
 
 type typeField struct {
@@ -525,14 +527,15 @@ func (c *Client) SearchIssuesJql(ctx context.Context, jql string) ([]Issue, erro
 				assigneeID = issue.Fields.Assignee.ID
 			}
 			i := Issue{
-				ID:         issue.ID,
-				Key:        issue.Key,
-				Summary:    issue.Fields.Summary,
-				Status:     issue.Fields.Status.Name,
-				Type:       issue.Fields.Type.Name,
-				Assignee:   assignee,
-				AssigneeID: assigneeID,
-				Project:    issue.Fields.Project,
+				ID:             issue.ID,
+				Key:            issue.Key,
+				Summary:        issue.Fields.Summary,
+				Status:         issue.Fields.Status.Name,
+				StatusCategory: issue.Fields.Status.StatusCategory.Key,
+				Type:           issue.Fields.Type.Name,
+				Assignee:       assignee,
+				AssigneeID:     assigneeID,
+				Project:        issue.Fields.Project,
 			}
 			if issue.Fields.Priority != nil {
 				i.Priority = Priority{
@@ -654,14 +657,15 @@ func (c *Client) GetIssueDetail(ctx context.Context, issueKey, startDateFieldID 
 	)
 
 	detail := &Issue{
-		ID:          issue.ID,
-		Key:         issue.Key,
-		Project:     issue.Fields.Project,
-		Type:        issue.Fields.Type.Name,
-		Summary:     issue.Fields.Summary,
-		Status:      issue.Fields.Status.Name,
-		Description: issue.Fields.Description,
-		DueDate:     issue.Fields.DueDate,
+		ID:             issue.ID,
+		Key:            issue.Key,
+		Project:        issue.Fields.Project,
+		Type:           issue.Fields.Type.Name,
+		Summary:        issue.Fields.Summary,
+		Status:         issue.Fields.Status.Name,
+		StatusCategory: issue.Fields.Status.StatusCategory.Key,
+		Description:    issue.Fields.Description,
+		DueDate:        issue.Fields.DueDate,
 	}
 
 	if startDateFieldID != "" {

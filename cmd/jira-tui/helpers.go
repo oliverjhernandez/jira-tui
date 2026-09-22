@@ -17,41 +17,86 @@ import (
 	"github.com/oliverjhernandez/jira-tui/internal/ui"
 )
 
+const (
+	statusCategoryNew        = "new"
+	statusCategoryInProgress = "indeterminate"
+	statusCategoryDone       = "done"
+)
+
+const rankUnknown = 1 << 10
+
+var statusCategoryRank = map[string]int{
+	statusCategoryInProgress: 1,
+	statusCategoryNew:        2,
+	statusCategoryDone:       3,
+}
+
 var priorityOrder = map[string]int{
-	"Critica":     1,
-	"Highest":     2,
-	"High":        3,
-	"Medium":      4,
-	"Low":         5,
-	"Lowest":      6,
-	"Por Definir": 7,
+	"critica":     1,
+	"crítica":     1,
+	"highest":     2,
+	"high":        3,
+	"medium":      4,
+	"low":         5,
+	"lowest":      6,
+	"por definir": 7,
 }
 
 var statusOrder = map[string]int{
-	"Trabajando":               1,
-	"To Do":                    2,
-	"Selected for Development": 3,
-	"Backlog":                  4,
-	"Done":                     5,
-	"Cancelada":                6,
-	"Validación":               7,
-	"🔴 BLOQUEADO":              8,
-	"Ready to Deploy":          9,
+	"trabajando":               1,
+	"in progress":              1,
+	"to do":                    2,
+	"selected for development": 3,
+	"backlog":                  4,
+	"done":                     5,
+	"cancelada":                6,
+	"validación":               7,
+	"🔴 bloqueado":              8,
+	"ready to deploy":          9,
 }
 
 var intransitStatuses = map[string]bool{
-	"Ready to Deploy": true,
-	"Validación":      true,
-	"🔴 BLOQUEADO":     true,
+	"ready to deploy": true,
+	"validación":      true,
+	"🔴 bloqueado":     true,
 }
 
-var closureStatuses = map[string]bool{
-	"Done":      true,
-	"Cancelada": true,
+var closureStatusNames = map[string]bool{
+	"done":      true,
+	"cancelada": true,
+	"closed":    true,
+	"resolved":  true,
+	"cancelled": true,
+	"canceled":  true,
 }
 
-func isClosedStatus(status string) bool {
-	return closureStatuses[status]
+func normalizeStatus(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func isClosedIssue(i jira.Issue) bool {
+	if i.StatusCategory != "" {
+		return i.StatusCategory == statusCategoryDone
+	}
+	return closureStatusNames[normalizeStatus(i.Status)]
+}
+
+func isInTransitStatus(status string) bool {
+	return intransitStatuses[normalizeStatus(status)]
+}
+
+func rankOf(table map[string]int, key string) int {
+	if r, ok := table[normalizeStatus(key)]; ok {
+		return r
+	}
+	return rankUnknown
+}
+
+func issueStatusRank(i jira.Issue) int {
+	if r, ok := statusCategoryRank[i.StatusCategory]; ok {
+		return r
+	}
+	return rankUnknown
 }
 
 func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
@@ -239,20 +284,23 @@ func (m model) getCommentCursorLine() int {
 	return lines
 }
 
-// compareIssues orders issues within a list: finished (Done/Cancelada) always
-// sink to the bottom, then highest priority first, then by status.
+// compareIssues orders issues within a list: finished issues always sink to the
+// bottom, then highest priority first, then by status.
 func compareIssues(a, b jira.Issue) int {
-	aClosed, bClosed := isClosedStatus(a.Status), isClosedStatus(b.Status)
+	aClosed, bClosed := isClosedIssue(a), isClosedIssue(b)
 	if aClosed != bClosed {
 		if aClosed {
 			return 1 // a is finished -> after b
 		}
 		return -1
 	}
-	if pa, pb := priorityOrder[a.Priority.Name], priorityOrder[b.Priority.Name]; pa != pb {
+	if pa, pb := rankOf(priorityOrder, a.Priority.Name), rankOf(priorityOrder, b.Priority.Name); pa != pb {
 		return pa - pb // lower rank value = higher priority, comes first
 	}
-	return statusOrder[a.Status] - statusOrder[b.Status]
+	if sa, sb := issueStatusRank(a), issueStatusRank(b); sa != sb {
+		return sa - sb
+	}
+	return rankOf(statusOrder, a.Status) - rankOf(statusOrder, b.Status)
 }
 
 func sortSectionsIssues(sections []Section) {
@@ -264,14 +312,17 @@ func sortSectionsIssues(sections []Section) {
 func sortSectionsIssuesByPriority(sections []Section) {
 	for si := range sections {
 		sort.Slice(sections[si].Issues, func(i, j int) bool {
-			return priorityOrder[sections[si].Issues[i].Priority.Name] < priorityOrder[sections[si].Issues[j].Priority.Name]
+			return rankOf(priorityOrder, sections[si].Issues[i].Priority.Name) < rankOf(priorityOrder, sections[si].Issues[j].Priority.Name)
 		})
 	}
 }
 
 func sortIssuesByStatus(issues []jira.Issue) {
 	slices.SortFunc(issues, func(a, b jira.Issue) int {
-		return statusOrder[a.Status] - statusOrder[b.Status]
+		if sa, sb := issueStatusRank(a), issueStatusRank(b); sa != sb {
+			return sa - sb
+		}
+		return rankOf(statusOrder, a.Status) - rankOf(statusOrder, b.Status)
 	})
 }
 

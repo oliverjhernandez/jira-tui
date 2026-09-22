@@ -243,21 +243,33 @@ func TestEstimateDoesNotWrapTheHeader(t *testing.T) {
 	}
 }
 
-func TestIsClosedStatus(t *testing.T) {
+func TestIsClosedIssue(t *testing.T) {
 	t.Parallel()
 
-	closed := []string{"Done", "Cancelada"}
-	open := []string{"Trabajando", "To Do", "Backlog", "Validación", "Ready to Deploy", "Selected for Development"}
-
-	for _, s := range closed {
-		if !isClosedStatus(s) {
-			t.Errorf("isClosedStatus(%q) = false, want true", s)
-		}
+	tests := []struct {
+		name  string
+		issue jira.Issue
+		want  bool
+	}{
+		{"category done wins", jira.Issue{Status: "Anything", StatusCategory: "done"}, true},
+		{"category in progress", jira.Issue{Status: "Done", StatusCategory: "indeterminate"}, false},
+		{"category new", jira.Issue{Status: "Backlog", StatusCategory: "new"}, false},
+		{"english closed name fallback", jira.Issue{Status: "Done"}, true},
+		{"spanish closed name fallback", jira.Issue{Status: "Cancelada"}, true},
+		{"resolved name fallback", jira.Issue{Status: "Resolved"}, true},
+		{"cancelled name fallback", jira.Issue{Status: "Cancelled"}, true},
+		{"case insensitive fallback", jira.Issue{Status: "  DONE "}, true},
+		{"open name fallback", jira.Issue{Status: "Trabajando"}, false},
+		{"unknown open status", jira.Issue{Status: "In Review"}, false},
 	}
-	for _, s := range open {
-		if isClosedStatus(s) {
-			t.Errorf("isClosedStatus(%q) = true, want false", s)
-		}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := isClosedIssue(tt.issue); got != tt.want {
+				t.Errorf("isClosedIssue(%+v) = %v, want %v", tt.issue, got, tt.want)
+			}
+		})
 	}
 }
 
