@@ -329,9 +329,14 @@ func (m model) postTransitionCmd(issueKey, transitionID, worklogTime string) tea
 }
 
 const (
-	flaggedFieldID     = "customfield_10021"
 	flaggedFieldValue  = "Impediment"
-	blockReasonFieldID = "customfield_10485"
+	blockReasonPrefix  = "Blocked: "
+	cancelReasonPrefix = "Cancellation reason: "
+)
+
+var (
+	flaggedFieldNames     = []string{"flagged", "impediment", "impedimento"}
+	blockReasonFieldNames = []string{"block reason", "blocked reason", "motivo de bloqueo", "motivo bloqueo"}
 )
 
 func (m model) postBlockedTransitionCmd(issueKey, transitionID, reason string) tea.Cmd {
@@ -340,14 +345,25 @@ func (m model) postBlockedTransitionCmd(issueKey, transitionID, reason string) t
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		fields := map[string]any{
-			flaggedFieldID: []map[string]string{
+		fields := map[string]any{}
+		if m.flaggedFieldID != "" {
+			fields[m.flaggedFieldID] = []map[string]string{
 				{"value": flaggedFieldValue},
-			},
-			blockReasonFieldID: reason,
+			}
 		}
 
-		err := m.client.PostTransition(context.Background(), issueKey, transitionID, fields, "", "")
+		var comment string
+		if m.blockReasonFieldID != "" {
+			fields[m.blockReasonFieldID] = reason
+		} else {
+			comment = blockReasonPrefix + reason
+		}
+
+		if len(fields) == 0 {
+			fields = nil
+		}
+
+		err := m.client.PostTransition(context.Background(), issueKey, transitionID, fields, comment, "")
 		if err != nil {
 			return errMsg{err}
 		}
@@ -362,7 +378,7 @@ func (m model) postTransitionWithReasonCmd(issueKey, transitionID, reason string
 			return errMsg{fmt.Errorf("jira client not initialized")}
 		}
 
-		comment := "Motivo de cancelación: " + reason
+		comment := cancelReasonPrefix + reason
 
 		err := m.client.PostTransition(context.Background(), issueKey, transitionID, nil, comment, "")
 		if err != nil {

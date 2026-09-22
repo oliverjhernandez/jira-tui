@@ -122,7 +122,11 @@ var startDateFieldNames = []string{
 }
 
 func resolveStartDateField(fields []jira.Field) string {
-	for _, want := range startDateFieldNames {
+	return resolveFieldByNames(fields, startDateFieldNames)
+}
+
+func resolveFieldByNames(fields []jira.Field, names []string) string {
+	for _, want := range names {
 		for _, f := range fields {
 			if strings.EqualFold(strings.TrimSpace(f.Name), want) {
 				return f.ID
