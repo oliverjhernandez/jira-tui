@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-<!-- One paragraph: what this service/tool does and who consumes it. -->
+jira-tui is a terminal UI for Jira Cloud, built on Bubble Tea v2. It is a single
+binary distributed via Homebrew and GitHub releases. Time tracking is backed by
+Tempo and is optional; everything else talks to the Jira Cloud REST API v3.
 
 ## Commands
 
@@ -16,17 +18,17 @@ go vet ./...
 
 ## Architecture
 
-<!-- Adjust to actual layout -->
-
-- `cmd/` — entrypoints (one subdir per binary)
-- `internal/` — private application code
-- `pkg/` — public reusable packages (only if intentionally exported)
-- `api/` — protobuf / OpenAPI definitions
-- `configs/` — configuration files
+- `cmd/jira-tui/` — the whole TUI (package `main`): the model struct, `Update`
+  and `View` dispatch by `viewMode`, one file per view/modal, and `commands.go`
+  for every async `tea.Cmd` and message type
+- `internal/jira/` — REST client, domain types, Markdown↔ADF conversion
+- `internal/ui/` — styles, themes, column width math
+- `internal/config/` — environment configuration
+- `internal/store/` — local JSON state (issue tags) and XDG paths
 
 ## Conventions
 
-- Go version: 1.22+ (match `go.mod`; do not change it without asking)
+- Go version: match `go.mod` (currently 1.25.8); do not change it without asking
 - Formatting: `gofmt` / `goimports` — never hand-format
 - Errors: wrap with `fmt.Errorf("context: %w", err)`; no `panic` outside `main` or init paths
 - Errors are values: check every error; don't discard with `_` unless justified with a comment
