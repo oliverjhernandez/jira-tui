@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -241,4 +242,61 @@ func TestBrowseURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompareIssuesForeignWorkflow(t *testing.T) {
+	t.Parallel()
+
+	issues := []jira.Issue{
+		{Key: "A-3", Status: "Done", StatusCategory: "done", Priority: jira.Priority{Name: "High"}},
+		{Key: "A-1", Status: "In Review", StatusCategory: "indeterminate", Priority: jira.Priority{Name: "High"}},
+		{Key: "A-2", Status: "Triage", StatusCategory: "new", Priority: jira.Priority{Name: "High"}},
+	}
+
+	slices.SortFunc(issues, compareIssues)
+
+	want := []string{"A-1", "A-2", "A-3"}
+	for i, w := range want {
+		if issues[i].Key != w {
+			t.Errorf("position %d = %s, want %s (order: %v)", i, issues[i].Key, w, keysOf(issues))
+		}
+	}
+}
+
+func TestCompareIssuesUnknownPrioritySortsLast(t *testing.T) {
+	t.Parallel()
+
+	issues := []jira.Issue{
+		{Key: "B-2", Status: "Open", StatusCategory: "new", Priority: jira.Priority{Name: "Sev-4"}},
+		{Key: "B-1", Status: "Open", StatusCategory: "new", Priority: jira.Priority{Name: "High"}},
+	}
+
+	slices.SortFunc(issues, compareIssues)
+
+	if issues[0].Key != "B-1" {
+		t.Errorf("known priority should sort first, got %v", keysOf(issues))
+	}
+}
+
+func TestUnknownStatusDoesNotOutrankInProgress(t *testing.T) {
+	t.Parallel()
+
+	issues := []jira.Issue{
+		{Key: "C-2", Status: "Mystery"},
+		{Key: "C-1", Status: "Working", StatusCategory: "indeterminate"},
+	}
+
+	slices.SortFunc(issues, compareIssues)
+
+	if issues[0].Key != "C-1" {
+		t.Errorf("classified issue should sort before unclassified, got %v", keysOf(issues))
+	}
+}
+
+func keysOf(issues []jira.Issue) []string {
+	out := make([]string, len(issues))
+	for i, is := range issues {
+		out[i] = is.Key
+	}
+	return out
 }

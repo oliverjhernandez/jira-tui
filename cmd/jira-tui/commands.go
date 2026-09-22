@@ -809,9 +809,12 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 			}
 		}
 		if categoryKey == "" {
+			categoryKey = issue.StatusCategory
+		}
+		if categoryKey == "" {
 			categoryKey = global[key]
 		}
-		if intransitStatuses[issue.Status] {
+		if isInTransitStatus(issue.Status) {
 			categoryKey = "transit"
 		}
 
@@ -900,7 +903,7 @@ func (m model) buildListContent() string {
 		fmt.Fprintf(&listContent, "%s\n", sectionHeader)
 		for ii, issue := range s.Issues {
 			selected := m.sectionCursor == si && m.cursor == ii
-			dimmed := isClosedStatus(issue.Status)
+			dimmed := isClosedIssue(issue)
 			listContent.WriteString(m.renderIssueRow(issue, selected, dimmed) + "\n")
 		}
 		listContent.WriteString("\n\n")
@@ -1000,7 +1003,7 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	if m.activeIssue.Worklogs != nil {
 		logged = ui.DimTextStyle.Render("Logged: " + extractLoggedTime(m.activeIssue.Worklogs))
 	}
-	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now(), isClosedStatus(m.activeIssue.Status))
+	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now(), isClosedIssue(*m.activeIssue))
 	detailsHeaderLine2 := joinNonEmpty("  ", status, assignee, estimate, logged, due)
 	// Tags take whatever is left of line 2. The metadata panel has exactly four
 	// content lines and all of them are spoken for, so a fifth would push the
