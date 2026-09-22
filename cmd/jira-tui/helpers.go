@@ -351,6 +351,16 @@ func findIndex(section focusedSection, order []focusedSection) int {
 	return 0
 }
 
+// issueYankBlock is the shareable form of an issue: a "KEY // Summary" header
+// over the description, rendered back to the markdown it was authored in.
+func issueYankBlock(i jira.Issue) string {
+	block := i.Key + " // " + i.Summary
+	if body := jira.ADFToMarkdown(i.Description); body != "" {
+		block += "\n" + body
+	}
+	return block
+}
+
 func yankToClipboard(text string) {
 	err := clipboard.WriteAll(plainClipboardText(text))
 	if err != nil {

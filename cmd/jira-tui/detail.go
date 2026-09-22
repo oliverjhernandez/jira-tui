@@ -355,6 +355,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
 			return m, tea.Batch(cmds...)
 
+		case keyPressMsg.String() == "d" && m.lastKey == "y":
+			var cmds []tea.Cmd
+			m.lastKey = ""
+			yankToClipboard(issueYankBlock(*m.activeIssue))
+			m.setInfo("Key, summary and description yanked to clipboard")
+			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
+			return m, tea.Batch(cmds...)
+
 		case keyPressMsg.String() == "g" && m.lastKey == "":
 			m.lastKey = "g"
 			return m, nil
