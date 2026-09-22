@@ -110,7 +110,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !ok {
 				return m, nil
 			}
-			textToCopy := "https://layer7.atlassian.net/browse/" + issue.Key
+			textToCopy := m.browseURL + issue.Key
 			yankToClipboard(textToCopy)
 			m.setInfo("URL yanked to clipboard")
 			cmds = append(cmds, m.clearStatusAfter(clearMsgTimeout))
