@@ -159,7 +159,7 @@ func (m *model) loadActiveTab() tea.Cmd {
 
 	m.sections = m.sectionsFor(m.issues)
 	if m.filtering && t.board.filterValue != "" {
-		m.filteredSections = filterSections(m.sections, t.board.filterValue)
+		m.filteredSections = filterSections(m.sections, t.board.filterValue, m.tagsOf)
 	} else {
 		m.filteredSections = nil
 	}

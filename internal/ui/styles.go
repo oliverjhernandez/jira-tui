@@ -73,6 +73,11 @@ var (
 	ThemeComment = CatOverlay0
 	ThemeMention = CatSapphire
 	ThemeLink    = CatBlue
+
+	// Local tags. CatPink is used nowhere else, so a tag can never be mistaken
+	// for a status, priority or type at a glance.
+	ThemeTag    = CatPink
+	ThemeTagDim = CatOverlay0
 )
 
 // ============================================================================
@@ -200,6 +205,20 @@ var (
 	CursorBarStyle = lipgloss.NewStyle().
 			Foreground(ThemeAccent).
 			Bold(true)
+
+	// Tag chips are filled pills, deliberately unlike the Jira badges (a
+	// colored glyph on the terminal background): local metadata reads as a
+	// different class of thing.
+	TagChipStyle = lipgloss.NewStyle().
+			Foreground(ThemeBg).
+			Background(ThemeTag)
+
+	TagChipDimStyle = lipgloss.NewStyle().
+			Foreground(ThemeBgDark).
+			Background(ThemeTagDim)
+
+	TagMoreStyle = lipgloss.NewStyle().
+			Foreground(ThemeFgDim)
 )
 
 // ============================================================================

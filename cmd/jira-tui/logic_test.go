@@ -131,7 +131,7 @@ func TestFilterSections(t *testing.T) {
 		},
 	}
 
-	filtered := filterSections(sections, "bug")
+	filtered := filterSections(sections, "bug", nil)
 	if len(filtered) != 2 {
 		t.Fatalf("filterSections should preserve section count, got %d", len(filtered))
 	}
@@ -145,18 +145,60 @@ func TestFilterSections(t *testing.T) {
 
 func TestIssueMatchesFilter(t *testing.T) {
 	issue := jira.Issue{Key: "DEV-42", Summary: "Refactor parser", Status: "In Progress"}
+	tags := []string{"needs-review", "urgent"}
 	tests := []struct {
+		name   string
 		filter string
+		tags   []string
 		want   bool
 	}{
-		{"dev-42", true},
-		{"refactor", true},
-		{"progress", true},
-		{"nonexistent", false},
+		{name: "key", filter: "dev-42", want: true},
+		{name: "summary", filter: "refactor", want: true},
+		{name: "status", filter: "progress", want: true},
+		{name: "no match", filter: "nonexistent", want: false},
+
+		{name: "tag exact", filter: "#urgent", tags: tags, want: true},
+		{name: "tag prefix as you type", filter: "#need", tags: tags, want: true},
+		{name: "tag substring", filter: "#review", tags: tags, want: true},
+		{name: "unknown tag", filter: "#nope", tags: tags, want: false},
+		{name: "bare hash means has any tag", filter: "#", tags: tags, want: true},
+		{name: "bare hash with no tags", filter: "#", want: false},
+		{name: "tag filter ignores the summary", filter: "#refactor", tags: tags, want: false},
+		{name: "plain filter ignores tags", filter: "urgent", tags: tags, want: false},
 	}
 	for _, tt := range tests {
-		if got := issueMatchesFilter(issue, tt.filter); got != tt.want {
-			t.Errorf("issueMatchesFilter(%q) = %v, want %v", tt.filter, got, tt.want)
+		t.Run(tt.name, func(t *testing.T) {
+			if got := issueMatchesFilter(issue, tt.filter, tt.tags); got != tt.want {
+				t.Errorf("issueMatchesFilter(%q, tags=%v) = %v, want %v", tt.filter, tt.tags, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterSectionsUsesTheTagLookup(t *testing.T) {
+	sections := []Section{{
+		Name: "In Progress",
+		Issues: []jira.Issue{
+			{Key: "DEV-1", Summary: "alpha"},
+			{Key: "DEV-2", Summary: "bravo"},
+		},
+	}}
+	tagsOf := func(key string) []string {
+		if key == "DEV-2" {
+			return []string{"urgent"}
 		}
+		return nil
+	}
+
+	filtered := filterSections(sections, "#urgent", tagsOf)
+	if len(filtered) != 1 {
+		t.Fatalf("filterSections should preserve section count, got %d", len(filtered))
+	}
+	if len(filtered[0].Issues) != 1 || filtered[0].Issues[0].Key != "DEV-2" {
+		t.Errorf("a #tag filter should keep only the tagged issue, got %+v", filtered[0].Issues)
+	}
+
+	if got := filterSections(sections, "#urgent", nil); len(got[0].Issues) != 0 {
+		t.Errorf("with no tag lookup a #tag filter should match nothing, got %+v", got[0].Issues)
 	}
 }

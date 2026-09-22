@@ -986,6 +986,13 @@ func (m model) renderMetadataPanel(width int, height int) string {
 	}
 	due := ui.DetailLabelStyle.Render("Due: ") + ui.RenderDue(m.activeIssue.DueDate, time.Now(), isClosedStatus(m.activeIssue.Status))
 	detailsHeaderLine2 := joinNonEmpty("  ", status, assignee, estimate, logged, due)
+	// Tags take whatever is left of line 2. The metadata panel has exactly four
+	// content lines and all of them are spoken for, so a fifth would push the
+	// whole detail layout down.
+	tagBudget := max(0, width-ui.PanelOverheadWidth-lipgloss.Width(detailsHeaderLine2)-2)
+	if tags := ui.RenderTags(m.tagsOf(m.activeIssue.Key), tagBudget, false); tags != "" {
+		detailsHeaderLine2 = joinNonEmpty("  ", detailsHeaderLine2, tags)
+	}
 	leftHeader := detailsHeaderLine1 + "\n" + detailsHeaderLine2
 
 	colwidth := 30

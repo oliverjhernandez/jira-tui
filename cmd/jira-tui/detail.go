@@ -424,6 +424,9 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.openDatesForm()
 
 		// priorities
+		case keyPressMsg.String() == "#":
+			return m.openTagsFor(m.activeIssue)
+
 		case keyPressMsg.String() == "p":
 			if m.activeIssue == nil {
 				return m, nil

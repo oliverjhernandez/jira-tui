@@ -55,7 +55,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput, cmd = m.textInput.Update(msg)
 
 			if m.textInput.Value() != "" {
-				m.filteredSections = filterSections(m.sections, m.textInput.Value())
+				m.filteredSections = filterSections(m.sections, m.textInput.Value(), m.tagsOf)
 
 				for i, s := range m.filteredSections {
 					if len(s.Issues) > 0 {
@@ -133,6 +133,9 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch keyPressMsg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
+
+		case "#":
+			return m.openTagsFor(m.selectedIssue)
 
 		case "n":
 			i := &NewIssueFormData{
@@ -440,7 +443,7 @@ func (m *model) selectIssueByKey(key string) {
 // sections, or clears it when no filter is active.
 func (m *model) rebuildFilteredSections() {
 	if m.filtering && m.textInput.Value() != "" {
-		m.filteredSections = filterSections(m.sections, m.textInput.Value())
+		m.filteredSections = filterSections(m.sections, m.textInput.Value(), m.tagsOf)
 		return
 	}
 	m.filteredSections = nil

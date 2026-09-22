@@ -48,6 +48,7 @@ const (
 	projectPickerView
 	helpView
 	datesView
+	tagsView
 )
 
 func (v viewMode) String() string {
@@ -94,6 +95,8 @@ func (v viewMode) String() string {
 		return "datesView"
 	case helpView:
 		return "helpView"
+	case tagsView:
+		return "tagsView"
 	default:
 		return "unknown"
 	}
@@ -163,6 +166,7 @@ type Section struct {
 type model struct {
 	// Core
 	client       *jira.Client
+	tags         tagStore
 	mode         viewMode
 	previousMode viewMode
 	baseView     viewMode
@@ -267,6 +271,7 @@ type model struct {
 	datesData             *DatesFormData
 	savedBoardData        *SavedBoardFormData
 	projectPickerData     *ProjectPickerFormData
+	tagsData              *TagsFormData
 
 	// UI Elements
 	spinner       spinner.Model
@@ -897,6 +902,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tmpModel, viewCmd = m.updateProjectPickerView(msg)
 	case datesView:
 		tmpModel, viewCmd = m.updateDatesView(msg)
+	case tagsView:
+		tmpModel, viewCmd = m.updateTagsView(msg)
 	case helpView:
 		tmpModel, viewCmd = m.updateHelpView(msg)
 	case priorityView:
@@ -955,6 +962,8 @@ func (m model) View() tea.View {
 		content = m.renderProjectPickerView()
 	case datesView:
 		content = m.renderDatesView()
+	case tagsView:
+		content = m.renderTagsView()
 	case helpView:
 		content = m.renderHelpView()
 	case priorityView:
@@ -1017,6 +1026,8 @@ func main() {
 
 	client, _ := jira.NewClient(cfg.JiraURL, cfg.JIraEmail, cfg.JiraToken, cfg.TempoURL, cfg.TempoToken)
 
+	tags, tagsErr := openTagStore()
+
 	logFile, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
@@ -1030,6 +1041,10 @@ func main() {
 		Level: slog.LevelInfo,
 	})))
 
+	if tagsErr != nil {
+		slog.Error("opening the local state file", "err", tagsErr)
+	}
+
 	textInput := textinput.New()
 	textInput.CharLimit = 50
 
@@ -1039,6 +1054,7 @@ func main() {
 		mode:            listView,
 		baseView:        listView,
 		client:          client,
+		tags:            tags,
 		textInput:       textInput,
 		windowWidth:     80,
 		windowHeight:    24,

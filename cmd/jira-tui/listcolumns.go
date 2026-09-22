@@ -94,10 +94,17 @@ var listColumns = []listColumn{
 // summaryCell renders the Summary column, including the parent-issue breadcrumb
 // prefix and selected/dimmed styling.
 func summaryCell(m model, i jira.Issue, selected, dimmed bool) string {
+	budget := m.columnWidths.Summary
+
+	chips := ui.RenderTags(m.tagsOf(i.Key), tagCellWidth(budget), dimmed)
+	if chipWidth := lipgloss.Width(chips); chipWidth > 0 {
+		budget -= chipWidth + 1
+	}
+
 	var summaryText string
 	if i.Parent != nil {
 		parentPrefix := ui.IconEnter + " " + i.Parent.Key + " " + ui.IconSeparator + " "
-		full := ui.TruncateLongString(parentPrefix+i.Summary, m.columnWidths.Summary)
+		full := ui.TruncateLongString(parentPrefix+i.Summary, budget)
 		switch {
 		case selected:
 			summaryText = full
@@ -107,9 +114,23 @@ func summaryCell(m model, i jira.Issue, selected, dimmed bool) string {
 			summaryText = ui.DimTextStyle.Render(parentPrefix) + strings.TrimPrefix(full, parentPrefix)
 		}
 	} else {
-		summaryText = ui.TruncateLongString(i.Summary, m.columnWidths.Summary)
+		summaryText = ui.TruncateLongString(i.Summary, budget)
+	}
+
+	if chips != "" {
+		summaryText = ui.PadCell(summaryText, budget) + " " + chips
 	}
 	return m.columnWidths.RenderSummary(summaryText, selected, dimmed)
+}
+
+// tagCellWidth gives tag chips only the slack the SUMMARY column has above its
+// floor, so a narrow terminal drops the chips instead of the summary text.
+func tagCellWidth(summaryWidth int) int {
+	slack := summaryWidth - ui.MinSummaryWidth
+	if slack < 8 {
+		return 0
+	}
+	return min(slack*2/3, 24)
 }
 
 // rowPrefix is the 2-cell cursor gutter. Both states are exactly 2 cells wide so
