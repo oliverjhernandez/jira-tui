@@ -354,3 +354,51 @@ func RenderDue(iso string, now time.Time, closed bool) string {
 	}
 	return style.Render(text)
 }
+
+// RenderTags renders local tags as chips, never exceeding budget cells. Tags
+// that do not fit are replaced by a "+N" marker; if not even that fits, the
+// result is empty. Callers rely on the width guarantee to keep list rows
+// aligned.
+func RenderTags(tags []string, budget int, dimmed bool) string {
+	if budget <= 0 || len(tags) == 0 {
+		return ""
+	}
+
+	chipStyle := TagChipStyle
+	if dimmed {
+		chipStyle = TagChipDimStyle
+	}
+
+	var chips []string
+	used := 0
+	for i, tag := range tags {
+		chip := "#" + tag
+		cost := lipgloss.Width(chip)
+		if len(chips) > 0 {
+			cost++
+		}
+		reserve := 0
+		if hidden := len(tags) - i - 1; hidden > 0 {
+			reserve = lipgloss.Width(moreTagsMarker(hidden))
+		}
+		if used+cost+reserve > budget {
+			break
+		}
+		used += cost
+		chips = append(chips, chipStyle.Render(chip))
+	}
+
+	if len(chips) == 0 {
+		return ""
+	}
+
+	out := strings.Join(chips, " ")
+	if hidden := len(tags) - len(chips); hidden > 0 {
+		out += TagMoreStyle.Render(moreTagsMarker(hidden))
+	}
+	return out
+}
+
+func moreTagsMarker(hidden int) string {
+	return fmt.Sprintf(" +%d", hidden)
+}

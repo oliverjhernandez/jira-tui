@@ -2,6 +2,10 @@ package ui
 
 import "time"
 
+// MinSummaryWidth is the floor the SUMMARY column never shrinks below; it is
+// the column users scan, so anything optional must yield to it.
+const MinSummaryWidth = 50
+
 type ColumnWidths struct {
 	Type        int
 	Key         int
@@ -57,7 +61,7 @@ func CalculateColumnWidths(terminalWidth int) ColumnWidths {
 		fixedWidths.DueDate + fixedWidths.TimeSpent +
 		fixedWidths.Empty*gaps
 
-	summaryWidth := max(availableWidth-fixedTotal, 50)
+	summaryWidth := max(availableWidth-fixedTotal, MinSummaryWidth)
 
 	fixedWidths.Summary = summaryWidth
 

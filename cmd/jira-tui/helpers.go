@@ -58,7 +58,7 @@ func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
 	var filtered []jira.Issue
 
 	for _, i := range issues {
-		if issueMatchesFilter(i, filter) {
+		if issueMatchesFilter(i, filter, nil) {
 			filtered = append(filtered, i)
 		}
 	}
@@ -66,13 +66,17 @@ func filterIssues(issues []jira.Issue, filter string) []jira.Issue {
 	return filtered
 }
 
-func filterSections(sections []Section, filter string) []Section {
+func filterSections(sections []Section, filter string, tagsOf func(string) []string) []Section {
 	var filteredSections []Section
 
 	for _, s := range sections {
 		var filteredIssues []jira.Issue
 		for _, i := range s.Issues {
-			if issueMatchesFilter(i, filter) {
+			var tags []string
+			if tagsOf != nil {
+				tags = tagsOf(i.Key)
+			}
+			if issueMatchesFilter(i, filter, tags) {
 				filteredIssues = append(filteredIssues, i)
 			}
 		}
@@ -87,8 +91,24 @@ func filterSections(sections []Section, filter string) []Section {
 	return filteredSections
 }
 
-func issueMatchesFilter(issue jira.Issue, filter string) bool {
-	filterLower := strings.ToLower(filter)
+// issueMatchesFilter matches summary, status and key. A filter starting with
+// "#" instead matches local tags only, so "#urgent" cannot also hit an issue
+// merely summarized "urgent fix"; a bare "#" means "has any tag".
+func issueMatchesFilter(issue jira.Issue, filter string, tags []string) bool {
+	filterLower := strings.ToLower(strings.TrimSpace(filter))
+
+	if tagQuery, isTagFilter := strings.CutPrefix(filterLower, "#"); isTagFilter {
+		if tagQuery == "" {
+			return len(tags) > 0
+		}
+		for _, t := range tags {
+			if strings.Contains(strings.ToLower(t), tagQuery) {
+				return true
+			}
+		}
+		return false
+	}
+
 	return strings.Contains(strings.ToLower(issue.Summary), filterLower) ||
 		strings.Contains(strings.ToLower(issue.Status), filterLower) ||
 		strings.Contains(strings.ToLower(issue.Key), filterLower)
@@ -287,6 +307,8 @@ func (m model) modalDataReady() bool {
 		return m.transitionWorklogData != nil
 	case datesView:
 		return m.datesData != nil
+	case tagsView:
+		return m.tagsData != nil
 	default:
 		return true
 	}
