@@ -217,6 +217,7 @@ type model struct {
 
 	// Worklogs
 	worklogTotals map[string]int
+	tempoEnabled  bool
 
 	// Transitions
 	// transitions       map[string][]jira.Transition
@@ -854,7 +855,7 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.listViewport.SetWidth(m.listLayout.panelContentWidth)
 		m.listViewport.SetHeight(m.listLayout.listHeight)
 
-		m.columnWidths = ui.CalculateColumnWidths(msg.Width)
+		m.columnWidths = m.layoutWidths(ui.CalculateColumnWidths(msg.Width))
 		m.listViewport.SetContent(m.buildListContent())
 
 		return m, nil
@@ -1064,6 +1065,7 @@ func main() {
 		baseView:        listView,
 		client:          client,
 		browseURL:       browseURL(cfg.JiraURL),
+		tempoEnabled:    cfg.TempoEnabled(),
 		tags:            tags,
 		textInput:       textInput,
 		windowWidth:     80,
