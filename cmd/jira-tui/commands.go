@@ -937,21 +937,8 @@ func (m model) renderInfoPanel() string {
 	}
 	total := inProgress + toDo + done
 
-	var projectsStr string
-	var projects []string
-	for _, p := range m.activeProjects {
-		projects = append(projects, p.Name)
-	}
-	projectsStr = strings.Join(projects, " · ")
-
-	userStyled := ui.InfoPanelUserStyle.Render(userName)
-	projectsStyled := ui.InfoPanelProjectStyle.Render(projectsStr)
+	line1 := ui.InfoPanelUserStyle.Render(userName)
 	line1InnerWidth := m.listLayout.panelContentWidth
-	line1Gap := line1InnerWidth - lipgloss.Width(userStyled) - lipgloss.Width(projectsStyled)
-	if line1Gap < 0 {
-		line1Gap = 1
-	}
-	line1 := userStyled + strings.Repeat(" ", line1Gap) + projectsStyled
 
 	statusCounts := fmt.Sprintf("%s In Progress: %d    %s To Do: %d    %s Done: %d",
 		ui.IconInfoInProgress, inProgress,

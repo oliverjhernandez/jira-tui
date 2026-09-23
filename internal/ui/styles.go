@@ -491,12 +491,6 @@ var (
 				Foreground(ThemeAccent).
 				Bold(true)
 
-	InfoPanelProjectStyle = lipgloss.NewStyle().
-				Foreground(ThemeFgMuted)
-
-	InfoPanelProjectSepStyle = lipgloss.NewStyle().
-					Foreground(ThemeBorder)
-
 	InfoPanelCountLabelStyle = lipgloss.NewStyle().
 					Foreground(ThemeFgMuted)
 
