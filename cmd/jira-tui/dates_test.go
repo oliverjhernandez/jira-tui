@@ -278,3 +278,25 @@ func TestResolveFieldByNames(t *testing.T) {
 		})
 	}
 }
+
+func TestBlockReasonFieldNames(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		field jira.Field
+	}{
+		{"english", jira.Field{ID: "customfield_1", Name: "Block reason"}},
+		{"spanish", jira.Field{ID: "customfield_1", Name: "Motivo de bloqueo"}},
+		{"motivo flag", jira.Field{ID: "customfield_1", Name: "Motivo Flag"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := resolveFieldByNames([]jira.Field{tt.field}, blockReasonFieldNames); got != tt.field.ID {
+				t.Errorf("resolveFieldByNames(%q) = %q, want %q", tt.field.Name, got, tt.field.ID)
+			}
+		})
+	}
+}
