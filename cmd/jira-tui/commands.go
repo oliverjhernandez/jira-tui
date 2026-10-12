@@ -336,7 +336,7 @@ const (
 
 var (
 	flaggedFieldNames     = []string{"flagged", "impediment", "impedimento"}
-	blockReasonFieldNames = []string{"block reason", "blocked reason", "motivo de bloqueo", "motivo bloqueo"}
+	blockReasonFieldNames = []string{"block reason", "blocked reason", "motivo de bloqueo", "motivo bloqueo", "motivo flag"}
 )
 
 func (m model) postBlockedTransitionCmd(issueKey, transitionID, reason string) tea.Cmd {
