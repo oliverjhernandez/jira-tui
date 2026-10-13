@@ -801,11 +801,16 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 		}
 	}
 
-	var unclassified []jira.Issue
+	var unclassified, readyToDeploy []jira.Issue
 
 	for i := range issues {
 		issue := issues[i]
 		key := strings.ToLower(strings.TrimSpace(issue.Status))
+
+		if key == readyToDeployStatus {
+			readyToDeploy = append(readyToDeploy, issue)
+			continue
+		}
 
 		categoryKey := ""
 		for _, s := range statuses[issue.Project.ID] {
@@ -840,6 +845,9 @@ func (m *model) classifyIssues(issues []jira.Issue, statuses map[string][]jira.S
 
 	if len(unclassified) > 0 {
 		sections = append(sections, Section{Name: "Other", CategoryKey: "other", Issues: unclassified})
+	}
+	if len(readyToDeploy) > 0 {
+		sections = append([]Section{{Name: "Ready to Deploy", CategoryKey: "ready", Issues: readyToDeploy}}, sections...)
 	}
 
 	return sections

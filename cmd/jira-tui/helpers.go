@@ -55,10 +55,11 @@ var statusOrder = map[string]int{
 	"ready to deploy":          9,
 }
 
+const readyToDeployStatus = "ready to deploy"
+
 var intransitStatuses = map[string]bool{
-	"ready to deploy": true,
-	"validación":      true,
-	"🔴 bloqueado":     true,
+	"validación":  true,
+	"🔴 bloqueado": true,
 }
 
 var closureStatusNames = map[string]bool{

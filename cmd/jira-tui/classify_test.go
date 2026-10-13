@@ -28,7 +28,8 @@ func TestClassifyIssues(t *testing.T) {
 		{Key: "DEV-1", Status: "In Progress", Project: jira.Project{ID: "10"}},
 		{Key: "DEV-2", Status: "To Do", Project: jira.Project{ID: "10"}},
 		{Key: "DEV-3", Status: "Done", Project: jira.Project{ID: "10"}},
-		{Key: "DEV-4", Status: "Ready to Deploy", Project: jira.Project{ID: "10"}}, // intransit override
+		{Key: "DEV-4", Status: "Ready to Deploy", Project: jira.Project{ID: "10"}},
+		{Key: "DEV-6", Status: "Validación", Project: jira.Project{ID: "10"}},
 		{Key: "DEV-5", Status: "Totally Unknown", Project: jira.Project{ID: "10"}}, // unclassified
 	}
 
@@ -41,6 +42,7 @@ func TestClassifyIssues(t *testing.T) {
 		"done":          1,
 		"transit":       1,
 		"other":         1,
+		"ready":         1,
 	}
 	for key, want := range checks {
 		s, ok := sectionByCategory(sections, key)
@@ -51,6 +53,36 @@ func TestClassifyIssues(t *testing.T) {
 		if len(s.Issues) != want {
 			t.Errorf("section %q has %d issues, want %d", key, len(s.Issues), want)
 		}
+	}
+}
+
+func TestClassifyIssuesReadyToDeployFirst(t *testing.T) {
+	issues := []jira.Issue{
+		{Key: "DEV-1", Status: "In Progress", StatusCategory: "indeterminate"},
+		{Key: "DEV-2", Status: " ready to deploy ", StatusCategory: "indeterminate"},
+	}
+
+	m := &model{}
+	sections := m.classifyIssues(issues, nil)
+
+	if sections[0].CategoryKey != "ready" {
+		t.Fatalf("first section = %q, want ready", sections[0].CategoryKey)
+	}
+	if len(sections[0].Issues) != 1 || sections[0].Issues[0].Key != "DEV-2" {
+		t.Errorf("ready section issues = %+v, want [DEV-2]", sections[0].Issues)
+	}
+}
+
+func TestClassifyIssuesNoReadySectionWhenEmpty(t *testing.T) {
+	issues := []jira.Issue{
+		{Key: "DEV-1", Status: "In Progress", StatusCategory: "indeterminate"},
+	}
+
+	m := &model{}
+	sections := m.classifyIssues(issues, nil)
+
+	if _, ok := sectionByCategory(sections, "ready"); ok {
+		t.Errorf("did not expect a 'ready' section when no issue is ready to deploy")
 	}
 }
 
