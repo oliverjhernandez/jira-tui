@@ -35,8 +35,17 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		{Key: "a", Status: "In Progress", Project: jira.Project{ID: "P"}},
 		{Key: "b", Status: "In Progress", Project: jira.Project{ID: "P"}},
 	}
+	inProgress := -1
+	for i, s := range m.sectionsFor(m.issues) {
+		if s.CategoryKey == "indeterminate" {
+			inProgress = i
+		}
+	}
+	if inProgress < 0 {
+		t.Fatal("no In Progress section")
+	}
 	m.cursor = 1
-	m.sectionCursor = 0
+	m.sectionCursor = inProgress
 	m.activeIssue = &jira.Issue{Key: "DEV-99"}
 	m.focusedSection = commentsSection
 	m.commentsCursor = 2
@@ -56,7 +65,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if len(m.issues) != 2 {
 		t.Fatalf("issues not restored: %d", len(m.issues))
 	}
-	if m.cursor != 1 || m.sectionCursor != 0 {
+	if m.cursor != 1 || m.sectionCursor != inProgress {
 		t.Errorf("cursor/sectionCursor not restored: %d/%d", m.cursor, m.sectionCursor)
 	}
 	if m.activeIssue == nil || m.activeIssue.Key != "DEV-99" {

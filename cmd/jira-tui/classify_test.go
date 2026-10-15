@@ -73,6 +73,28 @@ func TestClassifyIssuesReadyToDeployFirst(t *testing.T) {
 	}
 }
 
+func TestClassifyIssuesSectionOrder(t *testing.T) {
+	issues := []jira.Issue{
+		{Key: "DEV-1", Status: "To Do", StatusCategory: "new"},
+		{Key: "DEV-2", Status: "Validación", StatusCategory: "indeterminate"},
+		{Key: "DEV-3", Status: "Ready to Deploy", StatusCategory: "indeterminate"},
+		{Key: "DEV-4", Status: "In Progress", StatusCategory: "indeterminate"},
+	}
+
+	m := &model{}
+	sections := m.classifyIssues(issues, nil)
+
+	want := []string{"ready", "transit", "indeterminate", "new", "done"}
+	if len(sections) != len(want) {
+		t.Fatalf("got %d sections, want %d", len(sections), len(want))
+	}
+	for i, key := range want {
+		if sections[i].CategoryKey != key {
+			t.Errorf("section %d = %q, want %q", i, sections[i].CategoryKey, key)
+		}
+	}
+}
+
 func TestClassifyIssuesNoReadySectionWhenEmpty(t *testing.T) {
 	issues := []jira.Issue{
 		{Key: "DEV-1", Status: "In Progress", StatusCategory: "indeterminate"},
