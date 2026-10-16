@@ -61,6 +61,7 @@ type Tab struct {
 	kind     tabKind
 	grouping listGrouping // how this tab groups issues (status vs epic)
 	baseView viewMode     // listView or detailView
+	history  navHistory
 	board    boardState
 	detail   detailState
 }
@@ -109,6 +110,7 @@ func (m *model) saveActiveTab() {
 	}
 	t := &m.tabs[m.activeTab]
 	t.baseView = m.mode
+	t.history = m.history
 	t.board = boardState{
 		jql:            t.board.jql,
 		issues:         m.issues,
@@ -143,6 +145,7 @@ func (m *model) loadActiveTab() tea.Cmd {
 	}
 	t := m.tabs[m.activeTab]
 	m.mode = t.baseView
+	m.history = t.history
 
 	// --- board ---
 	m.issues = t.board.issues
@@ -291,6 +294,7 @@ func (m model) openBoardTab(title, jql string, kind tabKind) (tea.Model, tea.Cmd
 
 	// blank the live board so the new tab renders empty until issues arrive
 	m.mode = listView
+	m.history = navHistory{}
 	m.issues = nil
 	m.sections = nil
 	m.filteredSections = nil

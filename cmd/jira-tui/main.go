@@ -176,6 +176,7 @@ type model struct {
 	// one-shot (consumed and reset to listView) so opening an issue from search
 	// results returns to the results rather than the board.
 	detailReturnView viewMode
+	history          navHistory
 	err              error
 
 	// Tabs
