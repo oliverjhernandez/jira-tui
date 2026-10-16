@@ -50,6 +50,7 @@ func (m model) updateSearchIssueView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.searchIssueData.Form.State == huh.StateCompleted {
 		switch m.issueSelectionMode {
 		case standardIssueSearch:
+			m.visitIssue(strings.ToUpper(strings.TrimSpace(m.searchIssueData.Query)))
 			m.loadingCount++
 			cmds = append(cmds, m.fetchIssueDetailCmd(m.searchIssueData.Query))
 			m.setInfo("Searching...")

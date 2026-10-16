@@ -34,7 +34,14 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = m.detailReturnView
 				m.detailReturnView = listView
 				m.detailPolling = false
+				if m.mode == listView {
+					m.history.visit(navEntry{mode: listView})
+				}
 				return m, nil
+			case "H", "ctrl+o":
+				return m.historyBack()
+			case "L":
+				return m.historyForward()
 			}
 			return m, nil
 		}
@@ -261,6 +268,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.subTasksCursor >= 0 && m.subTasksCursor < len(m.activeIssue.SubTasks) {
 					m.loadingCount++
 					m.activeIssue = &m.activeIssue.SubTasks[m.subTasksCursor]
+					m.visitIssue(m.activeIssue.Key)
 					detailCmd := m.fetchIssueDetailCmd(m.activeIssue.Key)
 					cmds = append(cmds, detailCmd)
 					m.focusedSection = metadataSection
@@ -376,6 +384,7 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Type: m.activeIssue.Parent.Type,
 				}
 				m.activeIssue = &issue
+				m.visitIssue(issue.Key)
 				m.loadingCount++
 				return m, m.fetchIssueDetailCmd(m.activeIssue.Key)
 			}
@@ -509,24 +518,17 @@ func (m model) updateDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchIssueDetailCmd(m.activeIssue.Key)
 
 		case keyPressMsg.String() == "esc":
-			var cmds []tea.Cmd
-			m.mode = m.detailReturnView
-			m.detailReturnView = listView
-			m.detailPolling = false
-			m.activeIssue = nil
+			cmd := m.leaveDetail()
+			if m.mode == listView {
+				m.history.visit(navEntry{mode: listView})
+			}
+			return m, cmd
 
-			m.descViewport.SetContent("")
-			m.commentsViewport.SetContent("")
-			m.worklogsViewport.SetContent("")
-			m.issueLinksViewport.SetContent("")
-			m.subTasksViewport.SetContent("")
+		case keyPressMsg.String() == "H" || keyPressMsg.String() == "ctrl+o":
+			return m.historyBack()
 
-			m.commentsCursor = 0
-			m.worklogsCursor = 0
-			m.subTasksCursor = 0
-			m.loadingCount++
-			cmds = append(cmds, m.fetchMyIssuesCmd())
-			return m, tea.Batch(cmds...)
+		case keyPressMsg.String() == "L":
+			return m.historyForward()
 
 		case keyPressMsg.String() == "q" || keyPressMsg.String() == "ctrl+c":
 			return m, tea.Quit

@@ -146,6 +146,12 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 
+		case "H", "ctrl+o":
+			return m.historyBack()
+
+		case "L":
+			return m.historyForward()
+
 		case "#":
 			return m.openTagsFor(m.selectedIssue)
 
@@ -357,6 +363,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				m.activeIssue = nil
 
+				m.visitIssue(m.selectedIssue.Key)
 				m.loadingCount++
 				detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 				cmds = append(cmds, detailCmd)
@@ -376,6 +383,7 @@ func (m model) updateListView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.sectionCursor < len(sectionsToNavigate) && m.cursor < len(sectionsToNavigate[m.sectionCursor].Issues) {
 				m.selectedIssue = &sectionsToNavigate[m.sectionCursor].Issues[m.cursor]
 				if m.selectedIssue.Parent != nil {
+					m.visitIssue(m.selectedIssue.Key)
 					m.loadingCount++
 					detailCmd := m.fetchIssueDetailCmd(m.selectedIssue.Key)
 					m.setInfo("Fetching parent...")

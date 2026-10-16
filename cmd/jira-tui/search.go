@@ -194,6 +194,7 @@ func (m model) submitSearch() (tea.Model, tea.Cmd) {
 				issue := m.searchResults[m.searchCursor].issue
 				m.selectedIssue = &issue
 				m.detailReturnView = searchView
+				m.visitIssue(issue.Key)
 				m.detailLayout = m.calculateDetailLayout()
 				m.mode = detailView
 				m.loadingCount++

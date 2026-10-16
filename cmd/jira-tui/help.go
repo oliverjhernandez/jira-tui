@@ -34,6 +34,8 @@ var helpGroups = []helpGroup{
 		{"gt / gT", "Next / previous tab"},
 		{"] / [", "Next / previous tab (list view)"},
 		{"x", "Close current tab"},
+		{"H / ctrl+o", "Back to the previous view"},
+		{"L", "Forward to the next view"},
 		{"b", "Open epic board"},
 		{"B", "Open saved-board picker"},
 		{"P", "Open project picker"},
